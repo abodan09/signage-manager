@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background: dark navy rounded square -->
+  <rect width="512" height="512" rx="96" fill="#0f172a"/>
+
+  <!-- TV monitor body -->
+  <rect x="56" y="112" width="400" height="264" rx="22" fill="#1e293b" stroke="#3b82f6" stroke-width="14"/>
+
+  <!-- Screen -->
+  <rect x="82" y="138" width="348" height="212" rx="10" fill="#060c1a"/>
+
+  <!-- Blue headline / primary content bar -->
+  <rect x="104" y="160" width="304" height="48" rx="8" fill="#3b82f6"/>
+
+  <!-- Content placeholder lines -->
+  <rect x="104" y="228" width="196" height="14" rx="5" fill="#334155"/>
+  <rect x="104" y="252" width="256" height="14" rx="5" fill="#334155"/>
+  <rect x="104" y="276" width="156" height="14" rx="5" fill="#334155"/>
+  <rect x="104" y="300" width="220" height="14" rx="5" fill="#334155"/>
+
+  <!-- Green live broadcast dot -->
+  <circle cx="364" cy="184" r="18" fill="#22c55e"/>
+
+  <!-- Signal arcs from live dot -->
+  <path d="M388 167 Q405 184 388 201" stroke="#22c55e" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.65"/>
+  <path d="M400 155 Q421 184 400 213" stroke="#22c55e" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.35"/>
+
+  <!-- TV stand pole -->
+  <rect x="228" y="376" width="56" height="32" rx="10" fill="#1e293b"/>
+
+  <!-- TV stand base -->
+  <rect x="172" y="408" width="168" height="20" rx="10" fill="#1e293b"/>
+</svg>

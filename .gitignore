@@ -4,3 +4,5 @@ release/
 *.db
 uploads/
 .env
+assets/icon.ico
+assets/icon.png

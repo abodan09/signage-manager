@@ -7,7 +7,8 @@
     "dev": "concurrently -k -n VITE,MAIN,ELECTRON -c cyan,yellow,green \"vite\" \"tsc -p tsconfig.main.json --watch --preserveWatchOutput\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
     "build": "vite build && tsc -p tsconfig.main.json",
     "start": "npm run build && electron .",
-    "dist": "npm run build && electron-builder"
+    "generate-icons": "node scripts/generate-icons.mjs",
+    "dist": "node scripts/generate-icons.mjs && npm run build && electron-builder"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -35,6 +36,8 @@
     "react-router-dom": "^6.22.3",
     "typescript": "^5.4.2",
     "vite": "^5.1.4",
+    "sharp": "^0.33.4",
+    "to-ico": "^2.0.1",
     "wait-on": "^7.2.0"
   },
   "build": {
@@ -45,7 +48,8 @@
       "output": "release"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "assets/icon.ico"
     },
     "files": [
       "dist/**/*",

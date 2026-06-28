@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android TV launcher banner — 320x180dp (16:9) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <!-- Background -->
+    <path android:pathData="M0,0 H320 V180 H0 Z" android:fillColor="#0f172a"/>
+
+    <!-- Subtle top/bottom shading -->
+    <path android:pathData="M0,0 H320 V50 H0 Z" android:fillColor="#1e293b" android:fillAlpha="0.45"/>
+    <path android:pathData="M0,130 H320 V180 H0 Z" android:fillColor="#1e293b" android:fillAlpha="0.45"/>
+
+    <!-- Blue accent strips -->
+    <path android:pathData="M0,0 H320 V5 H0 Z" android:fillColor="#3b82f6" android:fillAlpha="0.75"/>
+    <path android:pathData="M0,175 H320 V180 H0 Z" android:fillColor="#3b82f6" android:fillAlpha="0.75"/>
+
+    <!-- Left decorative EQ bars (ascending) -->
+    <path android:pathData="M29,101 H37 Q38,101 38,102 V111 Q38,112 37,112 H29 Q28,112 28,111 V102 Q28,101 29,101 Z"
+          android:fillColor="#3b82f6" android:fillAlpha="0.25"/>
+    <path android:pathData="M42,83 H50 Q51,83 51,84 V111 Q51,112 50,112 H42 Q41,112 41,111 V84 Q41,83 42,83 Z"
+          android:fillColor="#3b82f6" android:fillAlpha="0.4"/>
+    <path android:pathData="M55,69 H63 Q64,69 64,70 V111 Q64,112 63,112 H55 Q54,112 54,111 V70 Q54,69 55,69 Z"
+          android:fillColor="#3b82f6" android:fillAlpha="0.55"/>
+    <path android:pathData="M68,58 H76 Q77,58 77,59 V111 Q77,112 76,112 H68 Q67,112 67,111 V59 Q67,58 68,58 Z"
+          android:fillColor="#3b82f6" android:fillAlpha="0.7"/>
+    <path android:pathData="M81,74 H89 Q90,74 90,75 V111 Q90,112 89,112 H81 Q80,112 80,111 V75 Q80,74 81,74 Z"
+          android:fillColor="#3b82f6" android:fillAlpha="0.5"/>
+
+    <!-- Right decorative broadcast arcs -->
+    <path android:pathData="M249,68 Q270,90 249,112"
+          android:strokeColor="#3b82f6" android:strokeWidth="4"
+          android:fillColor="#00000000" android:strokeLineCap="round" android:strokeAlpha="0.6"/>
+    <path android:pathData="M260,52 Q285,90 260,128"
+          android:strokeColor="#3b82f6" android:strokeWidth="3"
+          android:fillColor="#00000000" android:strokeLineCap="round" android:strokeAlpha="0.35"/>
+    <path android:pathData="M271,36 Q300,90 271,144"
+          android:strokeColor="#3b82f6" android:strokeWidth="2.5"
+          android:fillColor="#00000000" android:strokeLineCap="round" android:strokeAlpha="0.18"/>
+
+    <!-- TV monitor body (centered) -->
+    <path android:pathData="M115,47 H205 Q210,47 210,52 V108 Q210,113 205,113 H115 Q110,113 110,108 V52 Q110,47 115,47 Z"
+          android:fillColor="#1e293b" android:strokeColor="#3b82f6" android:strokeWidth="3"/>
+
+    <!-- Screen -->
+    <path android:pathData="M119,55 H201 Q203,55 203,57 V103 Q203,105 201,105 H119 Q117,105 117,103 V57 Q117,55 119,55 Z"
+          android:fillColor="#060c1a"/>
+
+    <!-- Blue headline bar -->
+    <path android:pathData="M123,60 H194 Q196,60 196,62 V72 Q196,74 194,74 H123 Q121,74 121,72 V62 Q121,60 123,60 Z"
+          android:fillColor="#3b82f6"/>
+
+    <!-- Content lines -->
+    <path android:pathData="M122,78 H163 Q164,78 164,79.5 Q164,81 163,81 H122 Q121,81 121,79.5 Q121,78 122,78 Z"
+          android:fillColor="#334155"/>
+    <path android:pathData="M122,84 H177 Q178,84 178,85.5 Q178,87 177,87 H122 Q121,87 121,85.5 Q121,84 122,84 Z"
+          android:fillColor="#334155"/>
+    <path android:pathData="M122,90 H151 Q152,90 152,91.5 Q152,93 151,93 H122 Q121,93 121,91.5 Q121,90 122,90 Z"
+          android:fillColor="#334155"/>
+    <path android:pathData="M122,96 H167 Q168,96 168,97.5 Q168,99 167,99 H122 Q121,99 121,97.5 Q121,96 122,96 Z"
+          android:fillColor="#334155"/>
+
+    <!-- Green live dot -->
+    <path android:pathData="M183.5,66 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0"
+          android:fillColor="#22c55e"/>
+
+    <!-- Signal arcs from live dot -->
+    <path android:pathData="M194,62 Q202,66 194,70"
+          android:strokeColor="#A622C55E" android:strokeWidth="2.5"
+          android:fillColor="#00000000" android:strokeLineCap="round"/>
+    <path android:pathData="M198,57 Q209,66 198,75"
+          android:strokeColor="#5922C55E" android:strokeWidth="2"
+          android:fillColor="#00000000" android:strokeLineCap="round"/>
+
+    <!-- TV stand pole -->
+    <path android:pathData="M156,113 H164 Q166,113 166,115 V121 Q166,123 164,123 H156 Q154,123 154,121 V115 Q154,113 156,113 Z"
+          android:fillColor="#334155"/>
+
+    <!-- TV stand base -->
+    <path android:pathData="M146.5,123 H173.5 Q176,123 176,125.5 Q176,128 173.5,128 H146.5 Q144,128 144,125.5 Q144,123 146.5,123 Z"
+          android:fillColor="#334155"/>
+
+</vector>

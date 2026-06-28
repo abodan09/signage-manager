@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Signage Manager — Downloads</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
   :root {
     --bg:      #0f172a;
@@ -32,7 +33,7 @@
     background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
     border-bottom: 1px solid var(--border);
   }
-  .logo { font-size: 56px; margin-bottom: 16px; }
+  .logo { margin-bottom: 20px; line-height: 1; }
   header h1 { font-size: 40px; font-weight: 700; margin-bottom: 10px; }
   header p  { font-size: 17px; color: var(--muted); max-width: 480px; margin: 0 auto 28px; line-height: 1.6; }
 
@@ -238,7 +239,23 @@
 <body>
 
 <header>
-  <div class="logo">📡</div>
+  <div class="logo">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="80" height="80" style="display:block;margin:0 auto;border-radius:18px">
+      <rect width="512" height="512" rx="96" fill="#0f172a"/>
+      <rect x="56" y="112" width="400" height="264" rx="22" fill="#1e293b" stroke="#3b82f6" stroke-width="14"/>
+      <rect x="82" y="138" width="348" height="212" rx="10" fill="#060c1a"/>
+      <rect x="104" y="160" width="304" height="48" rx="8" fill="#3b82f6"/>
+      <rect x="104" y="228" width="196" height="14" rx="5" fill="#334155"/>
+      <rect x="104" y="252" width="256" height="14" rx="5" fill="#334155"/>
+      <rect x="104" y="276" width="156" height="14" rx="5" fill="#334155"/>
+      <rect x="104" y="300" width="220" height="14" rx="5" fill="#334155"/>
+      <circle cx="364" cy="184" r="18" fill="#22c55e"/>
+      <path d="M388 167 Q405 184 388 201" stroke="#22c55e" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.65"/>
+      <path d="M400 155 Q421 184 400 213" stroke="#22c55e" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.35"/>
+      <rect x="228" y="376" width="56" height="32" rx="10" fill="#1e293b"/>
+      <rect x="172" y="408" width="168" height="20" rx="10" fill="#1e293b"/>
+    </svg>
+  </div>
   <h1>Signage Manager</h1>
   <p>Digital signage for Google TV / Android TV screens. Manage ads, schedules, and devices from a Windows desktop app.</p>
   <div class="badge-row">

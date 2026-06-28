@@ -36,7 +36,16 @@ export default function Sidebar() {
       {/* logo */}
       <div style={{ padding: '0 20px 24px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ fontSize: 20, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 24 }}>📡</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="28" height="28" style={{ borderRadius: 5, flexShrink: 0 }}>
+            <rect width="512" height="512" rx="96" fill="#0f172a"/>
+            <rect x="56" y="112" width="400" height="264" rx="22" fill="#1e293b" stroke="#3b82f6" strokeWidth="14"/>
+            <rect x="82" y="138" width="348" height="212" rx="10" fill="#060c1a"/>
+            <rect x="104" y="160" width="304" height="48" rx="8" fill="#3b82f6"/>
+            <rect x="104" y="228" width="196" height="14" rx="5" fill="#334155"/>
+            <rect x="104" y="252" width="256" height="14" rx="5" fill="#334155"/>
+            <circle cx="364" cy="184" r="18" fill="#22c55e"/>
+            <path d="M388 167 Q405 184 388 201" stroke="#22c55e" strokeWidth="8" fill="none" strokeLinecap="round" opacity="0.65"/>
+          </svg>
           <span>Signage</span>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>Management Console</div>

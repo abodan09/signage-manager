@@ -1,7 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Simple placeholder launcher icon — replace with a PNG for production -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#0f172a" />
-    <stroke android:width="2dp" android:color="#3b82f6" />
-    <corners android:radius="12dp" />
-</shape>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Dark navy background -->
+    <path
+        android:pathData="M0,0 H108 V108 H0 Z"
+        android:fillColor="#0f172a"/>
+
+    <!-- TV monitor body -->
+    <path
+        android:pathData="M17,24 H91 Q96,24 96,29 V75 Q96,80 91,80 H17 Q12,80 12,75 V29 Q12,24 17,24 Z"
+        android:fillColor="#1e293b"
+        android:strokeColor="#3b82f6"
+        android:strokeWidth="2"/>
+
+    <!-- Screen -->
+    <path
+        android:pathData="M19,29 H88 Q90,29 90,31 V72 Q90,74 88,74 H19 Q17,74 17,72 V31 Q17,29 19,29 Z"
+        android:fillColor="#060c1a"/>
+
+    <!-- Blue headline bar -->
+    <path
+        android:pathData="M24,34 H84 Q86,34 86,36 V42 Q86,44 84,44 H24 Q22,44 22,42 V36 Q22,34 24,34 Z"
+        android:fillColor="#3b82f6"/>
+
+    <!-- Content placeholder lines -->
+    <path android:pathData="M23,48 H62 Q63,48 63,49.5 Q63,51 62,51 H23 Q22,51 22,49.5 Q22,48 23,48 Z"
+          android:fillColor="#334155"/>
+    <path android:pathData="M23,53 H75 Q76,53 76,54.5 Q76,56 75,56 H23 Q22,56 22,54.5 Q22,53 23,53 Z"
+          android:fillColor="#334155"/>
+    <path android:pathData="M23,58 H54 Q55,58 55,59.5 Q55,61 54,61 H23 Q22,61 22,59.5 Q22,58 23,58 Z"
+          android:fillColor="#334155"/>
+    <path android:pathData="M23,63 H67 Q68,63 68,64.5 Q68,66 67,66 H23 Q22,66 22,64.5 Q22,63 23,63 Z"
+          android:fillColor="#334155"/>
+
+    <!-- Green live dot -->
+    <path
+        android:pathData="M73,39 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0"
+        android:fillColor="#22c55e"/>
+
+    <!-- Signal arcs (semi-transparent green) -->
+    <path
+        android:pathData="M83,35 Q91,39 83,43"
+        android:strokeColor="#A622C55E"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round"/>
+    <path
+        android:pathData="M87,31 Q97,39 87,47"
+        android:strokeColor="#5922C55E"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round"/>
+
+    <!-- TV stand pole -->
+    <path
+        android:pathData="M50,80 H58 Q60,80 60,82 V86 Q60,88 58,88 H50 Q48,88 48,86 V82 Q48,80 50,80 Z"
+        android:fillColor="#334155"/>
+
+    <!-- TV stand base -->
+    <path
+        android:pathData="M38,88 H70 Q72,88 72,90 Q72,92 70,92 H38 Q36,92 36,90 Q36,88 38,88 Z"
+        android:fillColor="#334155"/>
+
+</vector>
