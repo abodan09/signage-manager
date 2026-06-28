@@ -124,7 +124,42 @@
   .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
 
   /* ── install steps ──────────────────────────────────────────────────────── */
-  .steps h2 { font-size: 22px; font-weight: 700; margin-bottom: 28px; }
+  .steps h2 { font-size: 22px; font-weight: 700; margin-bottom: 24px; }
+
+  /* ── video guide ─────────────────────────────────────────────────────────── */
+  .video-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .video-wrap video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    background: #000;
+  }
+  /* shown when no src is set */
+  .video-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--muted);
+    background: var(--card);
+    pointer-events: none;
+  }
+  .video-placeholder .ph-icon { font-size: 52px; opacity: .6; }
+  .video-placeholder p { font-size: 15px; }
+  .video-placeholder small { font-size: 12px; opacity: .6; }
 
   .steps-grid {
     display: grid;
@@ -265,6 +300,26 @@
   <!-- ── TV Install Steps ──────────────────────────────────────────────────── -->
   <section class="steps" id="adb-setup">
     <h2>📺 How to install the TV App</h2>
+
+    <!-- ── Video guide ──────────────────────────────────────────────────────
+         Replace the src attribute below with the URL of your MP4 video.
+         Example: src="https://your-storage.com/signage-install-guide.mp4"
+         You can also add  poster="https://…/thumbnail.jpg"  for a preview image.
+    ─────────────────────────────────────────────────────────────────────── -->
+    <div class="video-wrap" id="video-wrap">
+      <video
+        id="guide-video"
+        controls
+        preload="none"
+        src=""
+      ></video>
+      <div class="video-placeholder" id="video-placeholder">
+        <div class="ph-icon">🎬</div>
+        <p>Installation video guide coming soon</p>
+        <small>Follow the written steps below in the meantime</small>
+      </div>
+    </div>
+
     <div class="steps-grid">
       <div class="step">
         <div class="step-num">1</div>
@@ -393,6 +448,15 @@
   }
 
   // Copy ADB command
+  // Hide placeholder when a real video src is present
+  (function () {
+    var vid = document.getElementById('guide-video');
+    var ph  = document.getElementById('video-placeholder');
+    if (vid && vid.src && vid.src !== window.location.href) {
+      ph.style.display = 'none';
+    }
+  })();
+
   window.copyCmd = function () {
     var text = document.getElementById('adb-cmd').textContent;
     navigator.clipboard.writeText(text).then(function () {
