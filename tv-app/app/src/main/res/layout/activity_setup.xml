@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0f172a"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="60dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📡"
+        android:textSize="64sp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Signage TV Player"
+        android:textColor="#f1f5f9"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter the server URL from the Signage Manager desktop app"
+        android:textColor="#94a3b8"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginBottom="40dp" />
+
+    <TextView
+        android:id="@+id/tvCurrent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#94a3b8"
+        android:textSize="14sp"
+        android:fontFamily="monospace"
+        android:layout_marginBottom="20dp" />
+
+    <EditText
+        android:id="@+id/urlInput"
+        android:layout_width="500dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/input_bg"
+        android:hint="http://192.168.1.x:3001"
+        android:textColorHint="#64748b"
+        android:textColor="#f1f5f9"
+        android:textSize="18sp"
+        android:padding="16dp"
+        android:inputType="textUri"
+        android:imeOptions="actionDone"
+        android:layout_marginBottom="24dp"
+        android:focusableInTouchMode="true"
+        android:nextFocusDown="@+id/btnConnect" />
+
+    <Button
+        android:id="@+id/btnConnect"
+        android:layout_width="220dp"
+        android:layout_height="56dp"
+        android:text="Connect"
+        android:textSize="18sp"
+        android:textColor="#ffffff"
+        android:backgroundTint="#3b82f6"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tip: Hold OK/Center button for 3 seconds in the player to return to this screen."
+        android:textColor="#475569"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:layout_marginTop="40dp" />
+
+</LinearLayout>
