@@ -1,0 +1,15 @@
+{
+  "id": "com.signage.tvplayer",
+  "version": "1.0.0",
+  "vendor": "FrozenBit",
+  "type": "web",
+  "main": "index.html",
+  "title": "Signage Player",
+  "icon": "icon.png",
+  "largeIcon": "icon-large.png",
+  "iconColor": "#0f172a",
+  "splashBackground": "#0f172a",
+  "transparent": false,
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": false
+}

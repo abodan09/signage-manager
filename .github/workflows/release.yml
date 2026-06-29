@@ -64,10 +64,48 @@ jobs:
           path: tv-app/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
+  # ── LG webOS IPK ─────────────────────────────────────────────────────────
+  build-webos-ipk:
+    name: Build LG webOS IPK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate webOS icons from SVG
+        run: node scripts/generate-icons.mjs
+
+      - name: Set app version from tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          VER="${TAG#v}"
+          tmp=$(jq ".version = \"$VER\"" tv-app-webos/appinfo.json)
+          echo "$tmp" > tv-app-webos/appinfo.json
+
+      - name: Install ares-cli
+        run: npm install -g @webosose/ares-cli
+
+      - name: Package webOS app
+        run: ares-package tv-app-webos/ --outdir dist-webos/
+
+      - name: Upload IPK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webos-ipk
+          path: dist-webos/*.ipk
+          if-no-files-found: error
+
   # ── GitHub Release ────────────────────────────────────────────────────────
   release:
     name: Create GitHub Release
-    needs: [build-desktop, build-tv-apk]
+    needs: [build-desktop, build-tv-apk, build-webos-ipk]
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows installer
@@ -76,14 +114,22 @@ jobs:
           name: windows-installer
           path: artifacts/
 
-      - name: Download TV APK
+      - name: Download Android TV APK
         uses: actions/download-artifact@v4
         with:
           name: tv-apk
           path: artifacts/
 
-      - name: Rename APK for clarity
-        run: mv artifacts/app-debug.apk artifacts/signage-tv-player.apk
+      - name: Download webOS IPK
+        uses: actions/download-artifact@v4
+        with:
+          name: webos-ipk
+          path: artifacts/
+
+      - name: Rename artifacts for clarity
+        run: |
+          mv artifacts/app-debug.apk artifacts/signage-tv-player.apk
+          mv artifacts/com.signage.tvplayer_*.ipk artifacts/signage-webos-player.ipk
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
@@ -93,3 +139,4 @@ jobs:
           files: |
             artifacts/*.exe
             artifacts/*.apk
+            artifacts/*.ipk

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Signage Player</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── setup card ──────────────────────────────────────────────────────── */
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 56px 72px;
+      width: 680px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .logo { width: 80px; height: 80px; display: block; }
+
+    h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.5px; }
+
+    .subtitle {
+      font-size: 19px;
+      color: #94a3b8;
+      text-align: center;
+      line-height: 1.55;
+      margin-top: -8px;
+    }
+
+    /* ── form ────────────────────────────────────────────────────────────── */
+    .field {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 18px 20px;
+      background: #0f172a;
+      border: 1.5px solid #334155;
+      border-radius: 10px;
+      color: #f1f5f9;
+      font-size: 20px;
+      font-family: 'Courier New', monospace;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus { border-color: #3b82f6; }
+
+    /* ── buttons ─────────────────────────────────────────────────────────── */
+    .btn {
+      width: 100%;
+      padding: 20px;
+      border-radius: 10px;
+      border: none;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn:hover, .btn:focus {
+      background: #2563eb;
+      outline: 3px solid #60a5fa;
+      outline-offset: 2px;
+    }
+
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; outline: none; }
+
+    /* ── status / countdown ──────────────────────────────────────────────── */
+    #status {
+      font-size: 16px;
+      text-align: center;
+      min-height: 24px;
+    }
+    #status.error   { color: #f87171; }
+    #status.success { color: #22c55e; }
+    #status.info    { color: #60a5fa; }
+
+    #countdown-bar {
+      width: 100%;
+      height: 3px;
+      background: #334155;
+      border-radius: 2px;
+      overflow: hidden;
+      display: none;
+    }
+
+    #countdown-fill {
+      height: 100%;
+      background: #3b82f6;
+      border-radius: 2px;
+      transition: width 1s linear;
+    }
+
+    .version {
+      font-size: 13px;
+      color: #475569;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- logo -->
+  <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="96" fill="#0f172a"/>
+    <rect x="56" y="112" width="400" height="264" rx="22" fill="#1e293b" stroke="#3b82f6" stroke-width="14"/>
+    <rect x="82" y="138" width="348" height="212" rx="10" fill="#060c1a"/>
+    <rect x="104" y="160" width="304" height="48" rx="8" fill="#3b82f6"/>
+    <rect x="104" y="228" width="196" height="14" rx="5" fill="#334155"/>
+    <rect x="104" y="252" width="256" height="14" rx="5" fill="#334155"/>
+    <rect x="104" y="276" width="156" height="14" rx="5" fill="#334155"/>
+    <rect x="104" y="300" width="220" height="14" rx="5" fill="#334155"/>
+    <circle cx="364" cy="184" r="18" fill="#22c55e"/>
+    <path d="M388 167 Q405 184 388 201" stroke="#22c55e" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.65"/>
+    <path d="M400 155 Q421 184 400 213" stroke="#22c55e" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.35"/>
+    <rect x="228" y="376" width="56" height="32" rx="10" fill="#1e293b"/>
+    <rect x="172" y="408" width="168" height="20" rx="10" fill="#1e293b"/>
+  </svg>
+
+  <h1>Signage Player</h1>
+  <p class="subtitle">Enter the server URL shown in the desktop<br>app's Settings page, then press Connect.</p>
+
+  <div class="field">
+    <label for="server-url">Server URL</label>
+    <input
+      type="text"
+      id="server-url"
+      placeholder="http://192.168.1.x:3001"
+      autocomplete="off"
+      spellcheck="false"
+    >
+  </div>
+
+  <div id="countdown-bar"><div id="countdown-fill" style="width:100%"></div></div>
+
+  <button class="btn" id="connect-btn" onclick="connect()">Connect</button>
+
+  <div id="status"></div>
+
+  <div class="version">Signage Manager · webOS Player · v1.0.0</div>
+</div>
+
+<script>
+(function () {
+  var STORAGE_SERVER = 'signage_server_url';
+  var STORAGE_DEVICE = 'signage_device_id';
+  var SESSION_BACK   = 'signage_came_back';   // set when user navigates back
+
+  // ── device ID ─────────────────────────────────────────────────────────────
+  function getDeviceId() {
+    var id = localStorage.getItem(STORAGE_DEVICE);
+    if (!id) {
+      var r = function () { return Math.random().toString(36).slice(2, 9); };
+      id = 'webos-' + r() + r();
+      localStorage.setItem(STORAGE_DEVICE, id);
+    }
+    return id;
+  }
+
+  // ── DOM refs ───────────────────────────────────────────────────────────────
+  var input      = document.getElementById('server-url');
+  var btn        = document.getElementById('connect-btn');
+  var statusEl   = document.getElementById('status');
+  var cdBar      = document.getElementById('countdown-bar');
+  var cdFill     = document.getElementById('countdown-fill');
+
+  // ── restore saved URL ──────────────────────────────────────────────────────
+  var savedUrl = localStorage.getItem(STORAGE_SERVER) || '';
+  if (savedUrl) input.value = savedUrl;
+
+  // ── helpers ────────────────────────────────────────────────────────────────
+  function setStatus(msg, cls) {
+    statusEl.textContent = msg;
+    statusEl.className   = cls || '';
+  }
+
+  function normalise(raw) {
+    raw = raw.trim();
+    if (raw && !/^https?:\/\//i.test(raw)) raw = 'http://' + raw;
+    return raw.replace(/\/$/, '');
+  }
+
+  // ── countdown auto-connect ─────────────────────────────────────────────────
+  var cdTimer    = null;
+  var cdSeconds  = 5;
+  var cdCurrent  = cdSeconds;
+
+  function startCountdown() {
+    if (!savedUrl) return;
+    cdCurrent = cdSeconds;
+    cdBar.style.display = '';
+    cdFill.style.transition = 'none';
+    cdFill.style.width = '100%';
+
+    setStatus('Auto-connecting in ' + cdCurrent + 's … press any key to cancel', 'info');
+
+    // Force reflow before starting transition
+    void cdFill.offsetWidth;
+    cdFill.style.transition = 'width ' + cdSeconds + 's linear';
+    cdFill.style.width = '0%';
+
+    cdTimer = setInterval(function () {
+      cdCurrent--;
+      if (cdCurrent <= 0) {
+        stopCountdown();
+        connect();
+      } else {
+        setStatus('Auto-connecting in ' + cdCurrent + 's … press any key to cancel', 'info');
+      }
+    }, 1000);
+  }
+
+  function stopCountdown() {
+    if (cdTimer) { clearInterval(cdTimer); cdTimer = null; }
+    cdBar.style.display = 'none';
+    cdFill.style.transition = 'none';
+    cdFill.style.width = '100%';
+    if (statusEl.className === 'info' && statusEl.textContent.indexOf('Auto-connecting') === 0) {
+      setStatus('');
+    }
+  }
+
+  // ── connect ────────────────────────────────────────────────────────────────
+  window.connect = function () {
+    stopCountdown();
+    var url = normalise(input.value);
+    if (!url) { setStatus('Please enter a server URL.', 'error'); return; }
+
+    setStatus('Connecting…', 'info');
+    btn.disabled = true;
+
+    var controller = null;
+    var timeoutId  = null;
+    try {
+      controller = new AbortController();
+      timeoutId  = setTimeout(function () { controller.abort(); }, 6000);
+    } catch (e) { /* AbortController not supported */ }
+
+    var opts = controller ? { signal: controller.signal } : {};
+
+    fetch(url + '/api/health', opts)
+      .then(function (r) {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (!r.ok) throw new Error('Server returned ' + r.status);
+        return r.json();
+      })
+      .then(function () {
+        localStorage.setItem(STORAGE_SERVER, url);
+        setStatus('Connected! Launching player…', 'success');
+        sessionStorage.setItem(SESSION_BACK, '0');   // reset back-flag before redirect
+        setTimeout(function () {
+          var deviceId = getDeviceId();
+          window.location.href = url + '/tv/player?deviceId=' + encodeURIComponent(deviceId);
+        }, 600);
+      })
+      .catch(function (err) {
+        if (timeoutId) clearTimeout(timeoutId);
+        var msg = err && err.name === 'AbortError' ? 'Connection timed out.' : 'Cannot reach server: ' + (err.message || err);
+        setStatus(msg, 'error');
+        btn.disabled = false;
+      });
+  };
+
+  // ── keyboard / remote handling ─────────────────────────────────────────────
+  document.addEventListener('keydown', function (e) {
+    var k = e.keyCode;
+
+    // Cancel countdown on any key
+    if (cdTimer) { stopCountdown(); return; }
+
+    // webOS back key (461) or browser back (Alt+Left on some remotes)
+    if (k === 461 || (k === 8 && e.target.tagName !== 'INPUT')) {
+      e.preventDefault();
+      // Already on setup screen – nothing to go back to
+    }
+
+    // OK / Enter on input field → connect
+    if (k === 13 && e.target.id === 'server-url') {
+      connect();
+    }
+  });
+
+  input.addEventListener('focus', stopCountdown);
+  input.addEventListener('input', stopCountdown);
+
+  // ── initial behaviour ──────────────────────────────────────────────────────
+  // If user pressed back from the player page, sessionStorage flag is '1'
+  var cameBack = sessionStorage.getItem(SESSION_BACK) === '1';
+  if (cameBack) {
+    // Show setup without auto-connecting so the user can reconfigure
+    sessionStorage.removeItem(SESSION_BACK);
+    if (savedUrl) setStatus('Press Connect to reconnect to ' + savedUrl, 'info');
+  } else if (savedUrl) {
+    // Fresh launch with a saved URL → auto-connect countdown
+    startCountdown();
+  }
+
+  // Mark that we're on the setup page; if the player redirects back here,
+  // the back-navigation sets this flag via the beforeunload trick below.
+  window.addEventListener('pageshow', function (e) {
+    // pageshow fires both on initial load and when navigating back (bfcache)
+    if (e.persisted) {
+      // We were restored from back/forward cache (i.e., user pressed back from player)
+      sessionStorage.setItem(SESSION_BACK, '1');
+      stopCountdown();
+      if (savedUrl) setStatus('Press Connect to reconnect to ' + savedUrl, 'info');
+      btn.disabled = false;
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>

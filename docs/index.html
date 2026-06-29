@@ -295,9 +295,9 @@
     <!-- Android TV APK -->
     <div class="card">
       <div class="card-icon">📺</div>
-      <h2>TV App (APK)</h2>
+      <h2>TV App — Android</h2>
       <p>
-        Fullscreen kiosk player for your TCL / Google TV / Android TV.
+        Fullscreen kiosk player for TCL / Google TV / Android TV.
         Sideload via ADB — auto-starts on boot, reconnects automatically.
       </p>
       <div class="card-meta">
@@ -312,7 +312,73 @@
       <a id="btn-adb-jump" class="btn-secondary" href="#adb-setup">ADB install guide ↓</a>
     </div>
 
+    <!-- LG webOS IPK -->
+    <div class="card">
+      <div class="card-icon">🟣</div>
+      <h2>TV App — LG webOS</h2>
+      <p>
+        Fullscreen kiosk player for LG OLED / QNED / NanoCell TVs running
+        webOS. Sideload via the webOS Dev Manager — no ADB required.
+      </p>
+      <div class="card-meta">
+        <span class="pill">webOS 4+</span>
+        <span class="pill">LG C1 / C2 / C3…</span>
+        <span class="pill">~50 KB</span>
+      </div>
+      <a id="btn-webos" class="btn-download" href="#" target="_blank">
+        <span class="spinner" id="spin-webos"></span>
+        <span id="label-webos">Checking for latest…</span>
+      </a>
+      <a id="btn-webos-jump" class="btn-secondary" href="#webos-setup">Install guide ↓</a>
+    </div>
+
   </div>
+
+  <!-- ── webOS Install Steps ───────────────────────────────────────────────── -->
+  <section class="steps" id="webos-setup" style="margin-bottom:60px">
+    <h2>🟣 How to install on LG webOS</h2>
+    <div class="steps-grid" style="margin-top:24px">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Enable Developer Mode</h3>
+        <p>On your LG TV go to <b>Settings → Support → TV Information</b>, then click the TV logo <b>5 times</b> to reveal the Developer Mode app in the LG Content Store.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Install Developer Mode app</h3>
+        <p>Open the <b>LG Developer Mode</b> app from the Content Store, sign in with an LG developer account (free), and turn <b>Dev Mode Status</b> on.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Install webOS Dev Manager</h3>
+        <p>On your Windows PC, download <b>webOS TV Dev Manager</b> from the LG Developer site or install the VS Code extension. Add your TV's IP address as a device.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Install the IPK</h3>
+        <p>In webOS Dev Manager, select your TV, click <b>Install App</b>, and choose the downloaded <code>signage-webos-player.ipk</code> file.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <h3>Configure server URL</h3>
+        <p>Launch <b>Signage Player</b> from the LG Home Screen. Enter the server URL shown in the desktop app's Settings page and press Connect.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <h3>Done — reconnects automatically</h3>
+        <p>The player auto-connects on next launch. Press the <b>Back</b> button on your remote to return to settings and change the server URL.</p>
+      </div>
+    </div>
+
+    <div class="adb-box">
+      <h3>💡 Command-line install (ares-cli)</h3>
+      <p>If you prefer the terminal, install LG's <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px">@webosose/ares-cli</code> and run:</p>
+      <div class="adb-command">
+        <span id="webos-cmd">ares-install --device &lt;TV-name&gt; signage-webos-player.ipk</span>
+        <button class="copy-btn" onclick="copyWebosCmd()">Copy</button>
+      </div>
+    </div>
+  </section>
 
   <!-- ── TV Install Steps ──────────────────────────────────────────────────── -->
   <section class="steps" id="adb-setup">
@@ -433,8 +499,9 @@
       var tag    = data.tag_name || '';
       var date   = data.published_at ? new Date(data.published_at).toLocaleDateString() : '';
 
-      var exeAsset = assets.find(function (a) { return a.name.endsWith('.exe'); });
-      var apkAsset = assets.find(function (a) { return a.name.endsWith('.apk'); });
+      var exeAsset   = assets.find(function (a) { return a.name.endsWith('.exe'); });
+      var apkAsset   = assets.find(function (a) { return a.name.endsWith('.apk'); });
+      var ipkAsset   = assets.find(function (a) { return a.name.endsWith('.ipk'); });
 
       if (tag) {
         var bar = document.getElementById('version-bar');
@@ -452,11 +519,17 @@
         apkAsset ? apkAsset.browser_download_url : null,
         '⬇ Download APK  (' + (apkAsset ? fmtSize(apkAsset.size) : '') + ')'
       );
+      setBtn(
+        'btn-webos', 'spin-webos', 'label-webos',
+        ipkAsset ? ipkAsset.browser_download_url : null,
+        '⬇ Download IPK  (' + (ipkAsset ? fmtSize(ipkAsset.size) : '') + ')'
+      );
     })
     .catch(function () {
       // No releases yet — link to releases page
       setBtn('btn-desktop', 'spin-desktop', 'label-desktop', releasesUrl, '⬇ Visit Releases Page');
       setBtn('btn-tv',      'spin-tv',      'label-tv',      releasesUrl, '⬇ Visit Releases Page');
+      setBtn('btn-webos',   'spin-webos',   'label-webos',   releasesUrl, '⬇ Visit Releases Page');
     });
 
   function fmtSize(bytes) {
@@ -473,6 +546,16 @@
       ph.style.display = 'none';
     }
   })();
+
+  window.copyWebosCmd = function () {
+    var text = document.getElementById('webos-cmd').textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      var btn = document.querySelector('#webos-setup .copy-btn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  };
 
   window.copyCmd = function () {
     var text = document.getElementById('adb-cmd').textContent;
