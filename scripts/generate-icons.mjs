@@ -30,3 +30,8 @@ console.log('  ✓ tv-app-webos/icon.png')
 const webos130 = await sharp(svgPath).resize(130, 130).png().toBuffer()
 writeFileSync(join(root, 'tv-app-webos', 'icon-large.png'), webos130)
 console.log('  ✓ tv-app-webos/icon-large.png')
+
+// ── Tizen PNG icon (117×117) ─────────────────────────────────────────────────
+const tizen117 = await sharp(svgPath).resize(117, 117).png().toBuffer()
+writeFileSync(join(root, 'tv-app-tizen', 'icon.png'), tizen117)
+console.log('  ✓ tv-app-tizen/icon.png')

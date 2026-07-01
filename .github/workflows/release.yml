@@ -102,10 +102,47 @@ jobs:
           path: dist-webos/*.ipk
           if-no-files-found: error
 
+  # ── Samsung Tizen WGT ────────────────────────────────────────────────────
+  build-tizen-wgt:
+    name: Build Samsung Tizen WGT
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Tizen icon from SVG
+        run: node scripts/generate-icons.mjs
+
+      - name: Set app version from tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          VER="${TAG#v}"
+          sed -i "s/version=\"[^\"]*\"/version=\"$VER\"/" tv-app-tizen/config.xml
+
+      - name: Package Tizen WGT
+        run: |
+          mkdir -p dist-tizen
+          cd tv-app-tizen
+          zip -r ../dist-tizen/signage-tizen.wgt .
+
+      - name: Upload WGT artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tizen-wgt
+          path: dist-tizen/signage-tizen.wgt
+          if-no-files-found: error
+
   # ── GitHub Release ────────────────────────────────────────────────────────
   release:
     name: Create GitHub Release
-    needs: [build-desktop, build-tv-apk, build-webos-ipk]
+    needs: [build-desktop, build-tv-apk, build-webos-ipk, build-tizen-wgt]
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows installer
@@ -126,6 +163,12 @@ jobs:
           name: webos-ipk
           path: artifacts/
 
+      - name: Download Tizen WGT
+        uses: actions/download-artifact@v4
+        with:
+          name: tizen-wgt
+          path: artifacts/
+
       - name: Rename artifacts for clarity
         run: |
           mv artifacts/app-debug.apk artifacts/signage-tv-player.apk
@@ -140,3 +183,4 @@ jobs:
             artifacts/*.exe
             artifacts/*.apk
             artifacts/*.ipk
+            artifacts/*.wgt

@@ -332,6 +332,26 @@
       <a id="btn-webos-jump" class="btn-secondary" href="#webos-setup">Install guide ↓</a>
     </div>
 
+    <!-- Samsung Tizen WGT -->
+    <div class="card">
+      <div class="card-icon">🔵</div>
+      <h2>TV App — Samsung Tizen</h2>
+      <p>
+        Fullscreen kiosk player for Samsung QLED / Neo QLED / Frame TVs
+        running Tizen OS. Deploy via Tizen Studio — no USB required.
+      </p>
+      <div class="card-meta">
+        <span class="pill">Tizen 6.0+</span>
+        <span class="pill">Samsung 2021+</span>
+        <span class="pill">~50 KB</span>
+      </div>
+      <a id="btn-tizen" class="btn-download" href="#" target="_blank">
+        <span class="spinner" id="spin-tizen"></span>
+        <span id="label-tizen">Checking for latest…</span>
+      </a>
+      <a id="btn-tizen-jump" class="btn-secondary" href="#tizen-setup">Install guide ↓</a>
+    </div>
+
   </div>
 
   <!-- ── webOS Install Steps ───────────────────────────────────────────────── -->
@@ -376,6 +396,53 @@
       <div class="adb-command">
         <span id="webos-cmd">ares-install --device &lt;TV-name&gt; signage-webos-player.ipk</span>
         <button class="copy-btn" onclick="copyWebosCmd()">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Samsung Tizen Install Steps ─────────────────────────────────────── -->
+  <section class="steps" id="tizen-setup" style="margin-bottom:60px">
+    <h2>🔵 How to install on Samsung Tizen</h2>
+    <div class="steps-grid" style="margin-top:24px">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Enable Developer Mode</h3>
+        <p>On your Samsung TV go to <b>Apps</b>, then quickly enter <b>12345</b> on the remote. A Developer Mode dialog will appear — toggle it <b>ON</b> and enter your PC's IP address.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Restart the TV</h3>
+        <p>The TV will prompt you to restart. After reboot, a <b>DEVELOP MODE</b> banner should appear at the top of the Apps screen, confirming developer mode is active.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Install Tizen Studio</h3>
+        <p>Download <b>Tizen Studio</b> from the Samsung developer site and install it on your Windows PC. Open <b>Device Manager</b> from the toolbar.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Connect the TV</h3>
+        <p>In Device Manager, click <b>Remote Device Manager → Scan</b> or add the TV IP manually. Right-click the TV and select <b>Connect</b>. The status should turn green.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <h3>Install the WGT</h3>
+        <p>In Tizen Studio, go to <b>Tools → Tizen → Install Tizen App</b>, select the connected TV, and choose the downloaded <code>signage-tizen.wgt</code> file. Or run:</p>
+        <code id="tizen-install-cmd">tizen install -n signage-tizen.wgt -t &lt;device-id&gt;</code>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <h3>Configure &amp; enjoy</h3>
+        <p>Launch <b>Signage Player</b> from the Samsung Smart Hub. Enter the server URL from the desktop app's Settings page and press Connect. The app auto-reconnects on next launch.</p>
+      </div>
+    </div>
+
+    <div class="adb-box">
+      <h3>⚡ CLI install (Tizen CLI)</h3>
+      <p>If you have the Tizen CLI on your PATH, connect the TV via SDB and run:</p>
+      <div class="adb-command">
+        <span id="tizen-cmd">tizen sdb connect &lt;TV-IP&gt; &amp;&amp; tizen install -n signage-tizen.wgt -t &lt;device-id&gt;</span>
+        <button class="copy-btn" onclick="copyTizenCmd()">Copy</button>
       </div>
     </div>
   </section>
@@ -502,6 +569,7 @@
       var exeAsset   = assets.find(function (a) { return a.name.endsWith('.exe'); });
       var apkAsset   = assets.find(function (a) { return a.name.endsWith('.apk'); });
       var ipkAsset   = assets.find(function (a) { return a.name.endsWith('.ipk'); });
+      var wgtAsset   = assets.find(function (a) { return a.name.endsWith('.wgt'); });
 
       if (tag) {
         var bar = document.getElementById('version-bar');
@@ -524,12 +592,18 @@
         ipkAsset ? ipkAsset.browser_download_url : null,
         '⬇ Download IPK  (' + (ipkAsset ? fmtSize(ipkAsset.size) : '') + ')'
       );
+      setBtn(
+        'btn-tizen', 'spin-tizen', 'label-tizen',
+        wgtAsset ? wgtAsset.browser_download_url : null,
+        '⬇ Download WGT  (' + (wgtAsset ? fmtSize(wgtAsset.size) : '') + ')'
+      );
     })
     .catch(function () {
       // No releases yet — link to releases page
       setBtn('btn-desktop', 'spin-desktop', 'label-desktop', releasesUrl, '⬇ Visit Releases Page');
       setBtn('btn-tv',      'spin-tv',      'label-tv',      releasesUrl, '⬇ Visit Releases Page');
       setBtn('btn-webos',   'spin-webos',   'label-webos',   releasesUrl, '⬇ Visit Releases Page');
+      setBtn('btn-tizen',   'spin-tizen',   'label-tizen',   releasesUrl, '⬇ Visit Releases Page');
     });
 
   function fmtSize(bytes) {
@@ -546,6 +620,16 @@
       ph.style.display = 'none';
     }
   })();
+
+  window.copyTizenCmd = function () {
+    var text = document.getElementById('tizen-cmd').textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      var btn = document.querySelector('#tizen-setup .copy-btn');
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  };
 
   window.copyWebosCmd = function () {
     var text = document.getElementById('webos-cmd').textContent;
