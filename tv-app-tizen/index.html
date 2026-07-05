@@ -163,6 +163,10 @@
 
   <button class="btn" id="connect-btn" onclick="connect()">Connect</button>
 
+  <button class="btn" id="scan-btn" onclick="scanNetwork()" style="background:#334155;color:#94a3b8;font-size:17px;margin-top:-8px;">
+    🔍 Scan Network for Server
+  </button>
+
   <div id="status"></div>
 
   <div id="update-banner" style="
@@ -340,6 +344,80 @@
       btn.disabled = false;
     }
   });
+
+  // ── Network scan (auto-discovery) ──────────────────────────────────────────
+  window.scanNetwork = function () {
+    var scanBtn = document.getElementById('scan-btn');
+    scanBtn.disabled = true;
+    scanBtn.textContent = 'Scanning…';
+    setStatus('Scanning network for Signage Manager server…', 'info');
+
+    function doScan(subnet) {
+      return new Promise(function (resolve) {
+        var found = false;
+        var pending = 0;
+        for (var i = 1; i <= 254; i++) {
+          (function (host) {
+            pending++;
+            var url = 'http://' + subnet + '.' + host + ':3001';
+            var ctrl = null;
+            try { ctrl = new AbortController(); } catch (e) {}
+            var opts = ctrl ? { signal: ctrl.signal } : {};
+            var tid = ctrl ? setTimeout(function () { ctrl.abort(); }, 1200) : null;
+            fetch(url + '/api/health', opts)
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                if (tid) clearTimeout(tid);
+                if (!found && data && data.ok) { found = true; resolve(url); }
+              })
+              .catch(function () { if (tid) clearTimeout(tid); })
+              .finally(function () {
+                pending--;
+                if (pending === 0 && !found) resolve(null);
+              });
+          })(i);
+        }
+      });
+    }
+
+    function getLocalSubnet(cb) {
+      try {
+        tizen.systeminfo.getPropertyValue('NETWORK', function (net) {
+          var ip = net.ipAddress || '';
+          if (ip && ip !== '0.0.0.0') {
+            cb(ip.split('.').slice(0, 3).join('.'));
+          } else {
+            cb(null);
+          }
+        }, function () { cb(null); });
+      } catch (e) { cb(null); }
+    }
+
+    getLocalSubnet(function (subnet) {
+      var subnetsToTry = subnet ? [subnet] : ['192.168.1', '192.168.0', '10.0.0'];
+      var idx = 0;
+      function tryNext() {
+        if (idx >= subnetsToTry.length) {
+          scanBtn.disabled = false;
+          scanBtn.textContent = '🔍 Scan Network for Server';
+          setStatus('No server found. Enter the URL manually.', 'error');
+          return;
+        }
+        doScan(subnetsToTry[idx++]).then(function (url) {
+          if (url) {
+            input.value = url;
+            localStorage.setItem(STORAGE_SERVER, url);
+            setStatus('Server found at ' + url + '!', 'success');
+            scanBtn.disabled = false;
+            scanBtn.textContent = '🔍 Scan Network for Server';
+          } else {
+            tryNext();
+          }
+        });
+      }
+      tryNext();
+    });
+  };
 
   // ── Update check ───────────────────────────────────────────────────────────
   (function () {

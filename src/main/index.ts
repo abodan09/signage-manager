@@ -43,8 +43,8 @@ function buildMenu() {
           click: () => shell.openExternal('https://signage.frozenbit.eu'),
         },
         {
-          label: 'Report an Issue',
-          click: () => shell.openExternal('https://github.com/abodan09/signage-manager/issues'),
+          label: 'Report an Issue…',
+          click: () => send('report-issue'),
         },
       ]
     }
@@ -82,7 +82,7 @@ async function createWindow() {
 async function main() {
   const userData = app.getPath('userData')
 
-  serverPort = await startServer(userData, 3001)
+  serverPort = await startServer(userData, 3001, app.getVersion())
 
   ipcMain.handle('get-server-url', () => `http://localhost:${serverPort}`)
   ipcMain.handle('open-external', (_event, url: string) => shell.openExternal(url))

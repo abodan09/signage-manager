@@ -7,6 +7,7 @@ import DevicesPage from './pages/DevicesPage'
 import SettingsPage from './pages/SettingsPage'
 import UpdateBanner from './components/UpdateBanner'
 import HelpDialog from './components/HelpDialog'
+import ReportIssueDialog from './components/ReportIssueDialog'
 import type { UpdateInfo } from './types'
 
 function AboutDialog({ version, onClose }: { version: string; onClose: () => void }) {
@@ -194,10 +195,11 @@ function CheckUpdatesDialog({
 
 export default function App() {
   const [updateInfo, setUpdateInfo]       = useState<UpdateInfo | null>(null)
-  const [showHelp, setShowHelp]           = useState(false)
-  const [showAbout, setShowAbout]         = useState(false)
-  const [showCheckUpdate, setShowCheckUpdate] = useState(false)
-  const [version, setVersion]             = useState('')
+  const [showHelp, setShowHelp]                 = useState(false)
+  const [showAbout, setShowAbout]               = useState(false)
+  const [showCheckUpdate, setShowCheckUpdate]   = useState(false)
+  const [showReportIssue, setShowReportIssue]   = useState(false)
+  const [version, setVersion]                   = useState('')
 
   useEffect(() => {
     window.electronAPI.getVersion().then(setVersion)
@@ -206,6 +208,7 @@ export default function App() {
       if (event === 'show-help')      setShowHelp(true)
       if (event === 'about')          setShowAbout(true)
       if (event === 'check-updates')  setShowCheckUpdate(true)
+      if (event === 'report-issue')   setShowReportIssue(true)
       if (event === 'update-available' && payload) setUpdateInfo(payload)
     })
   }, [])
@@ -235,6 +238,7 @@ export default function App() {
       {showHelp        && <HelpDialog onClose={() => setShowHelp(false)} />}
       {showAbout       && <AboutDialog version={version} onClose={() => setShowAbout(false)} />}
       {showCheckUpdate && <CheckUpdatesDialog onClose={() => setShowCheckUpdate(false)} />}
+      {showReportIssue && <ReportIssueDialog version={version} onClose={() => setShowReportIssue(false)} />}
     </>
   )
 }

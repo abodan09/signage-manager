@@ -392,6 +392,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
           playMain(msg.content);
           var manualDur = (msg.content.durationSeconds || 10) * 1000 + 800;
           mainTimer = setTimeout(nextMain, manualDur);
+        } else if (msg.type === 'push_project' && msg.items && msg.items.length) {
+          // Override playlist with project items; reset on next playlist_update
+          clearTimeout(mainTimer); clearTimeout(overlayTimer);
+          mainPlaylist  = msg.items.filter(function(i){ return i.type !== 'text'; });
+          overlayItems  = msg.items.filter(function(i){ return i.type === 'text' && i.textPosition !== 'ticker'; });
+          tickerItems   = msg.items.filter(function(i){ return i.type === 'text' && i.textPosition === 'ticker'; });
+          mainIndex = 0; overlayIndex = 0; tickerIndex = 0;
+          showOSD('Project: ' + (msg.project && msg.project.name ? msg.project.name : 'pushed'), 3000);
+          nextMain();
+          nextOverlay();
+          nextTicker();
         }
       } catch(e) {}
     };

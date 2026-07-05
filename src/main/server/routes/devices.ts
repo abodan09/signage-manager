@@ -66,5 +66,23 @@ export function createDevicesRouter(
     res.json({ ok: true })
   })
 
+  // POST /api/devices/:id/push-project  (push all project items to a specific TV)
+  router.post('/:id/push-project', (req, res) => {
+    const ws = tvClients.get(req.params.id)
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      res.status(503).json({ error: 'Device not connected' })
+      return
+    }
+    const { projectId } = req.body as { projectId: string }
+    const project = db.getProjectById(projectId)
+    if (!project) { res.status(404).json({ error: 'Project not found' }); return }
+
+    const items = db.getContentByProjectId(projectId)
+    if (items.length === 0) { res.status(400).json({ error: 'Project has no content items' }); return }
+
+    ws.send(JSON.stringify({ type: 'push_project', project, items }))
+    res.json({ ok: true, count: items.length })
+  })
+
   return router
 }

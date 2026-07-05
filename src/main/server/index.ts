@@ -9,8 +9,9 @@ import { createContentRouter } from './routes/content'
 import { createDevicesRouter } from './routes/devices'
 import { createPlayerRouter } from './routes/player'
 import { createProjectsRouter } from './routes/projects'
+import { startDiscovery, getLocalIP } from './discovery'
 
-export async function startServer(userData: string, port: number): Promise<number> {
+export async function startServer(userData: string, port: number, appVersion = '1.0.0'): Promise<number> {
   fs.mkdirSync(path.join(userData, 'uploads'), { recursive: true })
 
   const db = new JsonDB(userData)
@@ -33,6 +34,10 @@ export async function startServer(userData: string, port: number): Promise<numbe
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, connectedTVs: tvClients.size })
+  })
+
+  app.get('/api/discovery', (_req, res) => {
+    res.json({ ip: getLocalIP(), port, name: 'Signage Manager', version: appVersion })
   })
 
   wss.on('connection', (ws, _req) => {
@@ -73,13 +78,13 @@ export async function startServer(userData: string, port: number): Promise<numbe
   return new Promise((resolve, reject) => {
     server.listen(port, () => {
       console.log(`[server] listening on http://localhost:${port}`)
+      startDiscovery(port, appVersion)
       resolve(port)
     })
     server.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE') {
-        // Try next port
         server.close()
-        startServer(userData, port + 1).then(resolve).catch(reject)
+        startServer(userData, port + 1, appVersion).then(resolve).catch(reject)
       } else {
         reject(err)
       }
