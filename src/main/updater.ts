@@ -14,6 +14,18 @@ export interface UpdateInfo {
   currentVersion: string
   downloadUrl?: string
   releasePageUrl: string
+  releaseNotes?: string   // bullet-point summary from GitHub release body
+}
+
+function parseReleaseNotes(body: string): string {
+  // Extract bullet lines from the GitHub release Markdown body
+  const lines = body.split('\n')
+  const bullets = lines
+    .map(l => l.trim())
+    .filter(l => l.startsWith('- ') || l.startsWith('* ') || l.startsWith('• '))
+    .map(l => l.replace(/^[-*•]\s+/, '').trim())
+    .filter(Boolean)
+  return bullets.length > 0 ? bullets.join('\n') : body.split('\n').filter(l => l.trim()).slice(0, 5).join('\n')
 }
 
 function versionGt(a: string, b: string): boolean {
@@ -58,12 +70,14 @@ export async function checkForUpdates(): Promise<UpdateInfo> {
     }
 
     const exeAsset = (data.assets ?? []).find((a: any) => a.name.endsWith('.exe'))
+    const releaseNotes = parseReleaseNotes(data.body ?? '')
     return {
       available: true,
       version: latest,
       currentVersion: current,
       downloadUrl: exeAsset?.browser_download_url,
       releasePageUrl,
+      releaseNotes,
     }
   } catch {
     return { available: false, currentVersion: current, releasePageUrl }

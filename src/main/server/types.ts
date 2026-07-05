@@ -18,14 +18,34 @@ export interface ContentItem {
   textFgColor?: string
   textFontSize?: number
   textPosition?: TextPosition
+  // overlay (text type) — runs concurrently on top of main media
+  overlayOpacity?: number  // 0–100, default 85
+  // project membership
+  projectId?: string
   // display
   durationSeconds: number
   // scheduling
   scheduleMode: ScheduleMode
-  scheduleStartTime?: string  // "09:00"
-  scheduleEndTime?: string    // "18:00"
-  scheduleDays?: string[]     // ["mon","tue","wed","thu","fri","sat","sun"]
+  scheduleStartTime?: string
+  scheduleEndTime?: string
+  scheduleDays?: string[]
   // meta
+  isActive: boolean
+  orderIndex: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Project {
+  id: string
+  name: string
+  description?: string
+  // shared settings applied to every content item in this project
+  durationSeconds: number
+  scheduleMode: ScheduleMode
+  scheduleStartTime?: string
+  scheduleEndTime?: string
+  scheduleDays?: string[]
   isActive: boolean
   orderIndex: number
   createdAt: string
@@ -44,4 +64,5 @@ export interface Device {
 export interface AppDB {
   content: ContentItem[]
   devices: Device[]
+  projects: Project[]
 }

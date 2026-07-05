@@ -8,6 +8,7 @@ import { JsonDB } from './database'
 import { createContentRouter } from './routes/content'
 import { createDevicesRouter } from './routes/devices'
 import { createPlayerRouter } from './routes/player'
+import { createProjectsRouter } from './routes/projects'
 
 export async function startServer(userData: string, port: number): Promise<number> {
   fs.mkdirSync(path.join(userData, 'uploads'), { recursive: true })
@@ -27,6 +28,7 @@ export async function startServer(userData: string, port: number): Promise<numbe
   app.use('/uploads', express.static(uploadsDir))
   app.use('/api/content', createContentRouter(db, uploadsDir, wss, tvClients))
   app.use('/api/devices', createDevicesRouter(db, wss, tvClients))
+  app.use('/api/projects', createProjectsRouter(db, uploadsDir, wss, tvClients))
   app.use('/tv', createPlayerRouter())
 
   app.get('/api/health', (_req, res) => {

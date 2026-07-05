@@ -38,7 +38,27 @@ export function createContentRouter(
 
   // GET /api/content/active  (used by TV player)
   router.get('/active', (_req, res) => {
-    const items = db.getAllContent().filter(c => c.isActive)
+    const items = db.getAllContent()
+      .filter(c => c.isActive)
+      .map(c => {
+        // Apply project-level schedule/duration to project-member items
+        if (c.projectId) {
+          const project = db.getProjectById(c.projectId)
+          if (project) {
+            return {
+              ...c,
+              durationSeconds: project.durationSeconds,
+              scheduleMode: project.scheduleMode,
+              scheduleStartTime: project.scheduleStartTime,
+              scheduleEndTime: project.scheduleEndTime,
+              scheduleDays: project.scheduleDays,
+              isActive: project.isActive && c.isActive,
+            }
+          }
+        }
+        return c
+      })
+      .filter(c => c.isActive)
     res.json({ items })
   })
 
@@ -85,7 +105,10 @@ export function createContentRouter(
       item.textFgColor = body.textFgColor ?? '#ffffff'
       item.textFontSize = parseInt(body.textFontSize ?? '72', 10)
       item.textPosition = (body.textPosition as ContentItem['textPosition']) ?? 'center'
+      item.overlayOpacity = parseInt(body.overlayOpacity ?? '85', 10)
     }
+
+    if (body.projectId) item.projectId = body.projectId
 
     db.insertContent(item)
     broadcast({ type: 'playlist_update' })
@@ -115,6 +138,8 @@ export function createContentRouter(
     if (body.textFgColor !== undefined) updates.textFgColor = body.textFgColor
     if (body.textFontSize !== undefined) updates.textFontSize = parseInt(body.textFontSize, 10)
     if (body.textPosition !== undefined) updates.textPosition = body.textPosition as ContentItem['textPosition']
+    if (body.overlayOpacity !== undefined) updates.overlayOpacity = parseInt(body.overlayOpacity, 10)
+    if (body.projectId !== undefined) updates.projectId = body.projectId || undefined
 
     if (req.file && (existing.type === 'image' || existing.type === 'video')) {
       // Delete old file

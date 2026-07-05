@@ -15,6 +15,8 @@ export interface ContentItem {
   textFgColor?: string
   textFontSize?: number
   textPosition?: TextPosition
+  overlayOpacity?: number   // 0–100, default 85
+  projectId?: string
   durationSeconds: number
   scheduleMode: ScheduleMode
   scheduleStartTime?: string
@@ -24,6 +26,22 @@ export interface ContentItem {
   orderIndex: number
   createdAt: string
   updatedAt: string
+}
+
+export interface Project {
+  id: string
+  name: string
+  description?: string
+  durationSeconds: number
+  scheduleMode: ScheduleMode
+  scheduleStartTime?: string
+  scheduleEndTime?: string
+  scheduleDays?: string[]
+  isActive: boolean
+  orderIndex: number
+  createdAt: string
+  updatedAt: string
+  items?: ContentItem[]  // populated by GET /api/projects
 }
 
 export interface Device {
@@ -41,6 +59,7 @@ export interface UpdateInfo {
   currentVersion: string
   downloadUrl?: string
   releasePageUrl: string
+  releaseNotes?: string
 }
 
 declare global {

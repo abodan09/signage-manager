@@ -131,6 +131,23 @@ function CheckUpdatesDialog({
             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
               You're on v{info.currentVersion}. A new version is ready to download.
             </div>
+            {info.releaseNotes && (
+              <div style={{
+                width: '100%', textAlign: 'left',
+                background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                borderRadius: 8, padding: '10px 14px', maxHeight: 160, overflowY: 'auto',
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  What's new
+                </div>
+                {info.releaseNotes.split('\n').filter(Boolean).map((line, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text-primary, #f1f5f9)', marginBottom: 4 }}>
+                    <span style={{ color: '#3b82f6', flexShrink: 0 }}>•</span>
+                    <span>{line}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'center' }}>
               {info.downloadUrl && (
                 <button

@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import type { AppDB, ContentItem, Device } from './types'
+import type { AppDB, ContentItem, Device, Project } from './types'
 
 export class JsonDB {
   private filePath: string
@@ -14,12 +14,15 @@ export class JsonDB {
   private load(): AppDB {
     try {
       if (fs.existsSync(this.filePath)) {
-        return JSON.parse(fs.readFileSync(this.filePath, 'utf-8'))
+        const raw = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'))
+        // Migrate: add projects array if missing (existing installs)
+        if (!raw.projects) raw.projects = []
+        return raw
       }
     } catch {
       // corrupt file – start fresh
     }
-    return { content: [], devices: [] }
+    return { content: [], devices: [], projects: [] }
   }
 
   private save() {
@@ -34,6 +37,10 @@ export class JsonDB {
 
   getContentById(id: string): ContentItem | undefined {
     return this.data.content.find(c => c.id === id)
+  }
+
+  getContentByProjectId(projectId: string): ContentItem[] {
+    return this.data.content.filter(c => c.projectId === projectId)
   }
 
   insertContent(item: ContentItem): ContentItem {
@@ -64,6 +71,42 @@ export class JsonDB {
       if (item) item.orderIndex = idx
     })
     this.save()
+  }
+
+  // ── Projects ───────────────────────────────────────────────────────────────
+
+  getAllProjects(): Project[] {
+    return [...this.data.projects].sort((a, b) => a.orderIndex - b.orderIndex)
+  }
+
+  getProjectById(id: string): Project | undefined {
+    return this.data.projects.find(p => p.id === id)
+  }
+
+  insertProject(project: Project): Project {
+    this.data.projects.push(project)
+    this.save()
+    return project
+  }
+
+  updateProject(id: string, updates: Partial<Project>): Project | null {
+    const idx = this.data.projects.findIndex(p => p.id === id)
+    if (idx === -1) return null
+    this.data.projects[idx] = { ...this.data.projects[idx], ...updates, updatedAt: new Date().toISOString() }
+    this.save()
+    return this.data.projects[idx]
+  }
+
+  deleteProject(id: string): boolean {
+    const before = this.data.projects.length
+    this.data.projects = this.data.projects.filter(p => p.id !== id)
+    // Detach content items from deleted project
+    this.data.content.forEach(c => {
+      if (c.projectId === id) delete c.projectId
+    })
+    const deleted = this.data.projects.length < before
+    if (deleted) this.save()
+    return deleted
   }
 
   // ── Devices ────────────────────────────────────────────────────────────────

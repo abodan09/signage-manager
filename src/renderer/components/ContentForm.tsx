@@ -26,10 +26,14 @@ export default function ContentForm({ serverUrl, item, onSave, onClose }: Props)
   const [htmlUrl, setHtmlUrl] = useState(item?.htmlUrl ?? '')
   // text
   const [textContent, setTextContent] = useState(item?.textContent ?? '')
-  const [textBgColor, setTextBgColor] = useState(item?.textBgColor ?? '#000000')
+  const [textBgColor, setTextBgColor] = useState(
+    item?.textBgColor === 'transparent' ? '#000000' : (item?.textBgColor ?? '#000000')
+  )
+  const [bgTransparent, setBgTransparent] = useState(item?.textBgColor === 'transparent')
   const [textFgColor, setTextFgColor] = useState(item?.textFgColor ?? '#ffffff')
   const [textFontSize, setTextFontSize] = useState(item?.textFontSize ?? 72)
   const [textPosition, setTextPosition] = useState<TextPosition>(item?.textPosition ?? 'center')
+  const [overlayOpacity, setOverlayOpacity] = useState(item?.overlayOpacity ?? 85)
   // file
   const [file, setFile] = useState<File | null>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -67,10 +71,11 @@ export default function ContentForm({ serverUrl, item, onSave, onClose }: Props)
       fd.append('htmlUrl', htmlUrl)
     } else if (type === 'text') {
       fd.append('textContent', textContent)
-      fd.append('textBgColor', textBgColor)
+      fd.append('textBgColor', bgTransparent ? 'transparent' : textBgColor)
       fd.append('textFgColor', textFgColor)
       fd.append('textFontSize', String(textFontSize))
       fd.append('textPosition', textPosition)
+      fd.append('overlayOpacity', String(overlayOpacity))
     } else if (file) {
       fd.append('file', file)
     }
@@ -161,6 +166,14 @@ export default function ContentForm({ serverUrl, item, onSave, onClose }: Props)
 
         {type === 'text' && (
           <>
+            <div style={{
+              background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)',
+              borderRadius: 8, padding: '10px 14px', marginBottom: 4, fontSize: 12,
+              color: 'var(--text-secondary)',
+            }}>
+              Text content always runs as an <strong style={{ color: '#60a5fa' }}>overlay</strong> — it plays concurrently on top of images, videos, and web pages.
+            </div>
+
             <div className="form-group">
               <label className="form-label">Text Content</label>
               <textarea className="form-textarea" value={textContent} onChange={e => setTextContent(e.target.value)} placeholder="Enter text to display…" rows={3} />
@@ -168,19 +181,44 @@ export default function ContentForm({ serverUrl, item, onSave, onClose }: Props)
             <div className="form-group">
               <label className="form-label">Position</label>
               <select className="form-select" value={textPosition} onChange={e => setTextPosition(e.target.value as TextPosition)}>
-                <option value="center">Center (full screen)</option>
-                <option value="top">Top</option>
-                <option value="bottom">Bottom</option>
+                <option value="center">Center (overlay)</option>
+                <option value="top">Top (overlay)</option>
+                <option value="bottom">Bottom (overlay)</option>
                 <option value="ticker">Ticker (scrolling bottom bar)</option>
               </select>
             </div>
+
+            {/* Overlay opacity */}
+            <div className="form-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label className="form-label" style={{ marginBottom: 0 }}>Overlay Opacity</label>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{overlayOpacity}%</span>
+              </div>
+              <input
+                type="range" min={0} max={100} value={overlayOpacity}
+                onChange={e => setOverlayOpacity(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#3b82f6' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                <span>Invisible</span><span>Fully visible</span>
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div className="form-group">
-                <label className="form-label">Background Color</label>
-                <div className="color-row">
-                  <input type="color" value={textBgColor} onChange={e => setTextBgColor(e.target.value)} />
-                  <input className="form-input" value={textBgColor} onChange={e => setTextBgColor(e.target.value)} style={{ fontFamily: 'monospace' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>Background Color</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={bgTransparent} onChange={e => setBgTransparent(e.target.checked)} />
+                    Transparent
+                  </label>
                 </div>
+                {!bgTransparent && (
+                  <div className="color-row">
+                    <input type="color" value={textBgColor} onChange={e => setTextBgColor(e.target.value)} />
+                    <input className="form-input" value={textBgColor} onChange={e => setTextBgColor(e.target.value)} style={{ fontFamily: 'monospace' }} />
+                  </div>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">Text Color</label>
