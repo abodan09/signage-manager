@@ -1,10 +1,57 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, Menu, MenuItemConstructorOptions } from 'electron'
 import path from 'path'
 import { startServer } from './server'
+import { setupUpdaterIpc, checkForUpdates } from './updater'
 
 const isDev = process.env.NODE_ENV === 'development'
 let mainWindow: BrowserWindow | null = null
 let serverPort = 3001
+
+function buildMenu() {
+  const send = (event: string) => mainWindow?.webContents.send('menu:event', event)
+
+  const template: MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        { role: 'quit' }
+      ]
+    },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'How To…',
+          accelerator: 'F1',
+          click: () => send('show-help'),
+        },
+        { type: 'separator' },
+        {
+          label: 'Check for Updates…',
+          click: () => send('check-updates'),
+        },
+        {
+          label: 'About Signage Manager',
+          click: () => send('about'),
+        },
+        { type: 'separator' },
+        {
+          label: 'Visit Download Page',
+          click: () => shell.openExternal('https://signage.frozenbit.eu'),
+        },
+        {
+          label: 'Report an Issue',
+          click: () => shell.openExternal('https://github.com/abodan09/signage-manager/issues'),
+        },
+      ]
+    }
+  ]
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
 
 async function createWindow() {
   mainWindow = new BrowserWindow({
@@ -40,8 +87,22 @@ async function main() {
   ipcMain.handle('get-server-url', () => `http://localhost:${serverPort}`)
   ipcMain.handle('open-external', (_event, url: string) => shell.openExternal(url))
 
+  setupUpdaterIpc(() => mainWindow)
+
   await app.whenReady()
+
+  buildMenu()
   await createWindow()
+
+  // Auto-check on startup (delay so the window can render first)
+  if (!isDev) {
+    setTimeout(async () => {
+      const info = await checkForUpdates()
+      if (info.available) {
+        mainWindow?.webContents.send('menu:event', 'update-available', info)
+      }
+    }, 5_000)
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

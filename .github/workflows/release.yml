@@ -24,6 +24,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set package version from tag
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          VER="${TAG#v}"
+          npm version "$VER" --no-git-tag-version --allow-same-version
+
       - name: Build & package
         run: npm run dist
         env:
@@ -52,6 +59,16 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.4'
+
+      - name: Set app version from tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          VER="${TAG#v}"
+          # versionCode: convert 1.2.3 → 10203 (each part × 100²/100/1)
+          IFS='.' read -r MAJ MIN PAT <<< "$VER"
+          CODE=$(( (${MAJ:-0} * 10000) + (${MIN:-0} * 100) + (${PAT:-0}) ))
+          sed -i "s/versionCode [0-9]*/versionCode $CODE/" tv-app/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"$VER\"/" tv-app/app/build.gradle
 
       - name: Build debug APK
         working-directory: tv-app
@@ -88,6 +105,7 @@ jobs:
           VER="${TAG#v}"
           tmp=$(jq ".version = \"$VER\"" tv-app-webos/appinfo.json)
           echo "$tmp" > tv-app-webos/appinfo.json
+          sed -i "s/__APP_VERSION__/$VER/g" tv-app-webos/index.html
 
       - name: Install ares-cli
         run: npm install -g @webosose/ares-cli
@@ -125,6 +143,7 @@ jobs:
           TAG="${{ github.ref_name }}"
           VER="${TAG#v}"
           sed -i "s/version=\"[^\"]*\"/version=\"$VER\"/" tv-app-tizen/config.xml
+          sed -i "s/__APP_VERSION__/$VER/g" tv-app-tizen/index.html
 
       - name: Package Tizen WGT
         run: |

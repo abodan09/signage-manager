@@ -1,6 +1,6 @@
 {
   "name": "signage-manager",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Digital Signage Management System",
   "main": "dist/main/index.js",
   "scripts": {
@@ -29,15 +29,15 @@
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
-    "electron": "^29.1.1",
+    "electron": "^29.4.6",
     "electron-builder": "^24.13.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
-    "typescript": "^5.4.2",
-    "vite": "^5.1.4",
     "sharp": "^0.33.4",
     "to-ico": "^1.1.5",
+    "typescript": "^5.4.2",
+    "vite": "^5.1.4",
     "wait-on": "^7.2.0"
   },
   "build": {

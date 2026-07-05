@@ -35,6 +35,9 @@ class SetupActivity : AppCompatActivity() {
             tvCurrent.text = "No server configured yet"
         }
 
+        // Check for updates in the background
+        UpdateChecker.check(this, BuildConfig.VERSION_NAME)
+
         btnConnect.setOnClickListener {
             val url = urlInput.text.toString().trim().trimEnd('/')
             if (url.isEmpty()) {

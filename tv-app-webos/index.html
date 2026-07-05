@@ -170,7 +170,14 @@
 
   <div id="status"></div>
 
-  <div class="version">Signage Manager · webOS Player · v1.0.0</div>
+  <div id="update-banner" style="
+    display:none;width:100%;padding:10px 14px;
+    background:#1e3a5f;border:1px solid #3b82f6;border-radius:8px;
+    font-size:13px;color:#93c5fd;text-align:center;cursor:pointer;
+    line-height:1.4;
+  "></div>
+
+  <div class="version">Signage Manager · webOS Player · v__APP_VERSION__</div>
 </div>
 
 <script>
@@ -330,6 +337,34 @@
 
   // Mark that we're on the setup page; if the player redirects back here,
   // the back-navigation sets this flag via the beforeunload trick below.
+  // ── Update check ───────────────────────────────────────────────────────────
+  (function () {
+    var CURRENT = 'v__APP_VERSION__';
+    var banner  = document.getElementById('update-banner');
+
+    function versionGt(a, b) {
+      var pa = a.replace(/^v/, '').split('.').map(Number);
+      var pb = b.replace(/^v/, '').split('.').map(Number);
+      for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
+        var d = (pa[i] || 0) - (pb[i] || 0);
+        if (d !== 0) return d > 0;
+      }
+      return false;
+    }
+
+    fetch('https://api.github.com/repos/abodan09/signage-manager/releases/latest')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var latest = data.tag_name || '';
+        if (latest && versionGt(latest, CURRENT)) {
+          banner.textContent = '🔄 Update available: ' + latest + ' — visit signage.frozenbit.eu to download the new IPK';
+          banner.style.display = '';
+          banner.onclick = function () { banner.style.display = 'none'; };
+        }
+      })
+      .catch(function () {});
+  })();
+
   window.addEventListener('pageshow', function (e) {
     // pageshow fires both on initial load and when navigating back (bfcache)
     if (e.persisted) {
