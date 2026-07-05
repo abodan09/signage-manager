@@ -1,6 +1,6 @@
 {
   "name": "signage-manager",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Digital Signage Management System",
   "main": "dist/main/index.js",
   "scripts": {
@@ -43,7 +43,7 @@
   "build": {
     "appId": "com.signage.manager",
     "productName": "Signage Manager",
-    "asar": false,
+    "asar": true,
     "directories": {
       "output": "release"
     },

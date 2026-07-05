@@ -107,8 +107,11 @@ export function downloadAndInstall(
         })
         res.on('end', () => {
           file.close(() => {
-            // NSIS silent install: /S flag, /D sets install dir (optional)
-            spawn(dest, ['/S'], { detached: true, stdio: 'ignore' }).unref()
+            // --updated marks this as an update (keeps shortcuts/app data),
+            // --force-run relaunches the app when the silent install finishes.
+            // The installer itself closes any still-running app instance
+            // before touching files (customInit in build/installer.nsh).
+            spawn(dest, ['/S', '--updated', '--force-run'], { detached: true, stdio: 'ignore' }).unref()
             app.quit()
             resolve()
           })

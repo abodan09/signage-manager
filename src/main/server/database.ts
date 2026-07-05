@@ -26,7 +26,11 @@ export class JsonDB {
   }
 
   private save() {
-    fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), 'utf-8')
+    // write-then-rename so the db survives the process being killed mid-write
+    // (the installer force-closes the app during auto-updates)
+    const tmp = `${this.filePath}.tmp`
+    fs.writeFileSync(tmp, JSON.stringify(this.data, null, 2), 'utf-8')
+    fs.renameSync(tmp, this.filePath)
   }
 
   // ── Content ────────────────────────────────────────────────────────────────
