@@ -535,9 +535,17 @@
 
       <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:22px 26px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-          <span style="font-weight:700;font-size:16px">v1.5.0</span>
+          <span style="font-weight:700;font-size:16px">v1.5.1</span>
           <span style="font-size:12px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--border);padding:2px 10px;border-radius:20px">Latest</span>
         </div>
+        <ul style="font-size:13px;color:var(--muted);line-height:1.8;padding-left:18px">
+          <li>Fixed installer error "Cannot uninstall old application files (code 2)" when updating from a previous version</li>
+          <li>Installer now automatically cleans up stale uninstall entries left by older installs</li>
+        </ul>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px 26px">
+        <div style="margin-bottom:12px"><span style="font-weight:700;font-size:16px">v1.5.0</span></div>
         <ul style="font-size:13px;color:var(--muted);line-height:1.8;padding-left:18px">
           <li>Auto-discovery — desktop broadcasts its address via UDP; TV apps detect and connect automatically without manual IP entry</li>
           <li>Push project — push an entire project's content to a TV in one click from the Devices page</li>
