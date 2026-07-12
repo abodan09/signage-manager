@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual run builds everything but publishes nothing — use to verify builds
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -25,6 +27,7 @@ jobs:
         run: npm ci
 
       - name: Set package version from tag
+        if: github.ref_type == 'tag'
         shell: bash
         run: |
           TAG="${{ github.ref_name }}"
@@ -43,7 +46,7 @@ jobs:
           path: release/*.exe
           if-no-files-found: error
 
-  # ── Android TV APK ────────────────────────────────────────────────────────
+  # ── Android TV APK (signed release build) ─────────────────────────────────
   build-tv-apk:
     name: Build Android TV APK
     runs-on: ubuntu-latest
@@ -61,6 +64,7 @@ jobs:
           gradle-version: '8.4'
 
       - name: Set app version from tag
+        if: github.ref_type == 'tag'
         run: |
           TAG="${{ github.ref_name }}"
           VER="${TAG#v}"
@@ -70,15 +74,36 @@ jobs:
           sed -i "s/versionCode [0-9]*/versionCode $CODE/" tv-app/app/build.gradle
           sed -i "s/versionName \"[^\"]*\"/versionName \"$VER\"/" tv-app/app/build.gradle
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: tv-app
-        run: gradle assembleDebug --no-daemon
+        run: gradle assembleRelease --no-daemon
+
+      # Sign with the project keystore so every release has the SAME signature —
+      # debug builds were signed with a fresh key per CI run, which breaks
+      # in-place updates (users had to uninstall first).
+      - name: Sign APK
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KS_B64" | base64 -d > release.p12
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$BT/zipalign" -f 4 \
+            tv-app/app/build/outputs/apk/release/app-release-unsigned.apk \
+            signage-tv-player-aligned.apk
+          "$BT/apksigner" sign \
+            --ks release.p12 \
+            --ks-pass env:KS_PASS \
+            --out signage-tv-player.apk \
+            signage-tv-player-aligned.apk
+          "$BT/apksigner" verify --print-certs signage-tv-player.apk | head -4
+          rm -f release.p12
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: tv-apk
-          path: tv-app/app/build/outputs/apk/debug/app-debug.apk
+          path: signage-tv-player.apk
           if-no-files-found: error
 
   # ── LG webOS IPK ─────────────────────────────────────────────────────────
@@ -100,6 +125,7 @@ jobs:
         run: node scripts/generate-icons.mjs
 
       - name: Set app version from tag
+        if: github.ref_type == 'tag'
         run: |
           TAG="${{ github.ref_name }}"
           VER="${TAG#v}"
@@ -120,7 +146,7 @@ jobs:
           path: dist-webos/*.ipk
           if-no-files-found: error
 
-  # ── Samsung Tizen WGT ────────────────────────────────────────────────────
+  # ── Samsung Tizen WGT (signed — unsigned zips are rejected by real TVs) ──
   build-tizen-wgt:
     name: Build Samsung Tizen WGT
     runs-on: ubuntu-latest
@@ -132,6 +158,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
       - name: Install dependencies
         run: npm ci
 
@@ -139,17 +170,56 @@ jobs:
         run: node scripts/generate-icons.mjs
 
       - name: Set app version from tag
+        if: github.ref_type == 'tag'
         run: |
           TAG="${{ github.ref_name }}"
           VER="${TAG#v}"
           sed -i "s/version=\"[^\"]*\"/version=\"$VER\"/" tv-app-tizen/config.xml
           sed -i "s/__APP_VERSION__/$VER/g" tv-app-tizen/index.html
 
-      - name: Package Tizen WGT
+      - name: Cache Tizen Studio CLI
+        id: tizen-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/tizen-studio
+          key: tizen-studio-cli-6.1
+
+      - name: Install Tizen Studio CLI
+        if: steps.tizen-cache.outputs.cache-hit != 'true'
+        run: |
+          wget -q "https://download.tizen.org/sdk/Installer/tizen-studio_6.1/web-cli_Tizen_Studio_6.1_ubuntu-64.bin" -O /tmp/tizen-cli.bin
+          chmod +x /tmp/tizen-cli.bin
+          /tmp/tizen-cli.bin --accept-license "$HOME/tizen-studio"
+
+      - name: Create signing profile
+        env:
+          TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
+        run: |
+          T="$HOME/tizen-studio/tools/ide/bin/tizen"
+          "$T" certificate -a SignageManager -p "$TZ_PASS" -c IT -n SignageManager -f signage-author
+          "$T" security-profiles add -n signage \
+            -a "$HOME/tizen-studio-data/keystore/author/signage-author.p12" -p "$TZ_PASS"
+          # The CLI stores password-file paths in profiles.xml which packaging
+          # can't read back — replace them with the actual passwords.
+          python3 - <<'EOF'
+          import os, re
+          p = os.path.expanduser('~/tizen-studio-data/profile/profiles.xml')
+          s = open(p).read()
+          def fix(m):
+              tag = m.group(0)
+              pw = 'tizenpkcs12passfordsigner' if 'distributor-signer' in tag else os.environ['TZ_PASS']
+              return re.sub(r'password="[^"]*"', 'password="%s"' % pw, tag)
+          s = re.sub(r'<profileitem[^>]*/>', fix, s)
+          open(p, 'w').write(s)
+          EOF
+
+      - name: Package signed WGT
         run: |
           mkdir -p dist-tizen
-          cd tv-app-tizen
-          zip -r ../dist-tizen/signage-tizen.wgt .
+          "$HOME/tizen-studio/tools/ide/bin/tizen" package -t wgt -s signage -o dist-tizen -- tv-app-tizen
+          mv dist-tizen/*.wgt dist-tizen/signage-tizen.wgt
+          # sanity: a signed widget must contain both signature files
+          unzip -l dist-tizen/signage-tizen.wgt | grep -E "author-signature.xml|signature1.xml"
 
       - name: Upload WGT artifact
         uses: actions/upload-artifact@v4
@@ -158,9 +228,10 @@ jobs:
           path: dist-tizen/signage-tizen.wgt
           if-no-files-found: error
 
-  # ── GitHub Release ────────────────────────────────────────────────────────
+  # ── GitHub Release (tag builds only) ──────────────────────────────────────
   release:
     name: Create GitHub Release
+    if: github.ref_type == 'tag'
     needs: [build-desktop, build-tv-apk, build-webos-ipk, build-tizen-wgt]
     runs-on: ubuntu-latest
     steps:
@@ -190,7 +261,6 @@ jobs:
 
       - name: Rename artifacts for clarity
         run: |
-          mv artifacts/app-debug.apk artifacts/signage-tv-player.apk
           mv artifacts/com.signage.tvplayer_*.ipk artifacts/signage-webos-player.ipk
 
       - name: Publish release
@@ -198,6 +268,7 @@ jobs:
         with:
           name: Signage Manager ${{ github.ref_name }}
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             artifacts/*.exe
             artifacts/*.apk

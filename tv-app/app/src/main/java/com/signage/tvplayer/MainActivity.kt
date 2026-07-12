@@ -41,8 +41,22 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().putString("server_url", newUrl).apply()
         }
 
-        setContentView(R.layout.activity_main)
-        webView = findViewById(R.id.webView)
+        // Some Android TV boxes ship without a WebView provider — inflating the
+        // layout then throws. Show a message instead of crashing on launch.
+        try {
+            setContentView(R.layout.activity_main)
+            webView = findViewById(R.id.webView)
+        } catch (t: Throwable) {
+            val msg = android.widget.TextView(this).apply {
+                text = "This device has no WebView component,\nso the Signage Player cannot run here."
+                setTextColor(0xFFF1F5F9.toInt())
+                setBackgroundColor(0xFF0F172A.toInt())
+                textSize = 20f
+                gravity = android.view.Gravity.CENTER
+            }
+            setContentView(msg)
+            return
+        }
 
         setupWebView()
         loadPlayer()
@@ -135,7 +149,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         longPressHandler.removeCallbacksAndMessages(null)
-        webView.destroy()
+        if (::webView.isInitialized) webView.destroy()
         super.onDestroy()
     }
 }

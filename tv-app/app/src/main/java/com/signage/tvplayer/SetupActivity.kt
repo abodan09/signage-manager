@@ -10,10 +10,15 @@ import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.InetSocketAddress
+import java.net.SocketAddress
+import java.net.SocketTimeoutException
 
 class SetupActivity : AppCompatActivity() {
 
     private var discoverySocket: DatagramSocket? = null
+    @Volatile private var discoveryStopped = false
+    @Volatile private var inForeground = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +68,16 @@ class SetupActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        inForeground = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        inForeground = false
+    }
+
     private fun startDiscoveryListener(
         urlInput: EditText,
         tvCurrent: TextView,
@@ -70,37 +85,57 @@ class SetupActivity : AppCompatActivity() {
     ) {
         Thread {
             try {
-                val socket = DatagramSocket(47777)
+                val socket = DatagramSocket(null as SocketAddress?).apply {
+                    reuseAddress = true
+                    broadcast = true
+                    soTimeout = 15_000
+                    bind(InetSocketAddress(47777))
+                }
                 discoverySocket = socket
-                socket.broadcast = true
-                socket.soTimeout = 60_000   // wait up to 60 s for a broadcast
 
-                val buf    = ByteArray(512)
-                val packet = DatagramPacket(buf, buf.size)
+                val buf = ByteArray(512)
+                // Keep listening until a valid beacon arrives or the activity stops us.
+                // A malformed/foreign packet must not end discovery.
+                while (!discoveryStopped) {
+                    val packet = DatagramPacket(buf, buf.size)
+                    try {
+                        socket.receive(packet)
+                    } catch (_: SocketTimeoutException) {
+                        continue
+                    }
+                    try {
+                        val obj = JSONObject(String(packet.data, 0, packet.length))
+                        if (obj.optString("type") != "signage-discovery") continue
 
-                socket.receive(packet)
-                val json = String(packet.data, 0, packet.length)
-                val obj  = JSONObject(json)
-                if (obj.optString("type") != "signage-discovery") return@Thread
+                        val ip   = obj.getString("ip")
+                        val port = obj.getInt("port")
+                        val url  = "http://$ip:$port"
 
-                val ip   = obj.getString("ip")
-                val port = obj.getInt("port")
-                val url  = "http://$ip:$port"
-
-                runOnUiThread {
-                    urlInput.setText(url)
-                    tvCurrent.text = "Auto-discovered: $url"
-                    prefs.edit().putString("server_url", url).apply()
-                    Toast.makeText(this, "Server found! Connecting…", Toast.LENGTH_SHORT).show()
-                    startMain()
+                        runOnUiThread {
+                            prefs.edit().putString("server_url", url).apply()
+                            urlInput.setText(url)
+                            tvCurrent.text = "Auto-discovered: $url"
+                            // Only navigate when we are the visible activity —
+                            // starting an activity from the background is blocked
+                            // on modern Android and would silently do nothing.
+                            if (inForeground && !isFinishing) {
+                                Toast.makeText(this, "Server found! Connecting…", Toast.LENGTH_SHORT).show()
+                                startMain()
+                            }
+                        }
+                        return@Thread
+                    } catch (_: Exception) {
+                        // Not our packet — keep listening
+                    }
                 }
             } catch (_: Exception) {
-                // Timeout or closed — ignore
+                // Bind failed (port in use) or socket closed — discovery unavailable
             }
         }.start()
     }
 
     private fun stopDiscovery() {
+        discoveryStopped = true
         try { discoverySocket?.close() } catch (_: Exception) {}
         discoverySocket = null
     }

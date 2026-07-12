@@ -22,7 +22,7 @@
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTask"
             android:screenOrientation="landscape">
 
             <!-- TV launcher banner — makes the app appear in Android TV home -->

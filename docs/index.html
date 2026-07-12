@@ -323,7 +323,8 @@
       <h2>TV App — LG webOS</h2>
       <p>
         Fullscreen kiosk player for LG OLED / QNED / NanoCell TVs running
-        webOS. Sideload via the webOS Dev Manager — no ADB required.
+        webOS. Pre-packaged IPK — install directly via the webOS Dev Manager,
+        no building required.
       </p>
       <div class="card-meta">
         <span class="pill">webOS 4+</span>
@@ -348,7 +349,8 @@
       <h2>TV App — Samsung Tizen</h2>
       <p>
         Fullscreen kiosk player for Samsung QLED / Neo QLED / Frame TVs
-        running Tizen OS. Deploy via Tizen Studio — no USB required.
+        running Tizen OS. Pre-built and signed WGT — install directly with
+        Device Manager or the Tizen CLI, no building required.
       </p>
       <div class="card-meta">
         <span class="pill">Tizen 6.0+</span>
@@ -460,6 +462,16 @@
   <!-- ── TV Install Steps ──────────────────────────────────────────────────── -->
   <section class="steps" id="adb-setup">
     <h2>📺 How to install the TV App</h2>
+
+    <div class="adb-box" style="margin-bottom:24px">
+      <h3>⬆️ Updating from v1.5.2 or earlier?</h3>
+      <p>
+        Releases from v1.5.3 are signed with a permanent release key (older builds used a
+        throw-away debug key), so the very first update requires a clean install:
+        run <code>adb uninstall com.signage.tvplayer</code> before installing the new APK.
+        Future updates install over the top normally.
+      </p>
+    </div>
 
     <!-- ── Video guide ──────────────────────────────────────────────────────
          Replace the src attribute below with the URL of your MP4 video.

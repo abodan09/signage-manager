@@ -370,7 +370,9 @@
                 }
               })
               .catch(function () { if (tid) clearTimeout(tid); })
-              .finally(function () {
+              // .then after .catch acts as "finally" (Promise.finally needs Chrome 63+;
+              // older webOS browsers don't have it)
+              .then(function () {
                 pending--;
                 if (pending === 0 && !found) resolve(null);
               });
