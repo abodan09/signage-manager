@@ -86,7 +86,7 @@ jobs:
           KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          echo "$KS_B64" | base64 -d > release.p12
+          printf '%s' "$KS_B64" | tr -d ' \r\n' | base64 -d > release.p12
           BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
           "$BT/zipalign" -f 4 \
             tv-app/app/build/outputs/apk/release/app-release-unsigned.apk \
@@ -177,9 +177,9 @@ jobs:
           sed -i "s/version=\"[^\"]*\"/version=\"$VER\"/" tv-app-tizen/config.xml
           sed -i "s/__APP_VERSION__/$VER/g" tv-app-tizen/index.html
 
-      - name: Cache Tizen Studio CLI
+      - name: Restore Tizen Studio CLI cache
         id: tizen-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/tizen-studio
           key: tizen-studio-cli-6.1
@@ -191,27 +191,55 @@ jobs:
           chmod +x /tmp/tizen-cli.bin
           /tmp/tizen-cli.bin --accept-license "$HOME/tizen-studio"
 
+      # Save even if later steps fail — the 267 MB download shouldn't repeat
+      - name: Save Tizen Studio CLI cache
+        if: steps.tizen-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/tizen-studio
+          key: tizen-studio-cli-6.1
+
+      - name: Diagnose CLI layout
+        run: |
+          ls "$HOME/tizen-studio/tools/ide/bin" || true
+          echo "--- certificate-generator ---"
+          ls -R "$HOME/tizen-studio/tools/certificate-generator" 2>/dev/null | head -30 || echo "certificate-generator MISSING"
+
+      # `tizen certificate` exits 1 silently on the minimal web-cli install, so the
+      # author key is generated with plain keytool (any RSA PKCS12 works as a Tizen
+      # author certificate) and profiles.xml is written directly.
       - name: Create signing profile
         env:
           TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
         run: |
-          T="$HOME/tizen-studio/tools/ide/bin/tizen"
-          "$T" certificate -a SignageManager -p "$TZ_PASS" -c IT -n SignageManager -f signage-author
-          "$T" security-profiles add -n signage \
-            -a "$HOME/tizen-studio-data/keystore/author/signage-author.p12" -p "$TZ_PASS"
-          # The CLI stores password-file paths in profiles.xml which packaging
-          # can't read back — replace them with the actual passwords.
-          python3 - <<'EOF'
-          import os, re
-          p = os.path.expanduser('~/tizen-studio-data/profile/profiles.xml')
-          s = open(p).read()
-          def fix(m):
-              tag = m.group(0)
-              pw = 'tizenpkcs12passfordsigner' if 'distributor-signer' in tag else os.environ['TZ_PASS']
-              return re.sub(r'password="[^"]*"', 'password="%s"' % pw, tag)
-          s = re.sub(r'<profileitem[^>]*/>', fix, s)
-          open(p, 'w').write(s)
+          AUTHOR_DIR="$HOME/tizen-studio-data/keystore/author"
+          DIST_DIR="$HOME/tizen-studio/tools/certificate-generator/certificates/distributor"
+          mkdir -p "$AUTHOR_DIR" "$HOME/tizen-studio-data/profile"
+
+          keytool -genkeypair -alias SignageManager -keyalg RSA -keysize 2048 \
+            -validity 7300 -storetype PKCS12 \
+            -keystore "$AUTHOR_DIR/signage-author.p12" \
+            -storepass "$TZ_PASS" -keypass "$TZ_PASS" \
+            -dname "CN=SignageManager, O=FrozenBit, C=IT"
+
+          if [ ! -f "$DIST_DIR/tizen-distributor-signer.p12" ]; then
+            echo "Default distributor certificate missing from CLI install!"
+            find "$HOME/tizen-studio" -name "*distributor*" 2>/dev/null
+            exit 1
+          fi
+
+          cat > "$HOME/tizen-studio-data/profile/profiles.xml" <<EOF
+          <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+          <profiles active="signage" version="3.1">
+          <profile name="signage">
+          <profileitem ca="" distributor="0" key="$AUTHOR_DIR/signage-author.p12" password="$TZ_PASS" rootca=""/>
+          <profileitem ca="$DIST_DIR/tizen-distributor-ca.cer" distributor="1" key="$DIST_DIR/tizen-distributor-signer.p12" password="tizenpkcs12passfordsigner" rootca=""/>
+          <profileitem ca="" distributor="2" key="" password="" rootca=""/>
+          </profile>
+          </profiles>
           EOF
+          # the CLI requires the config to point at the profiles path
+          "$HOME/tizen-studio/tools/ide/bin/tizen" cli-config "profiles.path=$HOME/tizen-studio-data/profile/profiles.xml" || true
 
       - name: Package signed WGT
         run: |
