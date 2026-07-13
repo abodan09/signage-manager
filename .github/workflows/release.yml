@@ -158,9 +158,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # Tizen CLI tooling is Java-8 era — its signer cannot load PKCS12
+      # keystores under newer JDKs ("Invaild password" on any keystore)
       - uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '8'
           distribution: 'temurin'
 
       - name: Install dependencies
