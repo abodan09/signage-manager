@@ -237,7 +237,35 @@ jobs:
             echo "author certificate was not created"; exit 1
           fi
 
-          "$T" security-profiles add -n signage -a "$AUTHOR_P12" -p "$TZ_PASS"
+          # Write profiles.xml directly with plaintext passwords and make it
+          # READ-ONLY: on first use the CLI tries to re-encrypt the passwords
+          # in-place, and that rewrite is what produces "Invaild password"
+          # failures in CI. (Same approach as sourcetoad/tizen-build-action.)
+          CERTS="$HOME/tizen-studio/tools/certificate-generator/certificates"
+          if [ -f "$CERTS/distributor/sdk-public/tizen-distributor-signer.p12" ]; then
+            DIST_KEY="$CERTS/distributor/sdk-public/tizen-distributor-signer.p12"
+            DIST_CA="$CERTS/distributor/sdk-public/tizen-distributor-ca.cer"
+          else
+            DIST_KEY="$CERTS/distributor/tizen-distributor-signer.p12"
+            DIST_CA="$CERTS/distributor/tizen-distributor-ca.cer"
+          fi
+          AUTHOR_CA="$CERTS/developer/tizen-developer-ca.cer"
+          [ -f "$AUTHOR_CA" ] || AUTHOR_CA=""
+
+          P="$("$T" cli-config -l | grep -i 'default.profiles.path=' | sed 's/^default\.profiles\.path=//')"
+          [ -n "$P" ] || P="$HOME/tizen-studio-data/profile/profiles.xml"
+          mkdir -p "$(dirname "$P")"
+          cat > "$P" <<EOF
+          <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+          <profiles active="signage" version="3.1">
+              <profile name="signage">
+                  <profileitem ca="$AUTHOR_CA" distributor="0" key="$AUTHOR_P12" password="$TZ_PASS" rootca=""/>
+                  <profileitem ca="$DIST_CA" distributor="1" key="$DIST_KEY" password="tizenpkcs12passfordsigner" rootca=""/>
+                  <profileitem ca="" distributor="2" key="" password="" rootca=""/>
+              </profile>
+          </profiles>
+          EOF
+          chmod a-w "$P"
 
       # The CLI re-prompts for passwords it cannot decrypt from profiles.xml,
       # and crashes with an NPE when there is no console — so run it under a
