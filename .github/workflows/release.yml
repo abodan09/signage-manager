@@ -205,26 +205,37 @@ jobs:
           echo "--- certificate-generator ---"
           ls -R "$HOME/tizen-studio/tools/certificate-generator" 2>/dev/null | head -30 || echo "certificate-generator MISSING"
 
-      # `tizen certificate` exits 1 silently on the minimal web-cli install, so the
-      # author key is generated with plain keytool (legacy PKCS12 encoding — the
-      # CLI's signer can't parse modern PBES2 keystores) and registered with
-      # `security-profiles add`, which writes profiles.xml itself.
+      # The CLI's tooling prompts on a console it doesn't have in CI (silent
+      # NPE exits), and its old crypto parser rejects keytool-made PKCS12
+      # files as "invalid password" — so generate the author certificate with
+      # the CLI itself, under an expect pseudo-terminal.
       - name: Create signing profile
         env:
           TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
         run: |
+          sudo apt-get install -y -qq expect > /dev/null
           T="$HOME/tizen-studio/tools/ide/bin/tizen"
-          AUTHOR_DIR="$HOME/tizen-studio-data/keystore/author"
-          mkdir -p "$AUTHOR_DIR"
+          AUTHOR_P12="$HOME/tizen-studio-data/keystore/author/signage-author.p12"
 
-          keytool -genkeypair -alias SignageManager -keyalg RSA -keysize 2048 \
-            -validity 7300 -storetype PKCS12 \
-            -J-Dkeystore.pkcs12.legacy \
-            -keystore "$AUTHOR_DIR/signage-author.p12" \
-            -storepass "$TZ_PASS" -keypass "$TZ_PASS" \
-            -dname "CN=SignageManager, O=FrozenBit, C=IT"
+          cat > /tmp/make-cert.exp <<'EOF'
+          #!/usr/bin/expect -f
+          set timeout 120
+          spawn $env(HOME)/tizen-studio/tools/ide/bin/tizen certificate -a SignageManager -p $env(TZ_PASS) -c IT -n SignageManager -f signage-author
+          expect {
+            -re {[Pp]assword.*:} { send -- "$env(TZ_PASS)\r"; exp_continue }
+            -re {\(y(es)?/n(o)?\)} { send -- "y\r"; exp_continue }
+            eof
+          }
+          catch wait result
+          exit [lindex $result 3]
+          EOF
+          expect /tmp/make-cert.exp
 
-          "$T" security-profiles add -n signage -a "$AUTHOR_DIR/signage-author.p12" -p "$TZ_PASS"
+          if [ ! -f "$AUTHOR_P12" ]; then
+            echo "author certificate was not created"; exit 1
+          fi
+
+          "$T" security-profiles add -n signage -a "$AUTHOR_P12" -p "$TZ_PASS"
 
       # The CLI re-prompts for passwords it cannot decrypt from profiles.xml,
       # and crashes with an NPE when there is no console — so run it under a
@@ -233,7 +244,6 @@ jobs:
         env:
           TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
         run: |
-          sudo apt-get install -y -qq expect > /dev/null
           mkdir -p dist-tizen
           cat > /tmp/package-wgt.exp <<'EOF'
           #!/usr/bin/expect -f
