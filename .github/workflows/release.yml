@@ -147,6 +147,10 @@ jobs:
           if-no-files-found: error
 
   # ── Samsung Tizen WGT (signed — unsigned zips are rejected by real TVs) ──
+  # Signing is done in pure JS with Samsung's @tizentv/webide-common-tizentv
+  # (the engine behind their VS Code extension). Tizen Studio CLI is NOT used:
+  # every headless path through it (certificate/security-profiles/package)
+  # either NPEs on a missing console or rejects its own keystore passwords.
   build-tizen-wgt:
     name: Build Samsung Tizen WGT
     runs-on: ubuntu-latest
@@ -157,13 +161,6 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-
-      # Tizen CLI tooling is Java-8 era — its signer cannot load PKCS12
-      # keystores under newer JDKs ("Invaild password" on any keystore)
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '8'
-          distribution: 'temurin'
 
       - name: Install dependencies
         run: npm ci
@@ -179,126 +176,14 @@ jobs:
           sed -i "s/version=\"[^\"]*\"/version=\"$VER\"/" tv-app-tizen/config.xml
           sed -i "s/__APP_VERSION__/$VER/g" tv-app-tizen/index.html
 
-      # Tizen Studio 5.1 — the version proven to sign headlessly in CI
-      # (sourcetoad/tizen-build-action); 6.x hangs/fails on password handling.
-      - name: Restore Tizen Studio CLI cache
-        id: tizen-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/tizen-studio
-          key: tizen-studio-cli-5.1
+      - name: Install Tizen signing library
+        run: npm install --no-save "@tizentv/webide-common-tizentv@1.0.20"
 
-      - name: Install Tizen Studio CLI
-        if: steps.tizen-cache.outputs.cache-hit != 'true'
-        run: |
-          wget -q "https://download.tizen.org/sdk/Installer/tizen-studio_5.1/web-cli_Tizen_Studio_5.1_ubuntu-64.bin" -O /tmp/tizen-cli.bin
-          chmod +x /tmp/tizen-cli.bin
-          /tmp/tizen-cli.bin --accept-license "$HOME/tizen-studio"
-
-      # Save even if later steps fail — the 284 MB download shouldn't repeat
-      - name: Save Tizen Studio CLI cache
-        if: steps.tizen-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/tizen-studio
-          key: tizen-studio-cli-5.1
-
-      - name: Diagnose CLI layout
-        run: |
-          ls "$HOME/tizen-studio/tools/ide/bin" || true
-          echo "--- certificate-generator ---"
-          ls -R "$HOME/tizen-studio/tools/certificate-generator" 2>/dev/null | head -30 || echo "certificate-generator MISSING"
-
-      # The CLI's tooling prompts on a console it doesn't have in CI (silent
-      # NPE exits), and its old crypto parser rejects keytool-made PKCS12
-      # files as "invalid password" — so generate the author certificate with
-      # the CLI itself, under an expect pseudo-terminal.
-      - name: Create signing profile
+      - name: Build & sign WGT
         env:
-          TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
+          TIZEN_CERT_PASSWORD: ${{ secrets.TIZEN_CERT_PASSWORD }}
         run: |
-          sudo apt-get install -y -qq expect > /dev/null
-          T="$HOME/tizen-studio/tools/ide/bin/tizen"
-          AUTHOR_P12="$HOME/tizen-studio-data/keystore/author/signage-author.p12"
-
-          cat > /tmp/make-cert.exp <<'EOF'
-          #!/usr/bin/expect -f
-          set timeout 120
-          spawn $env(HOME)/tizen-studio/tools/ide/bin/tizen certificate -a SignageManager -p $env(TZ_PASS) -c IT -n SignageManager -f signage-author
-          expect {
-            -re {[Pp]assword.*:} { send -- "$env(TZ_PASS)\r"; exp_continue }
-            -re {\(y(es)?/n(o)?\)} { send -- "y\r"; exp_continue }
-            timeout { puts "TIMED OUT waiting for tizen certificate"; exit 124 }
-            eof
-          }
-          catch wait result
-          exit [lindex $result 3]
-          EOF
-          expect /tmp/make-cert.exp
-
-          if [ ! -f "$AUTHOR_P12" ]; then
-            echo "author certificate was not created"; exit 1
-          fi
-
-          # Write profiles.xml directly with plaintext passwords and make it
-          # READ-ONLY: on first use the CLI tries to re-encrypt the passwords
-          # in-place, and that rewrite is what produces "Invaild password"
-          # failures in CI. (Same approach as sourcetoad/tizen-build-action.)
-          CERTS="$HOME/tizen-studio/tools/certificate-generator/certificates"
-          if [ -f "$CERTS/distributor/sdk-public/tizen-distributor-signer.p12" ]; then
-            DIST_KEY="$CERTS/distributor/sdk-public/tizen-distributor-signer.p12"
-            DIST_CA="$CERTS/distributor/sdk-public/tizen-distributor-ca.cer"
-          else
-            DIST_KEY="$CERTS/distributor/tizen-distributor-signer.p12"
-            DIST_CA="$CERTS/distributor/tizen-distributor-ca.cer"
-          fi
-          AUTHOR_CA="$CERTS/developer/tizen-developer-ca.cer"
-          [ -f "$AUTHOR_CA" ] || AUTHOR_CA=""
-
-          P="$("$T" cli-config -l | grep -i 'default.profiles.path=' | sed 's/^default\.profiles\.path=//')"
-          [ -n "$P" ] || P="$HOME/tizen-studio-data/profile/profiles.xml"
-          mkdir -p "$(dirname "$P")"
-          cat > "$P" <<EOF
-          <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-          <profiles active="signage" version="3.1">
-              <profile name="signage">
-                  <profileitem ca="$AUTHOR_CA" distributor="0" key="$AUTHOR_P12" password="$TZ_PASS" rootca=""/>
-                  <profileitem ca="$DIST_CA" distributor="1" key="$DIST_KEY" password="tizenpkcs12passfordsigner" rootca=""/>
-                  <profileitem ca="" distributor="2" key="" password="" rootca=""/>
-              </profile>
-          </profiles>
-          EOF
-          chmod a-w "$P"
-
-      # The CLI treats plaintext profile passwords as unreadable and re-prompts
-      # on a console CI doesn't have — run it under an expect pty and answer.
-      - name: Package signed WGT
-        env:
-          TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
-        run: |
-          mkdir -p dist-tizen
-          cat > /tmp/package-wgt.exp <<'EOF'
-          #!/usr/bin/expect -f
-          set timeout 240
-          spawn $env(HOME)/tizen-studio/tools/ide/bin/tizen package -t wgt -s signage -o dist-tizen -- tv-app-tizen
-          expect {
-            -re {[Aa]uthor.*[Pp]assword.*:} { send -- "$env(TZ_PASS)\r"; exp_continue }
-            -re {[Dd]istributor.*[Pp]assword.*:} { send -- "tizenpkcs12passfordsigner\r"; exp_continue }
-            -re {[Pp]assword.*:} { send -- "$env(TZ_PASS)\r"; exp_continue }
-            timeout { puts "TIMED OUT waiting for tizen package"; exit 124 }
-            eof
-          }
-          catch wait result
-          exit [lindex $result 3]
-          EOF
-          expect /tmp/package-wgt.exp || {
-            echo "--- cli.log tail ---"
-            tail -60 "$HOME/tizen-studio-data/cli/logs/cli.log" || true
-            echo "--- profiles.xml ---"
-            cat "$HOME/tizen-studio-data/profile/profiles.xml" || true
-            exit 1
-          }
-          mv dist-tizen/*.wgt dist-tizen/signage-tizen.wgt
+          node scripts/build-tizen-wgt.js
           # sanity: a signed widget must contain both signature files
           unzip -l dist-tizen/signage-tizen.wgt | grep -E "author-signature.xml|signature1.xml"
 
