@@ -151,9 +151,15 @@ jobs:
   # (the engine behind their VS Code extension). Tizen Studio CLI is NOT used:
   # every headless path through it (certificate/security-profiles/package)
   # either NPEs on a missing console or rejects its own keystore passwords.
+  # Runs on WINDOWS because the library's password store shells out to
+  # gnome-keyring's secret-tool on Linux, which cannot work headlessly
+  # (the library itself prints "not supported in headless Linux system").
   build-tizen-wgt:
     name: Build Samsung Tizen WGT
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -185,7 +191,7 @@ jobs:
         run: |
           node scripts/build-tizen-wgt.js
           # sanity: a signed widget must contain both signature files
-          unzip -l dist-tizen/signage-tizen.wgt | grep -E "author-signature.xml|signature1.xml"
+          7z l dist-tizen/signage-tizen.wgt | grep -E "author-signature.xml|signature1.xml"
 
       - name: Upload WGT artifact
         uses: actions/upload-artifact@v4
