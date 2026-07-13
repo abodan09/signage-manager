@@ -179,27 +179,29 @@ jobs:
           sed -i "s/version=\"[^\"]*\"/version=\"$VER\"/" tv-app-tizen/config.xml
           sed -i "s/__APP_VERSION__/$VER/g" tv-app-tizen/index.html
 
+      # Tizen Studio 5.1 — the version proven to sign headlessly in CI
+      # (sourcetoad/tizen-build-action); 6.x hangs/fails on password handling.
       - name: Restore Tizen Studio CLI cache
         id: tizen-cache
         uses: actions/cache/restore@v4
         with:
           path: ~/tizen-studio
-          key: tizen-studio-cli-6.1
+          key: tizen-studio-cli-5.1
 
       - name: Install Tizen Studio CLI
         if: steps.tizen-cache.outputs.cache-hit != 'true'
         run: |
-          wget -q "https://download.tizen.org/sdk/Installer/tizen-studio_6.1/web-cli_Tizen_Studio_6.1_ubuntu-64.bin" -O /tmp/tizen-cli.bin
+          wget -q "https://download.tizen.org/sdk/Installer/tizen-studio_5.1/web-cli_Tizen_Studio_5.1_ubuntu-64.bin" -O /tmp/tizen-cli.bin
           chmod +x /tmp/tizen-cli.bin
           /tmp/tizen-cli.bin --accept-license "$HOME/tizen-studio"
 
-      # Save even if later steps fail — the 267 MB download shouldn't repeat
+      # Save even if later steps fail — the 284 MB download shouldn't repeat
       - name: Save Tizen Studio CLI cache
         if: steps.tizen-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/tizen-studio
-          key: tizen-studio-cli-6.1
+          key: tizen-studio-cli-5.1
 
       - name: Diagnose CLI layout
         run: |
@@ -226,6 +228,7 @@ jobs:
           expect {
             -re {[Pp]assword.*:} { send -- "$env(TZ_PASS)\r"; exp_continue }
             -re {\(y(es)?/n(o)?\)} { send -- "y\r"; exp_continue }
+            timeout { puts "TIMED OUT waiting for tizen certificate"; exit 124 }
             eof
           }
           catch wait result
@@ -267,27 +270,10 @@ jobs:
           EOF
           chmod a-w "$P"
 
-      # The CLI re-prompts for passwords it cannot decrypt from profiles.xml,
-      # and crashes with an NPE when there is no console — so run it under a
-      # pseudo-terminal via expect and answer the prompts.
       - name: Package signed WGT
-        env:
-          TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
         run: |
           mkdir -p dist-tizen
-          cat > /tmp/package-wgt.exp <<'EOF'
-          #!/usr/bin/expect -f
-          set timeout 180
-          spawn $env(HOME)/tizen-studio/tools/ide/bin/tizen package -t wgt -s signage -o dist-tizen -- tv-app-tizen
-          expect {
-            -re {Author password.*:} { send -- "$env(TZ_PASS)\r"; exp_continue }
-            -re {[Dd]istributor.*password.*:} { send -- "tizenpkcs12passfordsigner\r"; exp_continue }
-            eof
-          }
-          catch wait result
-          exit [lindex $result 3]
-          EOF
-          expect /tmp/package-wgt.exp || {
+          timeout 300 "$HOME/tizen-studio/tools/ide/bin/tizen" package -t wgt -s signage -o dist-tizen -- tv-app-tizen || {
             echo "--- cli.log tail ---"
             tail -60 "$HOME/tizen-studio-data/cli/logs/cli.log" || true
             exit 1
