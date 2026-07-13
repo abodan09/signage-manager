@@ -270,12 +270,32 @@ jobs:
           EOF
           chmod a-w "$P"
 
+      # The CLI treats plaintext profile passwords as unreadable and re-prompts
+      # on a console CI doesn't have — run it under an expect pty and answer.
       - name: Package signed WGT
+        env:
+          TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
         run: |
           mkdir -p dist-tizen
-          timeout 300 "$HOME/tizen-studio/tools/ide/bin/tizen" package -t wgt -s signage -o dist-tizen -- tv-app-tizen || {
+          cat > /tmp/package-wgt.exp <<'EOF'
+          #!/usr/bin/expect -f
+          set timeout 240
+          spawn $env(HOME)/tizen-studio/tools/ide/bin/tizen package -t wgt -s signage -o dist-tizen -- tv-app-tizen
+          expect {
+            -re {[Aa]uthor.*[Pp]assword.*:} { send -- "$env(TZ_PASS)\r"; exp_continue }
+            -re {[Dd]istributor.*[Pp]assword.*:} { send -- "tizenpkcs12passfordsigner\r"; exp_continue }
+            -re {[Pp]assword.*:} { send -- "$env(TZ_PASS)\r"; exp_continue }
+            timeout { puts "TIMED OUT waiting for tizen package"; exit 124 }
+            eof
+          }
+          catch wait result
+          exit [lindex $result 3]
+          EOF
+          expect /tmp/package-wgt.exp || {
             echo "--- cli.log tail ---"
             tail -60 "$HOME/tizen-studio-data/cli/logs/cli.log" || true
+            echo "--- profiles.xml ---"
+            cat "$HOME/tizen-studio-data/profile/profiles.xml" || true
             exit 1
           }
           mv dist-tizen/*.wgt dist-tizen/signage-tizen.wgt
