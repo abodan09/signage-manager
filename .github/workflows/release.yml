@@ -208,16 +208,13 @@ jobs:
       # `tizen certificate` exits 1 silently on the minimal web-cli install, so the
       # author key is generated with plain keytool (legacy PKCS12 encoding — the
       # CLI's signer can't parse modern PBES2 keystores) and registered with
-      # `security-profiles add`, which writes profiles.xml itself. Any `.pwd`
-      # password-file references it leaves behind are replaced with the plaintext
-      # passwords (the classic CI fix — packaging can't read .pwd files).
+      # `security-profiles add`, which writes profiles.xml itself.
       - name: Create signing profile
         env:
           TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
         run: |
           T="$HOME/tizen-studio/tools/ide/bin/tizen"
           AUTHOR_DIR="$HOME/tizen-studio-data/keystore/author"
-          P="$HOME/tizen-studio-data/profile/profiles.xml"
           mkdir -p "$AUTHOR_DIR"
 
           keytool -genkeypair -alias SignageManager -keyalg RSA -keysize 2048 \
@@ -229,17 +226,30 @@ jobs:
 
           "$T" security-profiles add -n signage -a "$AUTHOR_DIR/signage-author.p12" -p "$TZ_PASS"
 
-          sed -i "s|password=\"[^\"]*signage-author.pwd\"|password=\"$TZ_PASS\"|" "$P" || true
-          sed -i "s|password=\"[^\"]*distributor-signer.pwd\"|password=\"tizenpkcs12passfordsigner\"|" "$P" || true
-
+      # The CLI re-prompts for passwords it cannot decrypt from profiles.xml,
+      # and crashes with an NPE when there is no console — so run it under a
+      # pseudo-terminal via expect and answer the prompts.
       - name: Package signed WGT
+        env:
+          TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
         run: |
+          sudo apt-get install -y -qq expect > /dev/null
           mkdir -p dist-tizen
-          "$HOME/tizen-studio/tools/ide/bin/tizen" package -t wgt -s signage -o dist-tizen -- tv-app-tizen || {
+          cat > /tmp/package-wgt.exp <<'EOF'
+          #!/usr/bin/expect -f
+          set timeout 180
+          spawn $env(HOME)/tizen-studio/tools/ide/bin/tizen package -t wgt -s signage -o dist-tizen -- tv-app-tizen
+          expect {
+            -re {Author password.*:} { send -- "$env(TZ_PASS)\r"; exp_continue }
+            -re {[Dd]istributor.*password.*:} { send -- "tizenpkcs12passfordsigner\r"; exp_continue }
+            eof
+          }
+          catch wait result
+          exit [lindex $result 3]
+          EOF
+          expect /tmp/package-wgt.exp || {
             echo "--- cli.log tail ---"
             tail -60 "$HOME/tizen-studio-data/cli/logs/cli.log" || true
-            echo "--- profiles.xml (passwords masked by runner) ---"
-            cat "$HOME/tizen-studio-data/profile/profiles.xml" || true
             exit 1
           }
           mv dist-tizen/*.wgt dist-tizen/signage-tizen.wgt
