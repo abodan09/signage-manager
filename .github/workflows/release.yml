@@ -206,45 +206,42 @@ jobs:
           ls -R "$HOME/tizen-studio/tools/certificate-generator" 2>/dev/null | head -30 || echo "certificate-generator MISSING"
 
       # `tizen certificate` exits 1 silently on the minimal web-cli install, so the
-      # author key is generated with plain keytool (any RSA PKCS12 works as a Tizen
-      # author certificate) and profiles.xml is written directly.
+      # author key is generated with plain keytool (legacy PKCS12 encoding — the
+      # CLI's signer can't parse modern PBES2 keystores) and registered with
+      # `security-profiles add`, which writes profiles.xml itself. Any `.pwd`
+      # password-file references it leaves behind are replaced with the plaintext
+      # passwords (the classic CI fix — packaging can't read .pwd files).
       - name: Create signing profile
         env:
           TZ_PASS: ${{ secrets.TIZEN_CERT_PASSWORD }}
         run: |
+          T="$HOME/tizen-studio/tools/ide/bin/tizen"
           AUTHOR_DIR="$HOME/tizen-studio-data/keystore/author"
-          DIST_DIR="$HOME/tizen-studio/tools/certificate-generator/certificates/distributor"
-          mkdir -p "$AUTHOR_DIR" "$HOME/tizen-studio-data/profile"
+          P="$HOME/tizen-studio-data/profile/profiles.xml"
+          mkdir -p "$AUTHOR_DIR"
 
           keytool -genkeypair -alias SignageManager -keyalg RSA -keysize 2048 \
             -validity 7300 -storetype PKCS12 \
+            -J-Dkeystore.pkcs12.legacy \
             -keystore "$AUTHOR_DIR/signage-author.p12" \
             -storepass "$TZ_PASS" -keypass "$TZ_PASS" \
             -dname "CN=SignageManager, O=FrozenBit, C=IT"
 
-          if [ ! -f "$DIST_DIR/tizen-distributor-signer.p12" ]; then
-            echo "Default distributor certificate missing from CLI install!"
-            find "$HOME/tizen-studio" -name "*distributor*" 2>/dev/null
-            exit 1
-          fi
+          "$T" security-profiles add -n signage -a "$AUTHOR_DIR/signage-author.p12" -p "$TZ_PASS"
 
-          cat > "$HOME/tizen-studio-data/profile/profiles.xml" <<EOF
-          <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-          <profiles active="signage" version="3.1">
-          <profile name="signage">
-          <profileitem ca="" distributor="0" key="$AUTHOR_DIR/signage-author.p12" password="$TZ_PASS" rootca=""/>
-          <profileitem ca="$DIST_DIR/tizen-distributor-ca.cer" distributor="1" key="$DIST_DIR/tizen-distributor-signer.p12" password="tizenpkcs12passfordsigner" rootca=""/>
-          <profileitem ca="" distributor="2" key="" password="" rootca=""/>
-          </profile>
-          </profiles>
-          EOF
-          # the CLI requires the config to point at the profiles path
-          "$HOME/tizen-studio/tools/ide/bin/tizen" cli-config "profiles.path=$HOME/tizen-studio-data/profile/profiles.xml" || true
+          sed -i "s|password=\"[^\"]*signage-author.pwd\"|password=\"$TZ_PASS\"|" "$P" || true
+          sed -i "s|password=\"[^\"]*distributor-signer.pwd\"|password=\"tizenpkcs12passfordsigner\"|" "$P" || true
 
       - name: Package signed WGT
         run: |
           mkdir -p dist-tizen
-          "$HOME/tizen-studio/tools/ide/bin/tizen" package -t wgt -s signage -o dist-tizen -- tv-app-tizen
+          "$HOME/tizen-studio/tools/ide/bin/tizen" package -t wgt -s signage -o dist-tizen -- tv-app-tizen || {
+            echo "--- cli.log tail ---"
+            tail -60 "$HOME/tizen-studio-data/cli/logs/cli.log" || true
+            echo "--- profiles.xml (passwords masked by runner) ---"
+            cat "$HOME/tizen-studio-data/profile/profiles.xml" || true
+            exit 1
+          }
           mv dist-tizen/*.wgt dist-tizen/signage-tizen.wgt
           # sanity: a signed widget must contain both signature files
           unzip -l dist-tizen/signage-tizen.wgt | grep -E "author-signature.xml|signature1.xml"
