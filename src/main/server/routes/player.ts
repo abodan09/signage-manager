@@ -12,7 +12,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 #player{position:relative;width:100vw;height:100vh;background:#000}
 
 /* main content layers */
-.layer{position:absolute;inset:0;display:none;opacity:0;transition:opacity 0.6s ease}
+/* NOTE: no CSS "inset" shorthand anywhere in this file — TV WebViews are often
+   Chromium < 87 (TCL/Hisense ship 66-83) which silently drops it, collapsing
+   every absolutely-positioned layer to 0x0. Use explicit edges. */
+.layer{position:absolute;top:0;left:0;right:0;bottom:0;display:none;opacity:0;transition:opacity 0.6s ease}
 .layer.active{display:flex;opacity:1}
 
 #image-layer{align-items:center;justify-content:center;background:#000}
@@ -26,7 +29,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 
 /* text overlay — runs concurrently on top of main content */
 #overlay-layer{
-  position:absolute;inset:0;
+  position:absolute;top:0;left:0;right:0;bottom:0;
   z-index:5;
   display:none;
   pointer-events:none;
@@ -75,7 +78,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 
 /* no-content screen */
 #no-content{
-  position:absolute;inset:0;display:flex;flex-direction:column;
+  position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center;color:#555;
   font-size:28px;gap:20px;z-index:1;
 }
@@ -243,21 +246,39 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     clearProgress();
     var dur = (item.durationSeconds || 10) * 1000;
 
+    // Detach the previous video's handlers so a late error/ended event can't
+    // skip the item that replaced it, and release the decoder when leaving the
+    // video layer (a hidden <video> keeps decoding on TV WebViews otherwise).
+    var vprev = qs('#vid');
+    vprev.onerror = null;
+    vprev.onended = null;
+    if (item.type !== 'video') {
+      try { vprev.pause(); vprev.removeAttribute('src'); vprev.load(); } catch (e) {}
+    }
+
     if (item.type === 'image') {
       showLayer('image-layer');
-      qs('#img').src = BASE + item.filePath;
+      var img = qs('#img');
+      // Broken/undecodable image (or one too large for a low-RAM TV WebView):
+      // skip ahead instead of sitting on a black screen. Small delay so a
+      // playlist of all-broken items can't spin in a tight loop.
+      img.onerror = function(){ clearTimeout(mainTimer); mainTimer = setTimeout(nextMain, 3000); };
+      img.src = BASE + item.filePath;
       startProgress(dur);
       mainTimer = setTimeout(nextMain, dur);
 
     } else if (item.type === 'video') {
       showLayer('video-layer');
       var vid = qs('#vid');
+      var advanced = false;
+      function advance() { if (advanced) return; advanced = true; clearTimeout(mainTimer); nextMain(); }
+      // Codec the TV WebView can't decode (HEVC/4K on old TCL Chromium etc.)
+      // fires error — skip to the next item rather than hanging the layer.
+      vid.onerror = function(){ setTimeout(advance, 3000); };
+      vid.onended = advance;
       vid.src = BASE + item.filePath;
       vid.play().catch(function(){});
       startProgress(dur);
-      var advanced = false;
-      function advance() { if (advanced) return; advanced = true; clearTimeout(mainTimer); nextMain(); }
-      vid.onended = advance;
       mainTimer = setTimeout(advance, dur);
 
     } else if (item.type === 'html') {
