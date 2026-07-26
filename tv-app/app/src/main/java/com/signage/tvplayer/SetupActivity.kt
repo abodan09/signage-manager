@@ -48,6 +48,10 @@ class SetupActivity : AppCompatActivity() {
         // Check for updates
         UpdateChecker.check(this, BuildConfig.VERSION_NAME)
 
+        // If the previous run died, put the stack trace on screen — a sideloaded
+        // TV app has no other way to report why it crashed.
+        CrashReporter.showIfCrashed(this)
+
         // Start UDP discovery listener (runs even if a URL is saved, to pick up IP changes)
         startDiscoveryListener(urlInput, tvCurrent, prefs)
 

@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -17,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private var webViewDestroyed = false
     private lateinit var prefs: android.content.SharedPreferences
     private var longPressHandler = Handler(Looper.getMainLooper())
     private var centerPressStart = 0L
@@ -48,18 +50,23 @@ class MainActivity : AppCompatActivity() {
             webView = findViewById(R.id.webView)
         } catch (t: Throwable) {
             val msg = android.widget.TextView(this).apply {
-                text = "This device has no WebView component,\nso the Signage Player cannot run here."
+                text = "Android System WebView is missing or disabled on this TV,\n" +
+                    "so the Signage Player cannot run.\n\n" +
+                    "Fix: TV Settings → Apps → See all apps → show system apps →\n" +
+                    "\"Android System WebView\" → Enable (then update it in the Play Store)."
                 setTextColor(0xFFF1F5F9.toInt())
                 setBackgroundColor(0xFF0F172A.toInt())
                 textSize = 20f
                 gravity = android.view.Gravity.CENTER
             }
             setContentView(msg)
+            CrashReporter.showIfCrashed(this)
             return
         }
 
         setupWebView()
         loadPlayer()
+        CrashReporter.showIfCrashed(this)
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -89,6 +96,25 @@ class MainActivity : AppCompatActivity() {
                         loadPlayer()
                     }, 5000)
                 }
+            }
+
+            // The WebView renderer runs out-of-process on Android 8+ and dies
+            // when it hits an OOM or a codec bug (common on low-RAM TVs playing
+            // heavy video). Returning false — the default — makes Android kill
+            // the whole app. Swallow the crash and rebuild the player instead.
+            override fun onRenderProcessGone(
+                view: WebView?,
+                detail: RenderProcessGoneDetail?
+            ): Boolean {
+                if (view != null) {
+                    (view.parent as? android.view.ViewGroup)?.removeView(view)
+                    view.destroy()
+                    webViewDestroyed = true
+                }
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (!isFinishing && !isDestroyed) recreate()
+                }, 1000)
+                return true
             }
         }
 
@@ -149,7 +175,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         longPressHandler.removeCallbacksAndMessages(null)
-        if (::webView.isInitialized) webView.destroy()
+        if (::webView.isInitialized && !webViewDestroyed) webView.destroy()
         super.onDestroy()
     }
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -10,6 +11,7 @@
     <uses-feature android:name="android.software.leanback" android:required="true" />
 
     <application
+        android:name=".SignageApp"
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:banner="@drawable/banner"
@@ -25,10 +27,13 @@
             android:launchMode="singleTask"
             android:screenOrientation="landscape">
 
-            <!-- TV launcher banner — makes the app appear in Android TV home -->
+            <!-- TV launcher banner — makes the app appear in Android TV home.
+                 LAUNCHER is listed too: some TCL/AOSP TV launchers only index
+                 the phone category and would otherwise hide the app. -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
@@ -43,6 +48,20 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- appcompat pulls in androidx.emoji2, whose auto-initializer runs at
+             process start (before ANY activity) and is a known startup-crash
+             source on TVs without a working Google fonts provider. A signage
+             kiosk needs no emoji processing — strip the initializer. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
 
         <!-- Auto-start on boot -->
         <receiver
