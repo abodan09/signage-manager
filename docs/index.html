@@ -15,7 +15,9 @@
     --line-2: #24365a;
     --ice:    #d9e7f8;
     --dim:    #8199ba;
-    --faint:  #55688a;
+    /* Third text tier. Keep at or above 4.5:1 on --void/--deep/--panel:
+       the previous #55688a measured 3.4:1 and failed WCAG AA on all three. */
+    --faint:  #7286ad;
     --glow:   #4cc9ff;
     --glow-2: #8b7bff;
     --ok:     #3ddc97;
@@ -355,7 +357,7 @@
     <div class="cell"><div class="k">TRANSPORT</div><div class="v">LAN-ONLY · <em>ZERO UPLINK</em></div></div>
     <div class="cell"><div class="k">FLEET SIZE</div><div class="v"><em>UNLIMITED</em> SCREENS</div></div>
     <div class="cell"><div class="k">PAYLOADS</div><div class="v">IMG · VIDEO · HTML · TEXT</div></div>
-    <div class="cell"><div class="k">MODES</div><div class="v">LOOP · SCHEDULED · <em>PUSH</em></div></div>
+    <div class="cell"><div class="k">MODES</div><div class="v">LOOP · SCHEDULED · <em>MANUAL</em></div></div>
   </div>
 </div>
 
@@ -371,7 +373,7 @@
       <div class="mod"><div class="id">MOD-01</div><h3>BROADCAST</h3><p>Override any screen — or all of them — instantly. A flash promo reaches the floor before the meeting ends.</p></div>
       <div class="mod"><div class="id">MOD-02</div><h3>TIMELINE</h3><p>Scheduled projects rotate content by time of day. Breakfast board at 07:00, happy hour at 17:00, unattended.</p></div>
       <div class="mod"><div class="id">MOD-03</div><h3>AUTO-LINK</h3><p>TVs discover the console over the network and register themselves. Pairing a screen takes under a minute.</p></div>
-      <div class="mod"><div class="id">MOD-04</div><h3>FLEET</h3><p>Live status for every display — online, playing, last seen. Name them, group them, command them individually.</p></div>
+      <div class="mod"><div class="id">MOD-04</div><h3>FLEET</h3><p>Live status for every display — online, playing, last seen. Name each screen and command it individually from the Devices page.</p></div>
       <div class="mod"><div class="id">MOD-05</div><h3>PAYLOADS</h3><p>Images, full-motion video, live HTML and text tickers in one playlist. If a browser renders it, a screen can play it.</p></div>
       <div class="mod"><div class="id">MOD-06</div><h3>AIR-GAP</h3><p>The internet can go down; the grid keeps playing. Content never leaves your building — by architecture, not policy.</p></div>
     </div>
@@ -650,16 +652,16 @@
     </div>
 
     <!-- ── Video guide ──────────────────────────────────────────────────────
-         Replace the src attribute below with the URL of your MP4 video.
-         Example: src="https://your-storage.com/signage-install-guide.mp4"
+         Add a src attribute to the video below to publish the guide:
+         src="https://your-storage.com/signage-install-guide.mp4"
          You can also add  poster="https://…/thumbnail.jpg"  for a preview image.
+         Leave it off entirely and the placeholder underneath stays visible.
     ─────────────────────────────────────────────────────────────────────── -->
     <div class="video-wrap" id="video-wrap">
       <video
         id="guide-video"
         controls
         preload="none"
-        src=""
       ></video>
       <div class="video-placeholder" id="video-placeholder">
         <div class="ph-icon">🎬</div>
@@ -969,12 +971,15 @@
     return (bytes / 1024).toFixed(0) + ' KB';
   }
 
-  // Copy ADB command
-  // Hide placeholder when a real video src is present
+  // Hide the placeholder only when a real video src is present.
+  // Test the content attribute, not vid.src: an absent/empty src resolves to
+  // the page URL minus the fragment, so comparing it against location.href
+  // reported "a video is set" on every #hash deep link and left a dead black box.
   (function () {
     var vid = document.getElementById('guide-video');
     var ph  = document.getElementById('video-placeholder');
-    if (vid && vid.src && vid.src !== window.location.href) {
+    var src = vid && vid.getAttribute('src');
+    if (ph && src && src.trim()) {
       ph.style.display = 'none';
     }
   })();
@@ -1081,9 +1086,34 @@
     ctx.restore()
   }
 
-  function loop(t) { draw(t); if (!reduced) requestAnimationFrame(loop) }
-  size(); window.addEventListener('resize', function () { size(); if (reduced) draw(0) })
-  if (reduced) draw(0); else requestAnimationFrame(loop)
+  // Only animate while the hero is actually on screen — the canvas scrolls away
+  // above a long page, and rAF is not throttled for off-screen elements.
+  var visible = true, running = false
+  function loop(t) {
+    if (reduced || !visible) { running = false; return }
+    draw(t)
+    requestAnimationFrame(loop)
+  }
+  function start() {
+    if (running || reduced || !visible) return
+    running = true
+    requestAnimationFrame(loop)
+  }
+
+  size()
+  window.addEventListener('resize', function () { size(); if (!running) draw(0) })
+
+  if (reduced) {
+    draw(0)
+  } else if (window.IntersectionObserver) {
+    new IntersectionObserver(function (entries) {
+      visible = entries[0].isIntersecting
+      if (visible) start()
+    }).observe(cv)
+    start()
+  } else {
+    start()
+  }
 })()
 </script>
 </body>
