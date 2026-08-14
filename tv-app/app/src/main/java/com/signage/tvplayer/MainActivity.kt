@@ -19,6 +19,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private var webViewDestroyed = false
+    private var statusText: android.widget.TextView? = null
+    private var mainFrameFailed = false
     private lateinit var prefs: android.content.SharedPreferences
     private var longPressHandler = Handler(Looper.getMainLooper())
     private var centerPressStart = 0L
@@ -48,6 +50,7 @@ class MainActivity : AppCompatActivity() {
         try {
             setContentView(R.layout.activity_main)
             webView = findViewById(R.id.webView)
+            statusText = findViewById(R.id.statusText)
         } catch (t: Throwable) {
             val msg = android.widget.TextView(this).apply {
                 text = "Android System WebView is missing or disabled on this TV,\n" +
@@ -85,17 +88,45 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.webViewClient = object : WebViewClient() {
+
+            private fun onMainFrameError() {
+                mainFrameFailed = true
+                val url = prefs.getString("server_url", "") ?: ""
+                statusText?.text =
+                    "Can't reach the server at $url — retrying every 5 seconds…\n" +
+                    "Check that Signage Manager is open on the PC and that the TV and PC " +
+                    "are on the same network. Hold OK for 3 seconds to change the address."
+                statusText?.visibility = View.VISIBLE
+                // Server unreachable — retry in 5 seconds
+                Handler(Looper.getMainLooper()).postDelayed({
+                    loadPlayer()
+                }, 5000)
+            }
+
             override fun onReceivedError(
                 view: WebView?,
                 request: WebResourceRequest?,
                 error: WebResourceError?
             ) {
-                if (request?.isForMainFrame == true) {
-                    // Server unreachable — retry in 5 seconds
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        loadPlayer()
-                    }, 5000)
-                }
+                if (request?.isForMainFrame == true) onMainFrameError()
+            }
+
+            // API 21-22 delivers load errors only through this legacy callback
+            @Deprecated("Deprecated in Java")
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                onMainFrameError()
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                // Fires for the built-in error page too — only clear the banner
+                // when the last main-frame load actually succeeded.
+                if (!mainFrameFailed) statusText?.visibility = View.GONE
+                mainFrameFailed = false
             }
 
             // The WebView renderer runs out-of-process on Android 8+ and dies

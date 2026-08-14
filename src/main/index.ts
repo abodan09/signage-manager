@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell, Menu, MenuItemConstructorOptions } from 'electron'
 import path from 'path'
 import { startServer } from './server'
+import { getLocalIP } from './server/discovery'
 import { setupUpdaterIpc, checkForUpdates } from './updater'
 
 const isDev = process.env.NODE_ENV === 'development'
@@ -85,6 +86,9 @@ async function main() {
   serverPort = await startServer(userData, 3001, app.getVersion())
 
   ipcMain.handle('get-server-url', () => `http://localhost:${serverPort}`)
+  // The address TVs must use — resolved fresh on every call so plugging into a
+  // different network updates the UI without an app restart.
+  ipcMain.handle('get-lan-url', () => `http://${getLocalIP()}:${serverPort}`)
   ipcMain.handle('open-external', (_event, url: string) => shell.openExternal(url))
 
   setupUpdaterIpc(() => mainWindow)

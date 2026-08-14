@@ -4,6 +4,7 @@ import type { UpdateInfo } from './updater'
 contextBridge.exposeInMainWorld('electronAPI', {
   // ── existing ────────────────────────────────────────────────────────────────
   getServerUrl: (): Promise<string>      => ipcRenderer.invoke('get-server-url'),
+  getLanUrl:    (): Promise<string>      => ipcRenderer.invoke('get-lan-url'),
   openExternal: (url: string): Promise<void> => ipcRenderer.invoke('open-external', url),
 
   // ── app info ────────────────────────────────────────────────────────────────

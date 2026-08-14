@@ -9,4 +9,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Connection status — shown when the server can't be reached so the TV
+         is never just a silent black screen -->
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#E60F172A"
+        android:textColor="#F1F5F9"
+        android:textSize="16sp"
+        android:lineSpacingExtra="4dp"
+        android:padding="20dp"
+        android:visibility="gone" />
+
 </FrameLayout>

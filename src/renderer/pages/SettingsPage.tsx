@@ -6,8 +6,24 @@ function useServerUrl() {
   return url
 }
 
+// The LAN address TVs must use. getServerUrl() returns http://localhost:… which
+// only works on this PC — showing it as "the server URL" sent users typing an
+// address their TV can never reach.
+function useLanUrl() {
+  const [url, setUrl] = useState('')
+  useEffect(() => {
+    let alive = true
+    const load = () => window.electronAPI.getLanUrl().then(u => { if (alive) setUrl(u) })
+    load()
+    const t = setInterval(load, 10_000)  // follows network changes
+    return () => { alive = false; clearInterval(t) }
+  }, [])
+  return url
+}
+
 export default function SettingsPage() {
   const serverUrl = useServerUrl()
+  const lanUrl    = useLanUrl()
   const [copied, setCopied] = useState(false)
   const [health, setHealth] = useState<{ ok: boolean; connectedTVs?: number } | null>(null)
 
@@ -20,7 +36,7 @@ export default function SettingsPage() {
   }, [serverUrl])
 
   const tvUrl   = `${serverUrl}/tv/player`
-  const adbCmd  = `adb shell am start -n com.signage.tvplayer/.SetupActivity --es SERVER_URL "${serverUrl}"`
+  const adbCmd  = `adb shell am start -n com.signage.tvplayer/.SetupActivity --es SERVER_URL "${lanUrl}"`
 
   function copy(text: string) {
     navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })
@@ -40,13 +56,14 @@ export default function SettingsPage() {
           {health?.ok && <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>· {health.connectedTVs ?? 0} TV(s) connected</span>}
         </div>
         <div className="form-group">
-          <div className="form-label">Local Server URL</div>
+          <div className="form-label">Server URL for TVs — enter this on the TV setup screen</div>
           <div className="url-box">
-            <span>{serverUrl}</span>
-            <button className="btn btn-ghost btn-sm" onClick={() => copy(serverUrl)}>{copied ? 'Copied!' : 'Copy'}</button>
+            <span style={{ fontWeight: 600 }}>{lanUrl || 'Detecting network address…'}</span>
+            <button className="btn btn-ghost btn-sm" onClick={() => copy(lanUrl)}>{copied ? 'Copied!' : 'Copy'}</button>
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>
-            The server runs automatically when Signage Manager is open. All TVs must be on the same network.
+            The server runs automatically when Signage Manager is open. All TVs must be on the same network as this PC
+            (VPN and virtual adapters are ignored automatically).
           </div>
         </div>
       </div>

@@ -1,6 +1,8 @@
 package com.signage.tvplayer
 
+import android.app.AlertDialog
 import android.content.Intent
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
@@ -10,15 +12,22 @@ import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.net.SocketTimeoutException
+import java.net.URL
 
 class SetupActivity : AppCompatActivity() {
 
     private var discoverySocket: DatagramSocket? = null
+    private var multicastLock: WifiManager.MulticastLock? = null
     @Volatile private var discoveryStopped = false
     @Volatile private var inForeground = false
+
+    // url → last failed probe time; avoids re-probing a dead address on every
+    // 5-second beacon
+    private val failedProbes = HashMap<String, Long>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +65,6 @@ class SetupActivity : AppCompatActivity() {
         startDiscoveryListener(urlInput, tvCurrent, prefs)
 
         btnConnect.setOnClickListener {
-            stopDiscovery()
             val url = urlInput.text.toString().trim().trimEnd('/')
             if (url.isEmpty()) {
                 Toast.makeText(this, "Please enter a server URL", Toast.LENGTH_SHORT).show()
@@ -66,9 +74,40 @@ class SetupActivity : AppCompatActivity() {
                 Toast.makeText(this, "URL must start with http:// or https://", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            prefs.edit().putString("server_url", url).apply()
-            Toast.makeText(this, "Saved! Connecting…", Toast.LENGTH_SHORT).show()
-            startMain()
+
+            // Verify the server actually answers before locking the URL in —
+            // a silent black player screen told users nothing about what failed.
+            btnConnect.isEnabled = false
+            tvCurrent.text = "Testing connection to $url …"
+            Thread {
+                val problem = probeServer(url)
+                runOnUiThread {
+                    if (isFinishing) return@runOnUiThread
+                    btnConnect.isEnabled = true
+                    if (problem == null) {
+                        stopDiscovery()
+                        prefs.edit().putString("server_url", url).apply()
+                        Toast.makeText(this, "Connected! Starting player…", Toast.LENGTH_SHORT).show()
+                        startMain()
+                    } else {
+                        tvCurrent.text = "Could not reach $url"
+                        AlertDialog.Builder(this)
+                            .setTitle("Can't reach the server")
+                            .setMessage(
+                                problem +
+                                "\n\nCheck that Signage Manager is open on the PC and that " +
+                                "the TV and PC are on the same network."
+                            )
+                            .setPositiveButton("Save anyway") { _, _ ->
+                                stopDiscovery()
+                                prefs.edit().putString("server_url", url).apply()
+                                startMain()
+                            }
+                            .setNegativeButton("Edit URL", null)
+                            .show()
+                    }
+                }
+            }.start()
         }
     }
 
@@ -82,11 +121,44 @@ class SetupActivity : AppCompatActivity() {
         inForeground = false
     }
 
+    /** Returns null when the server answers, else a human-readable reason. */
+    private fun probeServer(baseUrl: String): String? {
+        return try {
+            val conn = URL("$baseUrl/api/health").openConnection() as HttpURLConnection
+            conn.connectTimeout = 4_000
+            conn.readTimeout = 4_000
+            val code = conn.responseCode
+            conn.disconnect()
+            if (code in 200..299) null else "The server answered with HTTP $code."
+        } catch (e: java.net.ConnectException) {
+            "Connection refused — the address is reachable but nothing is listening. " +
+            "Is Signage Manager open on the PC? A PC firewall can also cause this."
+        } catch (e: SocketTimeoutException) {
+            "Timed out — the TV and PC may be on different networks, or the router " +
+            "blocks device-to-device traffic (AP isolation)."
+        } catch (e: java.net.UnknownHostException) {
+            "Unknown host — check the address for typos."
+        } catch (e: Exception) {
+            e.message ?: "Unreachable."
+        }
+    }
+
     private fun startDiscoveryListener(
         urlInput: EditText,
         tvCurrent: TextView,
         prefs: android.content.SharedPreferences,
     ) {
+        // Many TV Wi-Fi drivers silently DROP broadcast/multicast packets unless
+        // a MulticastLock is held — without this, the PC's beacon never reaches
+        // the app on wireless TVs. No-op on Ethernet-only devices.
+        try {
+            val wifi = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+            multicastLock = wifi.createMulticastLock("signage-discovery").apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+        } catch (_: Exception) {}
+
         Thread {
             try {
                 val socket = DatagramSocket(null as SocketAddress?).apply {
@@ -97,9 +169,11 @@ class SetupActivity : AppCompatActivity() {
                 }
                 discoverySocket = socket
 
-                val buf = ByteArray(512)
-                // Keep listening until a valid beacon arrives or the activity stops us.
-                // A malformed/foreign packet must not end discovery.
+                val buf = ByteArray(2048)
+                // Keep listening until a REACHABLE beacon arrives or the activity
+                // stops us. A malformed/foreign packet must not end discovery,
+                // and neither should a beacon advertising an address we can't
+                // actually reach (e.g. the PC's VPN adapter).
                 while (!discoveryStopped) {
                     val packet = DatagramPacket(buf, buf.size)
                     try {
@@ -111,10 +185,40 @@ class SetupActivity : AppCompatActivity() {
                         val obj = JSONObject(String(packet.data, 0, packet.length))
                         if (obj.optString("type") != "signage-discovery") continue
 
-                        val ip   = obj.getString("ip")
                         val port = obj.getInt("port")
-                        val url  = "http://$ip:$port"
+                        val candidates = ArrayList<String>()
+                        obj.optString("ip").takeIf { it.isNotBlank() }
+                            ?.let { candidates.add("http://$it:$port") }
+                        obj.optJSONArray("ips")?.let { arr ->
+                            for (i in 0 until arr.length()) {
+                                val u = "http://${arr.getString(i)}:$port"
+                                if (!candidates.contains(u)) candidates.add(u)
+                            }
+                        }
+                        if (candidates.isEmpty()) continue
 
+                        var reachable: String? = null
+                        var lastProblem: String? = null
+                        for (u in candidates) {
+                            if (discoveryStopped) break
+                            val failedAt = failedProbes[u]
+                            if (failedAt != null && System.currentTimeMillis() - failedAt < 30_000) continue
+                            val problem = probeServer(u)
+                            if (problem == null) { reachable = u; break }
+                            failedProbes[u] = System.currentTimeMillis()
+                            lastProblem = problem
+                        }
+
+                        if (reachable == null) {
+                            if (lastProblem != null) {
+                                runOnUiThread {
+                                    if (!isFinishing) tvCurrent.text = "Server found, but not reachable: $lastProblem"
+                                }
+                            }
+                            continue   // keep listening — network may recover
+                        }
+
+                        val url = reachable
                         runOnUiThread {
                             prefs.edit().putString("server_url", url).apply()
                             urlInput.setText(url)
@@ -142,6 +246,8 @@ class SetupActivity : AppCompatActivity() {
         discoveryStopped = true
         try { discoverySocket?.close() } catch (_: Exception) {}
         discoverySocket = null
+        try { multicastLock?.release() } catch (_: Exception) {}
+        multicastLock = null
     }
 
     override fun onDestroy() {

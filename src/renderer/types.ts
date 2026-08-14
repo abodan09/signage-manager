@@ -66,6 +66,7 @@ declare global {
   interface Window {
     electronAPI: {
       getServerUrl:     () => Promise<string>
+      getLanUrl:        () => Promise<string>
       openExternal:     (url: string) => Promise<void>
       getVersion:       () => Promise<string>
       checkForUpdates:  () => Promise<UpdateInfo>
