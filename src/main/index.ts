@@ -3,6 +3,7 @@ import path from 'path'
 import { startServer } from './server'
 import { getLocalIP } from './server/discovery'
 import { setupUpdaterIpc, checkForUpdates } from './updater'
+import { initTelemetry, track } from './telemetry'
 
 const isDev = process.env.NODE_ENV === 'development'
 let mainWindow: BrowserWindow | null = null
@@ -27,12 +28,12 @@ function buildMenu() {
         {
           label: 'How To…',
           accelerator: 'F1',
-          click: () => send('show-help'),
+          click: () => { track('help_opened'); send('show-help') },
         },
         { type: 'separator' },
         {
           label: 'Check for Updates…',
-          click: () => send('check-updates'),
+          click: () => { track('update_check'); send('check-updates') },
         },
         {
           label: 'About Signage Manager',
@@ -45,7 +46,7 @@ function buildMenu() {
         },
         {
           label: 'Report an Issue…',
-          click: () => send('report-issue'),
+          click: () => { track('report_issue_opened'); send('report-issue') },
         },
       ]
     }
@@ -95,6 +96,7 @@ async function main() {
 
   await app.whenReady()
 
+  initTelemetry()
   buildMenu()
   await createWindow()
 

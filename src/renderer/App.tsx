@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
@@ -200,6 +200,11 @@ export default function App() {
   const [showCheckUpdate, setShowCheckUpdate]   = useState(false)
   const [showReportIssue, setShowReportIssue]   = useState(false)
   const [version, setVersion]                   = useState('')
+  const location = useLocation()
+
+  useEffect(() => {
+    window.electronAPI.trackEvent?.('page_view', { page: location.pathname.replace(/^\//, '') || 'dashboard' })
+  }, [location.pathname])
 
   useEffect(() => {
     window.electronAPI.getVersion().then(setVersion)

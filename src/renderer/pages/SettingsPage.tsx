@@ -26,6 +26,18 @@ export default function SettingsPage() {
   const lanUrl    = useLanUrl()
   const [copied, setCopied] = useState(false)
   const [health, setHealth] = useState<{ ok: boolean; connectedTVs?: number } | null>(null)
+  const [telemetry, setTelemetry] = useState<{ enabled: boolean; installId: string } | null>(null)
+
+  useEffect(() => {
+    window.electronAPI.getTelemetryStatus?.().then(setTelemetry).catch(() => {})
+  }, [])
+
+  function toggleTelemetry() {
+    if (!telemetry) return
+    const enabled = !telemetry.enabled
+    setTelemetry({ ...telemetry, enabled })
+    window.electronAPI.setTelemetryEnabled(enabled)
+  }
 
   useEffect(() => {
     if (!serverUrl) return
@@ -101,6 +113,30 @@ export default function SettingsPage() {
             </div>
           </li>
         </ol>
+      </div>
+
+      {/* Privacy */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h2>Privacy</h2>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <input
+            type="checkbox"
+            id="telemetry-toggle"
+            checked={telemetry?.enabled ?? true}
+            onChange={toggleTelemetry}
+            disabled={!telemetry}
+            style={{ marginTop: 3, width: 16, height: 16, accentColor: '#3b82f6', cursor: 'pointer' }}
+          />
+          <label htmlFor="telemetry-toggle" style={{ cursor: 'pointer' }}>
+            <div style={{ fontWeight: 500, fontSize: 14 }}>Share anonymous usage statistics</div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.6 }}>
+              Helps improve Signage Manager by reporting which features are used and that the app is running.
+              Only a random install ID, app version, OS and named feature events are sent — never your content,
+              media, file names, or any personal data.
+              {telemetry && <> Install ID: <code style={{ background: 'var(--bg-primary)', padding: '1px 6px', borderRadius: 4 }}>{telemetry.installId.slice(0, 8)}</code></>}
+            </div>
+          </label>
+        </div>
       </div>
 
       {/* Fleet note */}

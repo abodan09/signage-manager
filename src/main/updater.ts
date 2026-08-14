@@ -4,6 +4,7 @@ import { join } from 'path'
 import https from 'https'
 import { spawn } from 'child_process'
 import os from 'os'
+import { track } from './telemetry'
 
 const REPO = 'abodan09/signage-manager'
 const API  = `https://api.github.com/repos/${REPO}/releases/latest`
@@ -133,6 +134,7 @@ export function setupUpdaterIpc(getWindow: () => BrowserWindow | null) {
     const win = getWindow()
     const send = (ch: string, ...args: any[]) => win?.webContents.send(ch, ...args)
     try {
+      track('app_update_started')
       await downloadAndInstall(url, pct => send('updater:progress', pct))
     } catch (err: any) {
       send('updater:error', err.message ?? String(err))

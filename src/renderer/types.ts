@@ -69,6 +69,9 @@ declare global {
       getLanUrl:        () => Promise<string>
       openExternal:     (url: string) => Promise<void>
       getVersion:       () => Promise<string>
+      trackEvent:       (name: string, props?: Record<string, unknown>) => void
+      getTelemetryStatus: () => Promise<{ enabled: boolean; installId: string }>
+      setTelemetryEnabled: (enabled: boolean) => Promise<void>
       checkForUpdates:  () => Promise<UpdateInfo>
       installUpdate:    (url: string) => Promise<void>
       openReleaseUrl:   (url: string) => Promise<void>

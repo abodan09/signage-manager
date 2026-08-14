@@ -10,6 +10,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── app info ────────────────────────────────────────────────────────────────
   getVersion: (): Promise<string> => ipcRenderer.invoke('get-version'),
 
+  // ── anonymous usage telemetry ───────────────────────────────────────────────
+  trackEvent: (name: string, props?: Record<string, unknown>): void => {
+    ipcRenderer.send('telemetry:event', name, props)
+  },
+  getTelemetryStatus: (): Promise<{ enabled: boolean; installId: string }> =>
+    ipcRenderer.invoke('telemetry:get'),
+  setTelemetryEnabled: (enabled: boolean): Promise<void> =>
+    ipcRenderer.invoke('telemetry:set', enabled),
+
   // ── updates ─────────────────────────────────────────────────────────────────
   checkForUpdates: (): Promise<UpdateInfo> => ipcRenderer.invoke('updater:check'),
   installUpdate:   (url: string): Promise<void> => ipcRenderer.invoke('updater:install', url),

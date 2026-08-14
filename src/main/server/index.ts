@@ -10,6 +10,32 @@ import { createDevicesRouter } from './routes/devices'
 import { createPlayerRouter } from './routes/player'
 import { createProjectsRouter } from './routes/projects'
 import { startDiscovery, getLocalIP } from './discovery'
+import { track, setTvCountProvider } from '../telemetry'
+
+// Feature-usage telemetry: successful mutations (and TV player loads) map to
+// named events. Reads/polling are deliberately not tracked. Order matters —
+// first match wins.
+const FEATURE_EVENTS: Array<[string, RegExp, string]> = [
+  ['POST',   /^\/api\/projects\/[^/]+\/content\/?$/,        'content_uploaded'],
+  ['DELETE', /^\/api\/projects\/[^/]+\/content\/[^/]+\/?$/, 'content_deleted'],
+  ['POST',   /^\/api\/projects\/?$/,                        'project_created'],
+  ['PUT',    /^\/api\/projects\/[^/]+\/?$/,                 'project_updated'],
+  ['DELETE', /^\/api\/projects\/[^/]+\/?$/,                 'project_deleted'],
+  ['PATCH',  /^\/api\/content\/reorder\/?$/,                'content_reordered'],
+  ['POST',   /^\/api\/content\/?$/,                         'content_uploaded'],
+  ['PUT',    /^\/api\/content\/[^/]+\/?$/,                  'content_updated'],
+  ['DELETE', /^\/api\/content\/[^/]+\/?$/,                  'content_deleted'],
+  ['POST',   /^\/api\/devices\/register\/?$/,               'device_registered'],
+  ['POST',   /^\/api\/devices\/[^/]+\/push\/?$/,            'push_to_device'],
+  ['POST',   /^\/api\/devices\/[^/]+\/push-project\/?$/,    'push_project_to_device'],
+  ['PATCH',  /^\/api\/devices\/[^/]+\/?$/,                  'device_renamed'],
+  ['DELETE', /^\/api\/devices\/[^/]+\/?$/,                  'device_removed'],
+  ['GET',    /^\/tv\/player\/?$/,                           'player_opened'],
+]
+
+function isLoopback(addr: string | undefined): boolean {
+  return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1'
+}
 
 export async function startServer(userData: string, port: number, appVersion = '1.0.0'): Promise<number> {
   fs.mkdirSync(path.join(userData, 'uploads'), { recursive: true })
@@ -24,8 +50,20 @@ export async function startServer(userData: string, port: number, appVersion = '
   // deviceId → WebSocket (TV clients only)
   const tvClients = new Map<string, WebSocket>()
 
+  setTvCountProvider(() => tvClients.size)
+
   app.use(cors())
   app.use(express.json())
+  app.use((req, res, next) => {
+    res.on('finish', () => {
+      if (res.statusCode >= 400) return
+      const hit = FEATURE_EVENTS.find(([m, re]) => m === req.method && re.test(req.path))
+      if (!hit) return
+      const name = hit[2]
+      track(name, name === 'player_opened' ? { remote: !isLoopback(req.socket.remoteAddress) } : undefined)
+    })
+    next()
+  })
   app.use('/uploads', express.static(uploadsDir))
   app.use('/api/content', createContentRouter(db, uploadsDir, wss, tvClients))
   app.use('/api/devices', createDevicesRouter(db, wss, tvClients))
