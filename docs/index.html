@@ -37,6 +37,7 @@
   .hud  { font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
   a:focus-visible, button:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; }
   b { color: var(--ice); }
+  [id] { scroll-margin-top: 74px; }
   .kicker { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--glow); font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
 
   /* ── nav ── */
@@ -119,7 +120,36 @@
 
   /* ── main ── */
   main { flex: 1; max-width: 1080px; margin: 0 auto; padding: 64px 24px; width: 100%; }
+  .sec-sub { color: var(--dim); max-width: 60ch; font-size: 14.5px; margin-top: 8px; }
   .sec-head { margin-bottom: 30px; }
+
+  /* ── modules ── */
+  .mods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 34px 0 72px; }
+  .mod {
+    border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(6px);
+    padding: 22px 20px 24px; position: relative; transition: border-color 0.2s, transform 0.2s;
+  }
+  .mod:hover { border-color: var(--glow); transform: translateY(-3px); }
+  .mod::before {
+    content: ""; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px;
+    border-top: 1.5px solid var(--glow); border-left: 1.5px solid var(--glow);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .mod:hover::before { opacity: 1; }
+  .mod .id { font-size: 10px; color: var(--faint); letter-spacing: 0.2em; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
+  .mod h3 { font-size: 14px; letter-spacing: 0.14em; margin: 9px 0 7px; color: var(--glow); font-weight: 700; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
+  .mod p { font-size: 13px; color: var(--dim); }
+
+  /* ── fleet screens ── */
+  .screens { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin: 34px 0 72px; perspective: 1200px; }
+  .tvw { transition: transform 0.25s; }
+  .tvw:nth-child(1) { transform: rotateY(7deg); }
+  .tvw:nth-child(3) { transform: rotateY(-7deg); }
+  .tvw:hover { transform: rotateY(0) translateY(-4px); }
+  .tv { border: 2px solid var(--line-2); background: #060b16; box-shadow: 0 0 40px rgba(76,201,255,0.08), inset 0 0 60px rgba(76,201,255,0.04); }
+  .tv svg { display: block; width: 100%; height: auto; }
+  .tv-cap { margin-top: 11px; font-size: 10.5px; color: var(--faint); letter-spacing: 0.16em; text-transform: uppercase; display: flex; justify-content: space-between; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
+  .tv-cap i { color: var(--ok); font-style: normal; }
   .sec-head h2, .steps > h2 {
     font-size: clamp(22px, 3vw, 30px); text-transform: uppercase; letter-spacing: 0.04em;
     font-weight: 700; margin-top: 10px; text-wrap: balance;
@@ -279,6 +309,8 @@
     .cell { border-top: 1px solid var(--line); }
     .nav-links a:not(.go) { display: none; }
     header.hero { padding-top: 64px; }
+    .mods, .screens { grid-template-columns: 1fr; }
+    .tvw, .tvw:nth-child(1), .tvw:nth-child(3) { transform: none; }
   }
 </style>
 </head>
@@ -288,6 +320,8 @@
   <div class="nav-in">
     <a class="brand" href="#top"><span class="brand-mark"></span><b class="disp">SIGNAGE&nbsp;MANAGER</b></a>
     <div class="nav-links">
+      <a href="#modules">Modules</a>
+      <a href="#fleet">Fleet</a>
       <a href="#downloads">Downloads</a>
       <a href="#adb-setup">Install</a>
       <a href="#changelog">Patch log</a>
@@ -309,7 +343,7 @@
     </p>
     <div class="cta">
       <a class="btn-go" href="#downloads">Deploy the console</a>
-      <a class="btn-ghost" href="#adb-setup">Install guides →</a>
+      <a class="btn-ghost" href="#fleet">View the fleet →</a>
     </div>
   </div>
 </header>
@@ -326,6 +360,82 @@
 </div>
 
 <main>
+  <!-- ── System modules ───────────────────────────────────────────────────── -->
+  <section id="modules">
+    <span class="kicker">// SYSTEM MODULES</span>
+    <div class="sec-head" style="margin-bottom:0">
+      <h2 class="disp">Six systems. One console.</h2>
+      <p class="sec-sub">Everything ships inside the desktop app — the server boots with it, and the grid assembles itself.</p>
+    </div>
+    <div class="mods">
+      <div class="mod"><div class="id">MOD-01</div><h3>BROADCAST</h3><p>Override any screen — or all of them — instantly. A flash promo reaches the floor before the meeting ends.</p></div>
+      <div class="mod"><div class="id">MOD-02</div><h3>TIMELINE</h3><p>Scheduled projects rotate content by time of day. Breakfast board at 07:00, happy hour at 17:00, unattended.</p></div>
+      <div class="mod"><div class="id">MOD-03</div><h3>AUTO-LINK</h3><p>TVs discover the console over the network and register themselves. Pairing a screen takes under a minute.</p></div>
+      <div class="mod"><div class="id">MOD-04</div><h3>FLEET</h3><p>Live status for every display — online, playing, last seen. Name them, group them, command them individually.</p></div>
+      <div class="mod"><div class="id">MOD-05</div><h3>PAYLOADS</h3><p>Images, full-motion video, live HTML and text tickers in one playlist. If a browser renders it, a screen can play it.</p></div>
+      <div class="mod"><div class="id">MOD-06</div><h3>AIR-GAP</h3><p>The internet can go down; the grid keeps playing. Content never leaves your building — by architecture, not policy.</p></div>
+    </div>
+  </section>
+
+  <!-- ── Live fleet ───────────────────────────────────────────────────────── -->
+  <section id="fleet">
+    <span class="kicker">// LIVE FLEET</span>
+    <div class="sec-head" style="margin-bottom:0">
+      <h2 class="disp">Three screens, one push</h2>
+    </div>
+    <div class="screens">
+      <div class="tvw">
+        <div class="tv">
+          <svg viewBox="0 0 320 190" role="img" aria-label="Menu board screen">
+            <rect width="320" height="190" fill="#060b16"/>
+            <rect x="0" y="0" width="320" height="34" fill="#0d1b31"/>
+            <text x="18" y="22" font-size="13" fill="#4cc9ff" font-family="Consolas, monospace" letter-spacing="2">NIGHT MENU</text>
+            <text x="302" y="22" font-size="10" fill="#55688a" font-family="Consolas, monospace" text-anchor="end">22:41</text>
+            <g font-family="Segoe UI, sans-serif" font-size="12" fill="#d9e7f8">
+              <text x="18" y="62">Suya skewers</text><text x="302" y="62" text-anchor="end" fill="#4cc9ff">30</text>
+              <text x="18" y="88">Kelewele bowl</text><text x="302" y="88" text-anchor="end" fill="#4cc9ff">22</text>
+              <text x="18" y="114">Chichinga wrap</text><text x="302" y="114" text-anchor="end" fill="#4cc9ff">28</text>
+            </g>
+            <rect x="18" y="140" width="284" height="30" fill="#0d1b31"/>
+            <text x="30" y="159" font-size="11" fill="#8b7bff" font-family="Consolas, monospace">▶ 2-FOR-1 UNTIL MIDNIGHT</text>
+          </svg>
+        </div>
+        <div class="tv-cap"><span>SCR-01 · KITCHEN PASS</span><i>● LIVE</i></div>
+      </div>
+      <div class="tvw">
+        <div class="tv">
+          <svg viewBox="0 0 320 190" role="img" aria-label="Promo countdown screen">
+            <rect width="320" height="190" fill="#060b16"/>
+            <text x="160" y="52" font-size="13" fill="#8199ba" font-family="Consolas, monospace" text-anchor="middle" letter-spacing="4">DROP INCOMING</text>
+            <text x="160" y="106" font-size="44" fill="#4cc9ff" font-family="Bahnschrift, sans-serif" text-anchor="middle" font-weight="700">02:14:09</text>
+            <rect x="60" y="128" width="200" height="1.5" fill="#1b2a42"/>
+            <rect x="60" y="128" width="132" height="1.5" fill="#8b7bff"/>
+            <text x="160" y="158" font-size="11" fill="#d9e7f8" font-family="Segoe UI, sans-serif" text-anchor="middle">New collection · Aisle 3 · Friday 09:00</text>
+          </svg>
+        </div>
+        <div class="tv-cap"><span>SCR-02 · SHOP FLOOR</span><i>● LIVE</i></div>
+      </div>
+      <div class="tvw">
+        <div class="tv">
+          <svg viewBox="0 0 320 190" role="img" aria-label="Departures-style schedule screen">
+            <rect width="320" height="190" fill="#060b16"/>
+            <rect x="0" y="0" width="320" height="30" fill="#0d1b31"/>
+            <text x="18" y="20" font-size="12" fill="#3ddc97" font-family="Consolas, monospace" letter-spacing="2">TODAY // SESSIONS</text>
+            <g font-family="Consolas, monospace" font-size="11">
+              <text x="18" y="58" fill="#8199ba">09:00</text><text x="80" y="58" fill="#d9e7f8">Intro to 3D printing</text><text x="302" y="58" fill="#3ddc97" text-anchor="end">HALL A</text>
+              <text x="18" y="84" fill="#8199ba">11:30</text><text x="80" y="84" fill="#d9e7f8">Drone assembly lab</text><text x="302" y="84" fill="#3ddc97" text-anchor="end">HALL C</text>
+              <text x="18" y="110" fill="#8199ba">14:00</text><text x="80" y="110" fill="#d9e7f8">Robotics finals</text><text x="302" y="110" fill="#8b7bff" text-anchor="end">ARENA</text>
+              <text x="18" y="136" fill="#8199ba">17:00</text><text x="80" y="136" fill="#d9e7f8">Closing keynote</text><text x="302" y="136" fill="#3ddc97" text-anchor="end">ARENA</text>
+            </g>
+            <rect x="0" y="160" width="320" height="30" fill="#0d1b31"/>
+            <text x="18" y="179" font-size="10" fill="#55688a" font-family="Consolas, monospace">TICKER // Doors open 30 min before each session</text>
+          </svg>
+        </div>
+        <div class="tv-cap"><span>SCR-03 · ATRIUM</span><i>● LIVE</i></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Downloads ────────────────────────────────────────────────────────── -->
   <span class="kicker" id="downloads">// DEPLOY PACKAGES</span>
   <div class="sec-head"><h2 class="disp">Start with the console, add screens</h2></div>
