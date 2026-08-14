@@ -1,0 +1,24 @@
+name = "signage-analytics"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+workers_dev = true
+
+# Custom domain (frozenbit.eu zone is on this Cloudflare account)
+routes = [
+  { pattern = "signage-api.frozenbit.eu", custom_domain = true }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "signage-analytics"
+database_id = "697ccd66-457d-4ab9-b968-cba381c79c07"
+
+[vars]
+GITHUB_REPO = "abodan09/signage-manager"
+LANDING_URL = "https://signage.frozenbit.eu"
+
+# Import *.html as text strings (the /admin dashboard page)
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true

@@ -11,3 +11,5 @@ tv-app-webos/icon-large.png
 tv-app-tizen/icon.png
 
 tv-app/.gradle/
+
+analytics-worker/.wrangler/

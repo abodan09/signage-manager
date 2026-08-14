@@ -720,31 +720,32 @@
   var REPO = 'abodan09/signage-manager';
   var API  = 'https://api.github.com/repos/' + REPO + '/releases/latest';
   var releasesUrl = 'https://github.com/' + REPO + '/releases/latest';
+  // Download gateway: logs the download, then redirects to the latest GitHub
+  // asset (resolved server-side — the buttons work even if the API call
+  // below fails or is rate-limited).
+  var DL = 'https://signage-api.frozenbit.eu';
 
   // Update footer links (already hardcoded above but we do it dynamically too)
   document.getElementById('footer-gh').href     = 'https://github.com/' + REPO;
   document.getElementById('footer-issues').href = 'https://github.com/' + REPO + '/issues';
   document.getElementById('btn-releases').href  = releasesUrl;
 
-  function setBtn(btnId, spinnerId, labelId, url, text) {
-    var btn     = document.getElementById(btnId);
+  // Buttons point at the gateway from the start
+  var GATEWAY = {
+    'btn-desktop': DL + '/d/windows',
+    'btn-tv':      DL + '/d/android',
+    'btn-webos':   DL + '/d/webos',
+    'btn-tizen':   DL + '/d/tizen'
+  };
+  Object.keys(GATEWAY).forEach(function (id) {
+    document.getElementById(id).href = GATEWAY[id];
+  });
+
+  function setBtn(btnId, spinnerId, labelId, text) {
     var spinner = document.getElementById(spinnerId);
     var label   = document.getElementById(labelId);
     spinner.style.display = 'none';
-    if (url) {
-      label.textContent = text;
-      btn.href = url;
-      btn.removeAttribute('disabled');
-    } else {
-      label.textContent = 'Not available yet';
-      btn.href = releasesUrl;
-      btn.style.background = '#334155';
-    }
-  }
-
-  function setError() {
-    setBtn('btn-desktop', 'spin-desktop', 'label-desktop', releasesUrl, 'View Releases');
-    setBtn('btn-tv',      'spin-tv',      'label-tv',      releasesUrl, 'View Releases');
+    label.textContent = text;
   }
 
   fetch(API)
@@ -768,33 +769,21 @@
         bar.classList.add('visible');
       }
 
-      setBtn(
-        'btn-desktop', 'spin-desktop', 'label-desktop',
-        exeAsset ? exeAsset.browser_download_url : null,
-        '⬇ Download for Windows  (' + (exeAsset ? fmtSize(exeAsset.size) : '') + ')'
-      );
-      setBtn(
-        'btn-tv', 'spin-tv', 'label-tv',
-        apkAsset ? apkAsset.browser_download_url : null,
-        '⬇ Download APK  (' + (apkAsset ? fmtSize(apkAsset.size) : '') + ')'
-      );
-      setBtn(
-        'btn-webos', 'spin-webos', 'label-webos',
-        ipkAsset ? ipkAsset.browser_download_url : null,
-        '⬇ Download IPK  (' + (ipkAsset ? fmtSize(ipkAsset.size) : '') + ')'
-      );
-      setBtn(
-        'btn-tizen', 'spin-tizen', 'label-tizen',
-        wgtAsset ? wgtAsset.browser_download_url : null,
-        '⬇ Download WGT  (' + (wgtAsset ? fmtSize(wgtAsset.size) : '') + ')'
-      );
+      setBtn('btn-desktop', 'spin-desktop', 'label-desktop',
+        '⬇ Download for Windows' + (exeAsset ? '  (' + fmtSize(exeAsset.size) + ')' : ''));
+      setBtn('btn-tv', 'spin-tv', 'label-tv',
+        '⬇ Download APK' + (apkAsset ? '  (' + fmtSize(apkAsset.size) + ')' : ''));
+      setBtn('btn-webos', 'spin-webos', 'label-webos',
+        '⬇ Download IPK' + (ipkAsset ? '  (' + fmtSize(ipkAsset.size) + ')' : ''));
+      setBtn('btn-tizen', 'spin-tizen', 'label-tizen',
+        '⬇ Download WGT' + (wgtAsset ? '  (' + fmtSize(wgtAsset.size) + ')' : ''));
     })
     .catch(function () {
-      // No releases yet — link to releases page
-      setBtn('btn-desktop', 'spin-desktop', 'label-desktop', releasesUrl, '⬇ Visit Releases Page');
-      setBtn('btn-tv',      'spin-tv',      'label-tv',      releasesUrl, '⬇ Visit Releases Page');
-      setBtn('btn-webos',   'spin-webos',   'label-webos',   releasesUrl, '⬇ Visit Releases Page');
-      setBtn('btn-tizen',   'spin-tizen',   'label-tizen',   releasesUrl, '⬇ Visit Releases Page');
+      // GitHub API unavailable — the gateway still resolves the latest build
+      setBtn('btn-desktop', 'spin-desktop', 'label-desktop', '⬇ Download for Windows');
+      setBtn('btn-tv',      'spin-tv',      'label-tv',      '⬇ Download APK');
+      setBtn('btn-webos',   'spin-webos',   'label-webos',   '⬇ Download IPK');
+      setBtn('btn-tizen',   'spin-tizen',   'label-tizen',   '⬇ Download WGT');
     });
 
   function fmtSize(bytes) {
