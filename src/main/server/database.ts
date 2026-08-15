@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import type { AppDB, ContentItem, Device, DeviceGroup, Project } from './types'
+import { randomUUID } from 'crypto'
+import type { AppDB, AppSettings, ContentItem, Device, DeviceGroup, Project } from './types'
 
 export class JsonDB {
   private filePath: string
@@ -18,12 +19,24 @@ export class JsonDB {
         // Migrate: add collections missing from older installs
         if (!raw.projects) raw.projects = []
         if (!raw.deviceGroups) raw.deviceGroups = []
+        if (!raw.devices) raw.devices = []
+        if (!raw.settings) raw.settings = { serverId: randomUUID(), pairingMode: 'open' }
+        if (!raw.settings.serverId) raw.settings.serverId = randomUUID()
+        if (raw.settings.pairingMode !== 'required') raw.settings.pairingMode = 'open'
+        // Grandfather every screen that existed before pairing: it keeps
+        // registering without a token forever, even in 'required' mode, so an
+        // upgrade never blacks out a fleet. Records created from here on always
+        // carry an explicit state, so this can't mislabel them later.
+        raw.devices.forEach((d: Device) => { if (!d.pairingState) d.pairingState = 'legacy' })
         return raw
       }
     } catch {
       // corrupt file – start fresh
     }
-    return { content: [], devices: [], projects: [], deviceGroups: [] }
+    return {
+      content: [], devices: [], projects: [], deviceGroups: [],
+      settings: { serverId: randomUUID(), pairingMode: 'open' },
+    }
   }
 
   private save() {
@@ -205,5 +218,58 @@ export class JsonDB {
 
   getDevicesByGroupId(groupId: string): Device[] {
     return this.data.devices.filter(d => d.groupIds?.includes(groupId))
+  }
+
+  // ── Settings & pairing ─────────────────────────────────────────────────────
+
+  getSettings(): AppSettings {
+    return this.data.settings
+  }
+
+  updateSettings(patch: Partial<AppSettings>): AppSettings {
+    this.data.settings = { ...this.data.settings, ...patch, serverId: this.data.settings.serverId }
+    this.save()
+    return this.data.settings
+  }
+
+  getDeviceByTokenHash(hash: string): Device | undefined {
+    if (!hash) return undefined
+    return this.data.devices.find(d => d.tokenHash === hash)
+  }
+
+  /** Binds a token to a device. Partial merge — never a whole-record replace. */
+  setDeviceToken(id: string, tokenHash: string): Device | null {
+    return this.updateDevice(id, {
+      tokenHash,
+      pairingState: 'paired',
+      pairedAt: new Date().toISOString(),
+    })
+  }
+
+  /** Explicit removal, so the delete is intentional and everything else — the
+   *  name, the groups, the registration date — survives for re-pairing. */
+  clearDeviceToken(id: string): Device | null {
+    const idx = this.data.devices.findIndex(d => d.id === id)
+    if (idx === -1) return null
+    const { tokenHash, pairedAt, ...rest } = this.data.devices[idx]
+    this.data.devices[idx] = { ...rest, pairingState: 'unpaired' }
+    this.save()
+    return this.data.devices[idx]
+  }
+
+  /** Removes grandfathering from every pre-pairing device. */
+  untrustLegacyDevices(): number {
+    let changed = 0
+    this.data.devices.forEach(d => {
+      if (d.pairingState === 'legacy') { d.pairingState = 'unpaired'; changed++ }
+    })
+    if (changed) this.save()
+    return changed
+  }
+
+  countByPairingState(): { legacy: number; unpaired: number; paired: number } {
+    const out = { legacy: 0, unpaired: 0, paired: 0 }
+    this.data.devices.forEach(d => { out[d.pairingState ?? 'legacy']++ })
+    return out
   }
 }

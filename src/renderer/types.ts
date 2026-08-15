@@ -44,6 +44,8 @@ export interface Project {
   items?: ContentItem[]  // populated by GET /api/projects
 }
 
+export type PairingState = 'legacy' | 'unpaired' | 'paired'
+
 export interface Device {
   id: string
   name: string
@@ -52,6 +54,29 @@ export interface Device {
   status: 'online' | 'offline'
   registeredAt: string
   groupIds?: string[]
+  pairingState?: PairingState
+  paired?: boolean
+  platform?: string
+  playerVersion?: string
+  pairedAt?: string
+}
+
+export interface PendingPairRequest {
+  userCode: string
+  ip: string
+  platform: string
+  playerVersion?: string
+  suggestedName?: string
+  requestedAt: string
+  expiresAt: string
+}
+
+export interface ServerSettings {
+  serverId: string
+  pairingMode: 'open' | 'required'
+  legacyCount: number
+  unpairedCount: number
+  pairedCount: number
 }
 
 export interface DeviceGroup {

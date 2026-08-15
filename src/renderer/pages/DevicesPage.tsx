@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Device, DeviceGroup, ContentItem, Project } from '../types'
+import type { Device, DeviceGroup, ContentItem, Project, PendingPairRequest } from '../types'
 
 function useServerUrl() {
   const [url, setUrl] = useState('')
@@ -46,10 +46,21 @@ export default function DevicesPage() {
   // Discovery info
   const [discoveryInfo, setDiscoveryInfo] = useState<{ ip: string; port: number } | null>(null)
 
+  // Pairing
+  const [pending, setPending]           = useState<PendingPairRequest[]>([])
+  const [pairCode, setPairCode]         = useState('')
+  const [pairName, setPairName]         = useState('')
+  const [pairGroupIds, setPairGroupIds] = useState<string[]>([])
+  const [pairReplaceId, setPairReplaceId] = useState('')
+  const [pairError, setPairError]       = useState('')
+  const [pairBusy, setPairBusy]         = useState(false)
+  const [pairOpen, setPairOpen]         = useState(false)
+
   const load = () => {
     if (!serverUrl) return
     fetch(`${serverUrl}/api/devices`).then(r => r.json()).then(d => setDevices(d.devices ?? []))
     fetch(`${serverUrl}/api/groups`).then(r => r.json()).then(d => setGroups(d.groups ?? [])).catch(() => {})
+    fetch(`${serverUrl}/api/pair/pending`).then(r => r.json()).then(d => setPending(d.requests ?? [])).catch(() => {})
     fetch(`${serverUrl}/api/content`).then(r => r.json()).then(d => setContent(d.items ?? []))
     fetch(`${serverUrl}/api/projects`).then(r => r.json()).then(d => setProjects(d.projects ?? []))
     fetch(`${serverUrl}/api/discovery`).then(r => r.json()).then(d => setDiscoveryInfo(d)).catch(() => {})
@@ -84,6 +95,38 @@ export default function DevicesPage() {
 
   async function handleDelete(id: string) {
     await fetch(`${serverUrl}/api/devices/${id}`, { method: 'DELETE' })
+    load()
+  }
+
+  async function handleApprovePair() {
+    const code = pairCode.trim()
+    if (!code) return
+    setPairBusy(true)
+    setPairError('')
+    try {
+      const res = await fetch(`${serverUrl}/api/pair/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          name: pairName.trim() || undefined,
+          groupIds: pairGroupIds,
+          replaceDeviceId: pairReplaceId || undefined,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Could not add that screen')
+      setPairCode(''); setPairName(''); setPairGroupIds([]); setPairReplaceId(''); setPairOpen(false)
+      load()
+    } catch (e: unknown) {
+      setPairError(e instanceof Error ? e.message : 'Could not add that screen')
+    } finally {
+      setPairBusy(false)
+    }
+  }
+
+  async function handleRevoke(d: Device) {
+    await fetch(`${serverUrl}/api/devices/${d.id}/revoke`, { method: 'POST' })
     load()
   }
 
@@ -236,6 +279,109 @@ export default function DevicesPage() {
         </div>
       )}
 
+      {/* ── Screens waiting to be added ────────────────────────────────────── */}
+      {(pending.length > 0 || pairOpen) && (
+        <div className="card" style={{ marginBottom: 20, borderColor: '#3b82f6' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <h2 style={{ margin: 0 }}>Add a screen</h2>
+            {pending.length > 0 && (
+              <span className="badge badge-green">{pending.length} waiting</span>
+            )}
+            <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setPairOpen(false)}>
+              Hide
+            </button>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14 }}>
+            A new screen shows an 8-letter code. Type it here to add it to this server.
+          </p>
+
+          {pending.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+              {pending.map(p => (
+                <button
+                  key={p.userCode}
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => { setPairCode(p.userCode); setPairName(p.suggestedName ?? '') }}
+                  title={`${p.platform} · ${p.ip}`}
+                  style={{ fontFamily: 'monospace', letterSpacing: 1 }}
+                >
+                  {p.userCode}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Code shown on the screen</label>
+              <input
+                className="form-input"
+                value={pairCode}
+                placeholder="BCDF-GHJK"
+                onChange={e => { setPairCode(e.target.value); setPairError('') }}
+                onKeyDown={e => { if (e.key === 'Enter' && pairCode.trim()) handleApprovePair() }}
+                style={{ fontFamily: 'monospace', letterSpacing: 2, textTransform: 'uppercase' }}
+              />
+            </div>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Name this screen</label>
+              <input
+                className="form-input"
+                value={pairName}
+                placeholder="Lobby TV"
+                onChange={e => setPairName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && pairCode.trim()) handleApprovePair() }}
+              />
+            </div>
+          </div>
+
+          {groups.length > 0 && (
+            <div className="form-group" style={{ marginTop: 12 }}>
+              <label className="form-label">Add to groups (optional)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {groups.map(g => {
+                  const on = pairGroupIds.includes(g.id)
+                  return (
+                    <button
+                      key={g.id}
+                      className="btn btn-sm"
+                      onClick={() => setPairGroupIds(ids => on ? ids.filter(x => x !== g.id) : [...ids, g.id])}
+                      style={{
+                        border: `1px solid ${on ? g.color : 'var(--border)'}`,
+                        background: on ? `${g.color}1f` : 'transparent',
+                        color: 'var(--text-primary)', borderRadius: 8,
+                      }}
+                    >
+                      {g.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {devices.length > 0 && (
+            <div className="form-group" style={{ marginTop: 12 }}>
+              <label className="form-label">Replacing a screen? (optional)</label>
+              <select className="form-select" value={pairReplaceId} onChange={e => setPairReplaceId(e.target.value)}>
+                <option value="">— add as a new screen —</option>
+                {devices.map(d => (
+                  <option key={d.id} value={d.id}>Take over “{d.name}” (keeps its name and groups)</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {pairError && <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 10 }}>{pairError}</div>}
+
+          <div style={{ marginTop: 14 }}>
+            <button className="btn btn-primary" onClick={handleApprovePair} disabled={!pairCode.trim() || pairBusy}>
+              {pairBusy ? 'Adding…' : 'Add screen'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Groups bar ─────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 22 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -248,6 +394,9 @@ export default function DevicesPage() {
         </div>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {!pairOpen && pending.length === 0 && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setPairOpen(true)}>+ Add a screen</button>
+          )}
           <FilterChip
             label={`All screens (${devices.length})`}
             active={filterGroupId === 'all'}
@@ -332,6 +481,15 @@ export default function DevicesPage() {
                     <span className={`badge ${d.status === 'online' ? 'badge-green' : 'badge-gray'}`} style={{ marginLeft: 4 }}>
                       {d.status}
                     </span>
+                    {d.pairingState === 'paired' && (
+                      <span className="badge badge-green" title="This screen was added with a pairing code">🔒 Paired</span>
+                    )}
+                    {d.pairingState === 'unpaired' && (
+                      <span className="badge badge-gray" title="This screen registered itself without a code">Unpaired</span>
+                    )}
+                    {d.pairingState === 'legacy' && (
+                      <span className="badge badge-gray" title="Connected before pairing existed — still trusted">Pre-pairing</span>
+                    )}
                     {memberships.map(g => (
                       <span
                         key={g.id}
@@ -366,6 +524,15 @@ export default function DevicesPage() {
                   <button className="btn btn-ghost btn-sm" onClick={() => { setRenameTarget(d); setRenameName(d.name) }}>
                     Rename
                   </button>
+                  {d.pairingState === 'paired' && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      title="Un-pair this screen. It keeps its name and groups and will show a new code."
+                      onClick={() => handleRevoke(d)}
+                    >
+                      Un-pair
+                    </button>
+                  )}
                   <button className="btn btn-danger btn-sm" onClick={() => handleDelete(d.id)}>Remove</button>
                 </div>
               </div>

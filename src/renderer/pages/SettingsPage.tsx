@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { ServerSettings } from '../types'
 
 function useServerUrl() {
   const [url, setUrl] = useState('')
@@ -27,10 +28,38 @@ export default function SettingsPage() {
   const [copied, setCopied] = useState(false)
   const [health, setHealth] = useState<{ ok: boolean; connectedTVs?: number } | null>(null)
   const [telemetry, setTelemetry] = useState<{ enabled: boolean; installId: string } | null>(null)
+  const [settings, setSettings] = useState<ServerSettings | null>(null)
+  const [pairMsg, setPairMsg] = useState('')
 
   useEffect(() => {
     window.electronAPI.getTelemetryStatus?.().then(setTelemetry).catch(() => {})
   }, [])
+
+  const loadSettings = () => {
+    if (!serverUrl) return
+    fetch(`${serverUrl}/api/settings`).then(r => r.json()).then(setSettings).catch(() => {})
+  }
+  useEffect(loadSettings, [serverUrl])
+
+  async function setPairingMode(mode: 'open' | 'required') {
+    await fetch(`${serverUrl}/api/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pairingMode: mode }),
+    })
+    setPairMsg(mode === 'required'
+      ? 'New screens must now be added with a code.'
+      : 'Any screen on this network can connect again.')
+    setTimeout(() => setPairMsg(''), 4000)
+    loadSettings()
+  }
+
+  async function reloadPlayers() {
+    const res = await fetch(`${serverUrl}/api/settings/reload-players`, { method: 'POST' })
+    const d = await res.json().catch(() => ({ sent: 0 }))
+    setPairMsg(`Reloaded ${d.sent} screen${d.sent === 1 ? '' : 's'}.`)
+    setTimeout(() => setPairMsg(''), 4000)
+  }
 
   function toggleTelemetry() {
     if (!telemetry) return
@@ -113,6 +142,70 @@ export default function SettingsPage() {
             </div>
           </li>
         </ol>
+      </div>
+
+      {/* Screen pairing */}
+      <div className="card" style={{ marginBottom: 20 }}>
+        <h2>Screen Pairing</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 16 }}>
+          Controls whether a TV can connect to this server on its own, or must be added with a code
+          from the Devices page.
+        </p>
+
+        {settings && (
+          <>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+              <span className="badge badge-green">{settings.pairedCount} paired</span>
+              <span className="badge badge-gray">{settings.unpairedCount} unpaired</span>
+              {settings.legacyCount > 0 && (
+                <span className="badge badge-gray">{settings.legacyCount} from before pairing</span>
+              )}
+            </div>
+
+            {(['open', 'required'] as const).map(mode => (
+              <label
+                key={mode}
+                style={{
+                  display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer',
+                  padding: '12px 14px', borderRadius: 8, marginBottom: 8,
+                  border: `1px solid ${settings.pairingMode === mode ? '#3b82f6' : 'var(--border)'}`,
+                  background: settings.pairingMode === mode ? 'rgba(59,130,246,0.08)' : 'transparent',
+                }}
+              >
+                <input
+                  type="radio"
+                  name="pairing-mode"
+                  checked={settings.pairingMode === mode}
+                  onChange={() => setPairingMode(mode)}
+                  style={{ marginTop: 3, accentColor: '#3b82f6', cursor: 'pointer' }}
+                />
+                <span>
+                  <div style={{ fontWeight: 500, fontSize: 14 }}>
+                    {mode === 'open' ? 'Open — any screen on this network can connect' : 'Required — new screens must be added with a code'}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 3, lineHeight: 1.6 }}>
+                    {mode === 'open'
+                      ? 'The original behaviour. Simplest on a private network you control.'
+                      : 'Recommended on shared or guest Wi-Fi. Screens already connected keep working.'}
+                  </div>
+                </span>
+              </label>
+            ))}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+              <button className="btn btn-ghost btn-sm" onClick={reloadPlayers}>
+                Reload all screens
+              </button>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)', alignSelf: 'center' }}>
+                Run this after updating, before switching to Required — it pulls every screen onto the new player.
+              </span>
+            </div>
+
+            {pairMsg && (
+              <div style={{ color: 'var(--success)', fontSize: 13, marginTop: 12 }}>{pairMsg}</div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Privacy */}

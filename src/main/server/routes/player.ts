@@ -83,6 +83,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   font-size:28px;gap:20px;z-index:1;
 }
 #no-content .icon{font-size:72px}
+
+/* pairing screen — shown until this screen has been claimed by a manager.
+   No flexbox gap and no CSS inset: both are unsupported on webOS 4 / Chrome 53. */
+#pair-screen{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  display:none;z-index:50;background:#0b1220;color:#e8eef6;
+  text-align:center;
+}
+#pair-screen.active{display:block}
+.pair-inner{
+  position:absolute;top:50%;left:0;right:0;
+  transform:translateY(-50%);
+  padding:0 40px;
+}
+#pair-screen h1{font-size:34px;font-weight:normal;color:#93a7c0;margin-bottom:28px}
+#pair-code{
+  font-family:"Courier New",Courier,monospace;
+  font-size:96px;letter-spacing:14px;font-weight:bold;color:#4cc9ff;
+  margin-bottom:12px;word-break:break-all;
+}
+#pair-hint{font-size:22px;color:#93a7c0;line-height:1.5;margin-bottom:8px}
+#pair-status{font-size:18px;color:#55688a;margin-top:26px}
+#pair-screen .brand{
+  position:absolute;bottom:36px;left:0;right:0;
+  font-size:15px;color:#3a4a63;
+}
 </style>
 </head>
 <body>
@@ -105,6 +131,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     <div class="icon">📺</div>
     <div>No active content scheduled</div>
   </div>
+
+  <div id="pair-screen">
+    <div class="pair-inner">
+      <h1>Add this screen in Signage Manager</h1>
+      <div id="pair-code">••••-••••</div>
+      <div id="pair-hint">Open Signage Manager on your PC, go to <b>Devices</b>, and enter this code.</div>
+      <div id="pair-status">Waiting for approval…</div>
+    </div>
+    <div class="brand">Signage Player</div>
+  </div>
 </div>
 <script>
 (function(){
@@ -112,9 +148,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 
   function qs(sel){ return document.querySelector(sel); }
 
+  function pad2(n){ return (n < 10 ? '0' : '') + n; }
+
   function uuid(){
+    // crypto.getRandomValues works on plain http; crypto.subtle does not, so
+    // never reach for randomUUID here.
+    var buf = null;
+    try {
+      if (window.crypto && window.crypto.getRandomValues) {
+        buf = new Uint8Array(16);
+        window.crypto.getRandomValues(buf);
+      }
+    } catch (e) { buf = null; }
+    var i = 0;
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
-      var r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);
+      var r = buf ? (buf[i++ % 16] & 15) : (Math.random()*16|0);
+      var v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
     });
   }
 
@@ -123,9 +173,45 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   var params   = new URLSearchParams(location.search);
   var deviceId = params.get('deviceId') || localStorage.getItem('signage_device_id') || uuid();
   localStorage.setItem('signage_device_id', deviceId);
-  if (!params.get('deviceId')) history.replaceState({}, '', '?deviceId=' + deviceId);
+
+  // A native shell hands the token over in the URL fragment: #t=<token>.
+  // The fragment (not the query string) because these WebViews predate
+  // Chrome 85's referrer default, so a token in ?query would leak through the
+  // Referer header to any external site an "html" content item loads.
+  var TOKEN_KEY = 'signage_device_token';
+  var hash = location.hash || '';
+  var mToken = hash.match(/[#&]t=([^&]+)/);
+  if (mToken) {
+    try { localStorage.setItem(TOKEN_KEY, decodeURIComponent(mToken[1])); } catch (e) {}
+  }
+  var token = null;
+  try { token = localStorage.getItem(TOKEN_KEY); } catch (e) { token = null; }
+
+  // Always rewrite the address so the token never lingers in the URL bar,
+  // history, or a screenshot of the TV.
+  try { history.replaceState({}, '', location.pathname + '?deviceId=' + deviceId); } catch (e) {}
 
   var BASE = location.origin;
+  var PLAYER_VERSION = '__APP_VERSION__';
+
+  function detectPlatform(){
+    var ua = navigator.userAgent || '';
+    if (/web0s|webos/i.test(ua)) return 'webos';
+    if (/tizen/i.test(ua))       return 'tizen';
+    if (/android/i.test(ua))     return 'android';
+    return 'browser';
+  }
+
+  function authHeaders(extra){
+    var h = extra || {};
+    if (token) h['Authorization'] = 'Bearer ' + token;
+    return h;
+  }
+
+  function clearToken(){
+    token = null;
+    try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+  }
 
   // ── state ──────────────────────────────────────────────────────────────────
 
@@ -220,8 +306,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
       var day  = DAYS[now.getDay()];
       var days = item.scheduleDays || DAYS;
       if (days.indexOf(day) === -1) return false;
-      var hh  = String(now.getHours()).padStart(2, '0');
-      var mm  = String(now.getMinutes()).padStart(2, '0');
+      // pad2, not String.padStart — padStart is ES2017 and throws on webOS 4
+      // (Chrome 53), which broke every scheduled item on those panels.
+      var hh  = pad2(now.getHours());
+      var mm  = pad2(now.getMinutes());
       var cur = hh + ':' + mm;
       var start = item.scheduleStartTime || '00:00';
       var end   = item.scheduleEndTime   || '23:59';
@@ -398,13 +486,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     try { ws = new WebSocket(wsUrl); } catch(e){ setTimeout(connectWS, 5000); return; }
 
     ws.onopen = function() {
-      ws.send(JSON.stringify({ type: 'register', deviceId: deviceId, name: 'TV-' + deviceId.slice(0, 6) }));
+      var reg = { type: 'register', deviceId: deviceId, name: 'TV-' + deviceId.slice(0, 6) };
+      if (token) reg.token = token;
+      ws.send(JSON.stringify(reg));
       showOSD('Connected', 2500);
     };
 
     ws.onmessage = function(evt) {
       try {
         var msg = JSON.parse(evt.data);
+        if (msg.type === 'unauthorized' || msg.type === 'unpaired') {
+          // The manager revoked or deleted this screen: stop playing and ask to
+          // be claimed again rather than leaving stale content on the wall.
+          clearToken();
+          try { ws.close(); } catch (e) {}
+          startPairing();
+          return;
+        }
+        if (msg.type === 'reload_player') { location.reload(); return; }
         if (msg.type === 'playlist_update') {
           fetchPlaylist(rebuildAndRestart);
         } else if (msg.type === 'manual_push' && msg.content) {
@@ -435,7 +534,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   // ── fetch playlist ─────────────────────────────────────────────────────────
 
   function fetchPlaylist(cb) {
-    fetch(BASE + '/api/content/active')
+    fetch(BASE + '/api/content/active', { headers: authHeaders({}) })
       .then(function(r){ return r.json(); })
       .then(function(data){
         fullPlaylist = data.items || [];
@@ -444,19 +543,134 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
       .catch(function(){ setTimeout(function(){ fetchPlaylist(cb); }, 5000); });
   }
 
-  function registerDevice() {
+  function registerDevice(onUnauthorized) {
     fetch(BASE + '/api/devices/register', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: deviceId, name: 'TV-' + deviceId.slice(0, 6) }),
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        id: deviceId,
+        name: 'TV-' + deviceId.slice(0, 6),
+        platform: detectPlatform(),
+        playerVersion: PLAYER_VERSION,
+      }),
+    }).then(function(r){
+      if (r.status === 401) {
+        clearToken();
+        if (onUnauthorized) onUnauthorized();
+        return null;
+      }
+      return r.json();
+    }).then(function(d){
+      // The server is authoritative about identity: adopt the id it returns so
+      // a re-paired screen keeps one record instead of forking a new one.
+      if (d && d.id && d.id !== deviceId) {
+        deviceId = d.id;
+        try { localStorage.setItem('signage_device_id', deviceId); } catch (e) {}
+      }
     }).catch(function(){});
+  }
+
+  // ── pairing ────────────────────────────────────────────────────────────────
+
+  var pairPollTimer = null;
+  var pairing = false;
+
+  function showPairScreen(show){
+    var el = qs('#pair-screen');
+    if (show) { el.classList.add('active'); }
+    else { el.classList.remove('active'); }
+  }
+
+  function pairStatus(msg){ qs('#pair-status').textContent = msg; }
+
+  function startPairing(){
+    if (pairing) return;
+    pairing = true;
+    clearTimeout(mainTimer); clearTimeout(overlayTimer); clearTimeout(tickerTimer);
+    hideMainLayers();
+    qs('#overlay-layer').classList.remove('active');
+    qs('#ticker-layer').classList.remove('active');
+    showPairScreen(true);
+    requestCode();
+  }
+
+  function stopPairing(){
+    pairing = false;
+    clearTimeout(pairPollTimer);
+    showPairScreen(false);
+  }
+
+  function requestCode(){
+    qs('#pair-code').textContent = '••••-••••';
+    pairStatus('Contacting Signage Manager…');
+    fetch(BASE + '/api/pair/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        platform: detectPlatform(),
+        playerVersion: PLAYER_VERSION,
+        name: 'TV-' + deviceId.slice(0, 6),
+      }),
+    }).then(function(r){
+      if (!r.ok) throw new Error('start failed');
+      return r.json();
+    }).then(function(d){
+      qs('#pair-code').textContent = d.userCode;
+      pairStatus('Waiting for approval…');
+      var interval = (d.interval || 5) * 1000;
+      // Ask for a fresh code when this one lapses, so a screen mounted days
+      // before anyone claims it always shows a live code.
+      var expiresAt = Date.now() + (d.expiresIn || 900) * 1000;
+      pollPair(d.deviceCode, interval, expiresAt);
+    }).catch(function(){
+      pairStatus('Cannot reach Signage Manager. Retrying…');
+      pairPollTimer = setTimeout(requestCode, 10000);
+    });
+  }
+
+  function pollPair(deviceCode, interval, expiresAt){
+    clearTimeout(pairPollTimer);
+    pairPollTimer = setTimeout(function(){
+      if (Date.now() > expiresAt) { requestCode(); return; }
+      fetch(BASE + '/api/pair/poll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceCode: deviceCode }),
+      }).then(function(r){
+        if (r.status === 404) { requestCode(); return null; }
+        return r.json();
+      }).then(function(d){
+        if (!d) return;
+        if (d.status === 'paired') {
+          token = d.token;
+          try { localStorage.setItem(TOKEN_KEY, d.token); } catch (e) {}
+          if (d.deviceId) {
+            deviceId = d.deviceId;
+            try { localStorage.setItem('signage_device_id', deviceId); } catch (e) {}
+          }
+          pairStatus('Paired! Starting…');
+          stopPairing();
+          startPlayback();
+          return;
+        }
+        if (d.status === 'denied') { pairStatus('Request declined.'); pairPollTimer = setTimeout(requestCode, 5000); return; }
+        if (d.status === 'slow_down' && d.interval) interval = d.interval * 1000;
+        pollPair(deviceCode, interval, expiresAt);
+      }).catch(function(){
+        pollPair(deviceCode, interval, expiresAt);
+      });
+    }, interval);
   }
 
   // ── init ───────────────────────────────────────────────────────────────────
 
-  registerDevice();
-  connectWS();
-  fetchPlaylist(rebuildAndRestart);
+  function startPlayback(){
+    registerDevice(startPairing);
+    connectWS();
+    fetchPlaylist(rebuildAndRestart);
+  }
+
+  startPlayback();
 
   // re-check schedule every minute
   setInterval(function(){
@@ -468,12 +682,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 </body>
 </html>`
 
-export function createPlayerRouter() {
+export function createPlayerRouter(appVersion = '0.0.0') {
   const router = Router()
+  const html = PLAYER_HTML.replace('__APP_VERSION__', appVersion)
 
   router.get('/player', (_req, res) => {
     res.setHeader('Content-Type', 'text/html')
-    res.send(PLAYER_HTML)
+    // Keep the fragment token out of any Referer sent to an external page an
+    // "html" content item might load.
+    res.setHeader('Referrer-Policy', 'no-referrer')
+    res.send(html)
   })
 
   return router

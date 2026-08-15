@@ -52,6 +52,12 @@ export interface Project {
   updatedAt: string
 }
 
+/** 'legacy'   = already in db.json before pairing existed; trusted forever.
+ *  'unpaired' = registered openly after this release; refused in 'required' mode.
+ *  'paired'   = holds a server-issued token. */
+export type PairingState = 'legacy' | 'unpaired' | 'paired'
+export type DevicePlatform = 'android' | 'webos' | 'tizen' | 'browser' | 'unknown'
+
 export interface Device {
   id: string
   name: string
@@ -62,6 +68,20 @@ export interface Device {
   // Group membership. A screen can belong to several groups at once — a lobby
   // TV is plausibly both "Ground Floor" and "Welcome Screens".
   groupIds?: string[]
+  pairingState: PairingState
+  /** sha256 of the device token. NEVER serialised into an HTTP response — every
+   *  Device leaves through publicDevice() in routes/_serialize.ts. */
+  tokenHash?: string
+  pairedAt?: string
+  platform?: DevicePlatform
+  playerVersion?: string
+}
+
+export interface AppSettings {
+  /** Stable per-install id, minted once and advertised in the discovery beacon
+   *  so a shell can tell "my manager moved IP" from "a different manager". */
+  serverId: string
+  pairingMode: 'open' | 'required'
 }
 
 export interface DeviceGroup {
@@ -78,4 +98,5 @@ export interface AppDB {
   devices: Device[]
   projects: Project[]
   deviceGroups: DeviceGroup[]
+  settings: AppSettings
 }
