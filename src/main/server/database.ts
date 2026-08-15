@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import type { AppDB, ContentItem, Device, Project } from './types'
+import type { AppDB, ContentItem, Device, DeviceGroup, Project } from './types'
 
 export class JsonDB {
   private filePath: string
@@ -15,14 +15,15 @@ export class JsonDB {
     try {
       if (fs.existsSync(this.filePath)) {
         const raw = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'))
-        // Migrate: add projects array if missing (existing installs)
+        // Migrate: add collections missing from older installs
         if (!raw.projects) raw.projects = []
+        if (!raw.deviceGroups) raw.deviceGroups = []
         return raw
       }
     } catch {
       // corrupt file – start fresh
     }
-    return { content: [], devices: [], projects: [] }
+    return { content: [], devices: [], projects: [], deviceGroups: [] }
   }
 
   private save() {
@@ -148,5 +149,61 @@ export class JsonDB {
     const deleted = this.data.devices.length < before
     if (deleted) this.save()
     return deleted
+  }
+
+  // ── Device groups ──────────────────────────────────────────────────────────
+
+  getAllGroups(): DeviceGroup[] {
+    return [...this.data.deviceGroups].sort((a, b) => a.orderIndex - b.orderIndex)
+  }
+
+  getGroupById(id: string): DeviceGroup | undefined {
+    return this.data.deviceGroups.find(g => g.id === id)
+  }
+
+  insertGroup(group: DeviceGroup): DeviceGroup {
+    this.data.deviceGroups.push(group)
+    this.save()
+    return group
+  }
+
+  updateGroup(id: string, updates: Partial<DeviceGroup>): DeviceGroup | null {
+    const idx = this.data.deviceGroups.findIndex(g => g.id === id)
+    if (idx === -1) return null
+    this.data.deviceGroups[idx] = {
+      ...this.data.deviceGroups[idx],
+      ...updates,
+      id: this.data.deviceGroups[idx].id,
+      updatedAt: new Date().toISOString(),
+    }
+    this.save()
+    return this.data.deviceGroups[idx]
+  }
+
+  /** Deletes the group and strips its id from every device that referenced it. */
+  deleteGroup(id: string): boolean {
+    const before = this.data.deviceGroups.length
+    this.data.deviceGroups = this.data.deviceGroups.filter(g => g.id !== id)
+    const deleted = this.data.deviceGroups.length < before
+    if (!deleted) return false
+    this.data.devices.forEach(d => {
+      if (d.groupIds?.includes(id)) d.groupIds = d.groupIds.filter(g => g !== id)
+    })
+    this.save()
+    return true
+  }
+
+  /** Replaces a device's group membership, ignoring ids that no longer exist. */
+  setDeviceGroups(deviceId: string, groupIds: string[]): Device | null {
+    const device = this.data.devices.find(d => d.id === deviceId)
+    if (!device) return null
+    const known = new Set(this.data.deviceGroups.map(g => g.id))
+    device.groupIds = [...new Set(groupIds)].filter(id => known.has(id))
+    this.save()
+    return device
+  }
+
+  getDevicesByGroupId(groupId: string): Device[] {
+    return this.data.devices.filter(d => d.groupIds?.includes(groupId))
   }
 }

@@ -373,7 +373,7 @@
       <div class="mod"><div class="id">MOD-01</div><h3>BROADCAST</h3><p>Override any screen — or all of them — instantly. A flash promo reaches the floor before the meeting ends.</p></div>
       <div class="mod"><div class="id">MOD-02</div><h3>TIMELINE</h3><p>Scheduled projects rotate content by time of day. Breakfast board at 07:00, happy hour at 17:00, unattended.</p></div>
       <div class="mod"><div class="id">MOD-03</div><h3>AUTO-LINK</h3><p>TVs discover the console over the network and register themselves. Pairing a screen takes under a minute.</p></div>
-      <div class="mod"><div class="id">MOD-04</div><h3>FLEET</h3><p>Live status for every display — online, playing, last seen. Name each screen and command it individually from the Devices page.</p></div>
+      <div class="mod"><div class="id">MOD-04</div><h3>FLEET</h3><p>Live status for every display — online, playing, last seen. Name them, group them, command them individually.</p></div>
       <div class="mod"><div class="id">MOD-05</div><h3>PAYLOADS</h3><p>Images, full-motion video, live HTML and text tickers in one playlist. If a browser renders it, a screen can play it.</p></div>
       <div class="mod"><div class="id">MOD-06</div><h3>AIR-GAP</h3><p>The internet can go down; the grid keeps playing. Content never leaves your building — by architecture, not policy.</p></div>
     </div>
@@ -777,8 +777,20 @@
 
       <div class="log-entry latest">
         <div class="log-head">
-          <span class="log-ver">v1.5.5</span>
+          <span class="log-ver">v1.6.0</span>
           <span class="log-tag">Latest</span>
+        </div>
+        <ul>
+          <li>New: <b>device groups</b> — organise screens by location or purpose (Lobby, Cafeteria, Menu Boards) and push content or a whole project to every screen in a group at once</li>
+          <li>A screen can belong to several groups, each with its own colour; the Devices page shows group tags on every TV and lets you filter by group or show only ungrouped screens</li>
+          <li>Group pushes report exactly what happened — how many screens received the content and how many were skipped because they were offline</li>
+          <li>Fixed: a TV that reconnected could silently fall out of its groups, and renaming a device no longer risks clearing other fields</li>
+        </ul>
+      </div>
+
+      <div class="log-entry">
+        <div class="log-head">
+          <span class="log-ver">v1.5.5</span>
         </div>
         <ul>
           <li>Fixed auto-discovery and manual connection failing when the PC has a VPN or virtual network adapter (Tailscale, Hyper-V, WSL…) — the server now advertises the real LAN address on every network it is connected to</li>

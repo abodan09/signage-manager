@@ -7,6 +7,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 import { JsonDB } from './database'
 import { createContentRouter } from './routes/content'
 import { createDevicesRouter } from './routes/devices'
+import { createGroupsRouter } from './routes/groups'
 import { createPlayerRouter } from './routes/player'
 import { createProjectsRouter } from './routes/projects'
 import { startDiscovery, getLocalIP } from './discovery'
@@ -28,8 +29,13 @@ const FEATURE_EVENTS: Array<[string, RegExp, string]> = [
   ['POST',   /^\/api\/devices\/register\/?$/,               'device_registered'],
   ['POST',   /^\/api\/devices\/[^/]+\/push\/?$/,            'push_to_device'],
   ['POST',   /^\/api\/devices\/[^/]+\/push-project\/?$/,    'push_project_to_device'],
-  ['PATCH',  /^\/api\/devices\/[^/]+\/?$/,                  'device_renamed'],
+  ['PATCH',  /^\/api\/devices\/[^/]+\/?$/,                  'device_updated'],
   ['DELETE', /^\/api\/devices\/[^/]+\/?$/,                  'device_removed'],
+  ['POST',   /^\/api\/groups\/[^/]+\/push\/?$/,             'push_to_group'],
+  ['POST',   /^\/api\/groups\/[^/]+\/push-project\/?$/,     'push_project_to_group'],
+  ['POST',   /^\/api\/groups\/?$/,                          'group_created'],
+  ['PUT',    /^\/api\/groups\/[^/]+\/?$/,                   'group_updated'],
+  ['DELETE', /^\/api\/groups\/[^/]+\/?$/,                   'group_deleted'],
   ['GET',    /^\/tv\/player\/?$/,                           'player_opened'],
 ]
 
@@ -67,6 +73,7 @@ export async function startServer(userData: string, port: number, appVersion = '
   app.use('/uploads', express.static(uploadsDir))
   app.use('/api/content', createContentRouter(db, uploadsDir, wss, tvClients))
   app.use('/api/devices', createDevicesRouter(db, wss, tvClients))
+  app.use('/api/groups', createGroupsRouter(db, tvClients))
   app.use('/api/projects', createProjectsRouter(db, uploadsDir, wss, tvClients))
   app.use('/tv', createPlayerRouter())
 

@@ -32,14 +32,37 @@ export function createDevicesRouter(
       lastSeen: now,
       status: 'online',
       registeredAt: existing?.registeredAt ?? now,
+      // upsert replaces the whole record — carry membership over or a TV would
+      // silently fall out of its groups every time it reconnects.
+      groupIds: existing?.groupIds ?? [],
     })
     res.json(device)
   })
 
-  // PATCH /api/devices/:id  (rename device)
+  // PATCH /api/devices/:id  (rename and/or set group membership)
   router.patch('/:id', (req, res) => {
-    const { name } = req.body as { name: string }
-    const updated = db.updateDevice(req.params.id, { name })
+    const { name, groupIds } = req.body as { name?: string; groupIds?: string[] }
+
+    // Only touch the fields actually supplied: a groups-only PATCH used to
+    // write `name: undefined` and wipe the device's name.
+    if (name !== undefined) {
+      const trimmed = name.trim()
+      if (!trimmed) { res.status(400).json({ error: 'Device name is required' }); return }
+      if (!db.updateDevice(req.params.id, { name: trimmed })) {
+        res.status(404).json({ error: 'Not found' }); return
+      }
+    }
+
+    if (groupIds !== undefined) {
+      if (!Array.isArray(groupIds) || groupIds.some(g => typeof g !== 'string')) {
+        res.status(400).json({ error: 'groupIds must be an array of group ids' }); return
+      }
+      if (!db.setDeviceGroups(req.params.id, groupIds)) {
+        res.status(404).json({ error: 'Not found' }); return
+      }
+    }
+
+    const updated = db.getDeviceById(req.params.id)
     if (!updated) { res.status(404).json({ error: 'Not found' }); return }
     res.json(updated)
   })

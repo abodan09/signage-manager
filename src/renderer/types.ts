@@ -51,6 +51,19 @@ export interface Device {
   lastSeen?: string
   status: 'online' | 'offline'
   registeredAt: string
+  groupIds?: string[]
+}
+
+export interface DeviceGroup {
+  id: string
+  name: string
+  color: string
+  orderIndex: number
+  createdAt: string
+  updatedAt: string
+  // populated by GET /api/groups
+  deviceCount?: number
+  onlineCount?: number
 }
 
 export interface UpdateInfo {

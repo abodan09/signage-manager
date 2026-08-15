@@ -59,10 +59,23 @@ export interface Device {
   lastSeen?: string
   status: 'online' | 'offline'
   registeredAt: string
+  // Group membership. A screen can belong to several groups at once — a lobby
+  // TV is plausibly both "Ground Floor" and "Welcome Screens".
+  groupIds?: string[]
+}
+
+export interface DeviceGroup {
+  id: string
+  name: string
+  color: string
+  orderIndex: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface AppDB {
   content: ContentItem[]
   devices: Device[]
   projects: Project[]
+  deviceGroups: DeviceGroup[]
 }
