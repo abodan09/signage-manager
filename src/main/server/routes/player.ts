@@ -80,9 +80,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 #no-content{
   position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center;color:#555;
-  font-size:28px;gap:20px;z-index:1;
+  font-size:28px;z-index:1;
 }
-#no-content .icon{font-size:72px}
+/* margin, not flex gap: gap in a flex container is Chrome 84+, so on webOS 4
+   this screen would render with everything jammed together. */
+#no-content .icon{font-size:72px;margin-bottom:20px}
+
+/* template chrome */
+#logo-layer{position:absolute;display:none;align-items:center;justify-content:flex-start}
+#logo-layer.on{display:flex}
+#logo-layer img{max-width:100%;max-height:100%;object-fit:contain}
+#clock-layer{
+  position:absolute;display:none;flex-direction:column;align-items:flex-end;
+  color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.6);line-height:1.1;
+}
+#clock-layer.on{display:flex}
+#clock-time{font-size:44px;font-weight:bold}
+#clock-date{font-size:18px;opacity:0.8}
 
 /* pairing screen — shown until this screen has been claimed by a manager.
    No flexbox gap and no CSS inset: both are unsupported on webOS 4 / Chrome 53. */
@@ -124,6 +138,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 
   <!-- ticker bar -->
   <div id="ticker-layer"><div class="ticker-scroll" id="ticker-text"></div></div>
+
+  <div id="logo-layer" style="display:none"><img id="logo-img" src="" alt=""></div>
+  <div id="clock-layer" style="display:none"><span id="clock-time"></span><span id="clock-date"></span></div>
 
   <div id="progress"></div>
   <div id="osd"></div>
@@ -171,8 +188,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   // ── device identity ────────────────────────────────────────────────────────
 
   var params   = new URLSearchParams(location.search);
-  var deviceId = params.get('deviceId') || localStorage.getItem('signage_device_id') || uuid();
-  localStorage.setItem('signage_device_id', deviceId);
+  // Preview mode (the template gallery in the manager). It must never register,
+  // never open a socket, and never touch stored identity — otherwise it leaks a
+  // phantom "online TV" and can steal a real browser player's device id.
+  var PREVIEW  = params.get('preview') === '1';
+  var deviceId = params.get('deviceId') || (PREVIEW ? 'preview' : (localStorage.getItem('signage_device_id') || uuid()));
+  if (!PREVIEW) localStorage.setItem('signage_device_id', deviceId);
 
   // A native shell hands the token over in the URL fragment: #t=<token>.
   // The fragment (not the query string) because these WebViews predate
@@ -232,6 +253,125 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   var progressStart    = null;
   var progressDuration = 0;
   var progressRAF      = null;
+
+  // ── template / layout ──────────────────────────────────────────────────────
+
+  var template = null;
+  var clockTimer = null;
+
+  // Cached so a TV powering on while the manager is off still renders with its
+  // last known layout instead of falling back to bare fullscreen.
+  try {
+    var cached = localStorage.getItem('signage_template');
+    if (cached) template = JSON.parse(cached);
+  } catch (e) { template = null; }
+
+  function len(v){
+    if (v === undefined || v === null) return 'auto';
+    if (typeof v === 'number') return v + '%';
+    return String(v);
+  }
+
+  var SLOT_EL = {
+    main:    ['#image-layer', '#video-layer', '#html-layer'],
+    overlay: ['#overlay-layer'],
+    ticker:  ['#ticker-layer'],
+    logo:    ['#logo-layer'],
+    clock:   ['#clock-layer'],
+    progress:['#progress']
+  };
+
+  function applyZone(el, zone){
+    if (!el || !zone) return;
+    var s = el.style;
+    // Every edge is written explicitly — zones are re-applied in place when the
+    // template changes, so a value left over from the previous layout would
+    // otherwise survive. Never the 'inset' shorthand (Chromium < 87 drops it).
+    s.left   = len(zone.left);
+    s.right  = len(zone.right);
+    s.top    = len(zone.top);
+    s.bottom = len(zone.bottom);
+    s.width  = zone.width  === undefined ? 'auto' : len(zone.width);
+    s.height = zone.height === undefined ? 'auto' : len(zone.height);
+    s.zIndex = String(zone.z);
+    if (zone.pad !== undefined) s.padding = len(zone.pad);
+  }
+
+  function applyTemplate(t){
+    if (!t || !t.zones) return;
+    template = t;
+    try { localStorage.setItem('signage_template', JSON.stringify(t)); } catch (e) {}
+
+    var theme = t.theme || {};
+    var player = qs('#player');
+    if (theme.bgColor) { player.style.background = theme.bgColor; document.body.style.background = theme.bgColor; }
+    if (t.fontFamily)  { document.body.style.fontFamily = t.fontFamily; }
+
+    for (var slot in SLOT_EL) {
+      if (!SLOT_EL.hasOwnProperty(slot)) continue;
+      var zone = t.zones[slot];
+      if (!zone) continue;
+      var sels = SLOT_EL[slot];
+      for (var i = 0; i < sels.length; i++) {
+        var el = qs(sels[i]);
+        if (!el) continue;
+        applyZone(el, zone);
+        // Hidden zones are collapsed, not just transparent, so a hidden video
+        // zone releases its decoder on low-RAM TVs.
+        if (zone.visible === false) { el.style.display = 'none'; el.setAttribute('data-zone-hidden', '1'); }
+        else { el.removeAttribute('data-zone-hidden'); }
+      }
+    }
+
+    // Media fit applies to image/video only — object-fit does nothing on iframes.
+    var fit = (t.zones.main && t.zones.main.fit) || 'contain';
+    var img = qs('#img'), vid = qs('#vid');
+    if (img) img.style.objectFit = fit;
+    if (vid) vid.style.objectFit = fit;
+
+    var prog = qs('#progress');
+    if (prog && theme.brandColor) prog.style.background = theme.brandColor;
+
+    applyChrome(theme);
+    applyOverlayTheme();
+  }
+
+  function applyChrome(theme){
+    var logo = qs('#logo-layer'), logoImg = qs('#logo-img');
+    var showLogo = theme.showLogo && theme.logoPath && template.zones.logo && template.zones.logo.visible !== false;
+    if (showLogo) { logoImg.src = BASE + theme.logoPath; logo.classList.add('on'); logo.style.display = 'flex'; }
+    else { logo.classList.remove('on'); logo.style.display = 'none'; logoImg.src = ''; }
+
+    var clock = qs('#clock-layer');
+    var showClock = theme.showClock && template.zones.clock && template.zones.clock.visible !== false;
+    clearInterval(clockTimer);
+    if (showClock) {
+      clock.classList.add('on'); clock.style.display = 'flex';
+      qs('#clock-date').style.display = theme.showClockDate ? 'block' : 'none';
+      tickClock(theme);
+      clockTimer = setInterval(function(){ tickClock(theme); }, 10000);
+    } else {
+      clock.classList.remove('on'); clock.style.display = 'none';
+    }
+  }
+
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DAYNAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  function tickClock(theme){
+    var now = new Date();
+    var h = now.getHours(), m = pad2(now.getMinutes()), suffix = '';
+    if (theme.clockFormat === '12h') {
+      suffix = h >= 12 ? ' PM' : ' AM';
+      h = h % 12; if (h === 0) h = 12;
+    } else {
+      h = pad2(h);
+    }
+    qs('#clock-time').textContent = h + ':' + m + suffix;
+    if (theme.showClockDate) {
+      qs('#clock-date').textContent = DAYNAMES[now.getDay()] + ', ' + now.getDate() + ' ' + MONTHS[now.getMonth()];
+    }
+  }
 
   // ── OSD ────────────────────────────────────────────────────────────────────
 
@@ -392,20 +532,44 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 
   // ── text overlay playback (concurrent) ────────────────────────────────────
 
+  function hexToRgba(hex, pct){
+    var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex || ''));
+    if (!m) return 'rgba(0,0,0,' + (pct / 100) + ')';
+    return 'rgba(' + parseInt(m[1],16) + ',' + parseInt(m[2],16) + ',' + parseInt(m[3],16) + ',' + (pct / 100) + ')';
+  }
+
+  var currentOverlayItem = null;
+
   function showOverlayItem(item) {
+    currentOverlayItem = item;
     var layer   = qs('#overlay-layer');
     var inner   = qs('#overlay-inner');
-    var opacity = (item.overlayOpacity != null ? item.overlayOpacity : 85) / 100;
+    // textPosition always routes/aligns the item — the theme never overrides it.
     var align   = { center: 'center', top: 'flex-start', bottom: 'flex-end' }[item.textPosition || 'center'] || 'center';
-    var bgColor = item.textBgColor === 'transparent' ? 'transparent' : (item.textBgColor || 'rgba(0,0,0,0.75)');
+    var themed  = item.styleSource === 'theme' && template && template.theme;
+    var theme   = themed ? template.theme : null;
 
-    layer.style.opacity      = String(opacity);
-    layer.style.alignItems   = align;
-    layer.style.background   = 'transparent';
+    layer.style.alignItems = align;
+    layer.style.background = 'transparent';
+
+    var bgColor;
+    if (themed) {
+      // Opacity on the BAND only, so the words stay fully opaque. Items created
+      // before templates keep the old whole-layer fade, so nothing already on a
+      // wall changes.
+      layer.style.opacity  = '1';
+      bgColor              = hexToRgba(theme.bandColor, theme.bandOpacity);
+      inner.style.color    = theme.textColor || '#ffffff';
+      inner.style.fontSize = Math.round((item.textFontSize || 72) * (theme.fontScale || 1)) + 'px';
+    } else {
+      var opacity = (item.overlayOpacity != null ? item.overlayOpacity : 85) / 100;
+      bgColor = item.textBgColor === 'transparent' ? 'transparent' : (item.textBgColor || 'rgba(0,0,0,0.75)');
+      layer.style.opacity  = String(opacity);
+      inner.style.color    = item.textFgColor || '#ffffff';
+      inner.style.fontSize = (item.textFontSize || 72) + 'px';
+    }
 
     inner.textContent        = item.textContent || '';
-    inner.style.fontSize     = (item.textFontSize || 72) + 'px';
-    inner.style.color        = item.textFgColor || '#ffffff';
     inner.style.background   = bgColor;
     inner.style.borderRadius = bgColor === 'transparent' ? '0' : '12px';
     inner.style.padding      = bgColor === 'transparent' ? '0' : '16px 32px';
@@ -413,6 +577,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     layer.style.display = 'flex';
     layer.getBoundingClientRect();
     layer.classList.add('active');
+  }
+
+  /** Re-styles whatever is on screen when the template changes mid-rotation. */
+  function applyOverlayTheme(){
+    if (currentOverlayItem && qs('#overlay-layer').classList.contains('active')) {
+      showOverlayItem(currentOverlayItem);
+    }
   }
 
   function hideOverlay() {
@@ -437,10 +608,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   function showTickerItem(item) {
     var tl = qs('#ticker-layer');
     var tt = qs('#ticker-text');
-    tl.style.background = item.textBgColor === 'transparent' ? 'rgba(0,0,0,0.8)' : (item.textBgColor || '#111');
+    var themed = item.styleSource === 'theme' && template && template.theme;
+    if (themed) {
+      var th = template.theme;
+      tl.style.background = hexToRgba(th.bandColor, th.bandOpacity);
+      tt.style.color      = th.textColor || '#fff';
+      tt.style.fontSize   = Math.round((item.textFontSize || 48) * (th.fontScale || 1)) + 'px';
+    } else {
+      tl.style.background = item.textBgColor === 'transparent' ? 'rgba(0,0,0,0.8)' : (item.textBgColor || '#111');
+      tt.style.fontSize   = (item.textFontSize || 48) + 'px';
+      tt.style.color      = item.textFgColor || '#fff';
+    }
     tt.textContent      = item.textContent || '';
-    tt.style.fontSize   = (item.textFontSize || 48) + 'px';
-    tt.style.color      = item.textFgColor || '#fff';
     var speed = Math.max(8, (item.textContent || '').length * 0.12);
     tt.style.animationDuration = speed + 's';
     tl.classList.add('active');
@@ -504,6 +683,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
           return;
         }
         if (msg.type === 'reload_player') { location.reload(); return; }
+        if (msg.type === 'template_update' && msg.template) { applyTemplate(msg.template); return; }
+        if (msg.template) applyTemplate(msg.template);
         if (msg.type === 'playlist_update') {
           fetchPlaylist(rebuildAndRestart);
         } else if (msg.type === 'manual_push' && msg.content) {
@@ -534,11 +715,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   // ── fetch playlist ─────────────────────────────────────────────────────────
 
   function fetchPlaylist(cb) {
-    fetch(BASE + '/api/content/active', { headers: authHeaders({}) })
+    fetch(BASE + '/api/content/active?deviceId=' + encodeURIComponent(deviceId), { headers: authHeaders({}) })
       .then(function(r){ return r.json(); })
       .then(function(data){
         fullPlaylist = data.items || [];
-        if (cb) cb();
+        if (data.template) {
+          try { applyTemplate(data.template); }
+          catch (e) { showOSD('Layout error', 4000); }
+        }
+        // The callback runs in its own guard: a throw in here used to land in
+        // the .catch below, which re-fetches every 5s — turning any rendering
+        // bug into a permanent black screen with a silent request loop.
+        if (cb) {
+          try { cb(); }
+          catch (e) { showOSD('Playback error', 4000); }
+        }
       })
       .catch(function(){ setTimeout(function(){ fetchPlaylist(cb); }, 5000); });
   }
@@ -670,7 +861,26 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     fetchPlaylist(rebuildAndRestart);
   }
 
-  startPlayback();
+  if (PREVIEW) {
+    // Render the requested template against whatever content exists, with no
+    // registration, no socket and no stored state.
+    var previewId = params.get('template');
+    qs('#osd').style.display = 'none';
+    fetch(BASE + '/api/templates/' + encodeURIComponent(previewId || 'builtin:fullscreen') + '/resolved')
+      .then(function(r){ return r.json(); })
+      .then(function(d){ if (d && d.template) applyTemplate(d.template); })
+      .catch(function(){});
+    fetch(BASE + '/api/content/active')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        fullPlaylist = d.items || [];
+        try { rebuildAndRestart(); } catch (e) {}
+      })
+      .catch(function(){});
+  } else {
+    if (template) { try { applyTemplate(template); } catch (e) {} }
+    startPlayback();
+  }
 
   // re-check schedule every minute
   setInterval(function(){

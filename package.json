@@ -1,12 +1,13 @@
 {
   "name": "signage-manager",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Digital Signage Management System",
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "concurrently -k -n VITE,MAIN,ELECTRON -c cyan,yellow,green \"vite\" \"tsc -p tsconfig.main.json --watch --preserveWatchOutput\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
     "build": "vite build && tsc -p tsconfig.main.json",
     "start": "npm run build && electron .",
+    "test": "node tests/run-all.js",
     "generate-icons": "node scripts/generate-icons.mjs",
     "dist": "node scripts/generate-icons.mjs && npm run build && electron-builder"
   },

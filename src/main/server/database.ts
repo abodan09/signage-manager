@@ -1,7 +1,8 @@
 import fs from 'fs'
 import path from 'path'
 import { randomUUID } from 'crypto'
-import type { AppDB, AppSettings, ContentItem, Device, DeviceGroup, Project } from './types'
+import type { AppDB, AppSettings, ContentItem, Device, DeviceGroup, Project, ResolvedTemplate, Template } from './types'
+import { builtinTemplates, DEFAULT_TEMPLATE_ID, isBuiltinId, resolveTemplate } from './templates'
 
 export class JsonDB {
   private filePath: string
@@ -20,9 +21,16 @@ export class JsonDB {
         if (!raw.projects) raw.projects = []
         if (!raw.deviceGroups) raw.deviceGroups = []
         if (!raw.devices) raw.devices = []
+        if (!raw.templates) raw.templates = []
         if (!raw.settings) raw.settings = { serverId: randomUUID(), pairingMode: 'open' }
         if (!raw.settings.serverId) raw.settings.serverId = randomUUID()
         if (raw.settings.pairingMode !== 'required') raw.settings.pairingMode = 'open'
+        if (!raw.settings.defaultTemplateId) raw.settings.defaultTemplateId = DEFAULT_TEMPLATE_ID
+        // Text created before templates keeps supplying its own colours, so no
+        // screen changes appearance on upgrade. New text defaults to the theme.
+        raw.content.forEach((c: ContentItem) => {
+          if (c.type === 'text' && !c.styleSource) c.styleSource = 'custom'
+        })
         // Grandfather every screen that existed before pairing: it keeps
         // registering without a token forever, even in 'required' mode, so an
         // upgrade never blacks out a fleet. Records created from here on always
@@ -34,8 +42,8 @@ export class JsonDB {
       // corrupt file – start fresh
     }
     return {
-      content: [], devices: [], projects: [], deviceGroups: [],
-      settings: { serverId: randomUUID(), pairingMode: 'open' },
+      content: [], devices: [], projects: [], deviceGroups: [], templates: [],
+      settings: { serverId: randomUUID(), pairingMode: 'open', defaultTemplateId: DEFAULT_TEMPLATE_ID },
     }
   }
 
@@ -265,6 +273,74 @@ export class JsonDB {
     })
     if (changed) this.save()
     return changed
+  }
+
+  // ── Templates ──────────────────────────────────────────────────────────────
+
+  /** Built-in presets first, then anything the operator created. */
+  getAllTemplates(): Template[] {
+    return [...builtinTemplates(), ...this.data.templates]
+  }
+
+  getTemplateById(id: string): Template | undefined {
+    if (isBuiltinId(id)) return builtinTemplates().find(t => t.id === id)
+    return this.data.templates.find(t => t.id === id)
+  }
+
+  insertTemplate(t: Template): Template {
+    this.data.templates.push(t)
+    this.save()
+    return t
+  }
+
+  updateTemplate(id: string, updates: Partial<Template>): Template | null {
+    const idx = this.data.templates.findIndex(t => t.id === id)
+    if (idx === -1) return null
+    this.data.templates[idx] = {
+      ...this.data.templates[idx],
+      ...updates,
+      id: this.data.templates[idx].id,
+      updatedAt: new Date().toISOString(),
+    }
+    this.save()
+    return this.data.templates[idx]
+  }
+
+  /** Deleting a template detaches it everywhere so nothing points at a ghost. */
+  deleteTemplate(id: string): boolean {
+    if (isBuiltinId(id)) return false
+    const before = this.data.templates.length
+    this.data.templates = this.data.templates.filter(t => t.id !== id)
+    if (this.data.templates.length === before) return false
+    this.data.devices.forEach(d => { if (d.templateId === id) delete d.templateId })
+    this.data.deviceGroups.forEach(g => { if (g.templateId === id) delete g.templateId })
+    this.data.projects.forEach(p => { if (p.templateId === id) delete p.templateId })
+    if (this.data.settings.defaultTemplateId === id) this.data.settings.defaultTemplateId = DEFAULT_TEMPLATE_ID
+    this.save()
+    return true
+  }
+
+  /** device → first group that has one → install default → built-in fullscreen.
+   *  Templates govern presentation only, so every screen still receives the
+   *  same playlist; only the frame around it differs. */
+  resolveTemplateForDevice(deviceId?: string, projectTemplateId?: string): ResolvedTemplate {
+    const pick = (id?: string) => (id ? this.getTemplateById(id) : undefined)
+
+    let t = pick(projectTemplateId)
+    if (!t && deviceId) {
+      const device = this.getDeviceById(deviceId)
+      t = pick(device?.templateId)
+      if (!t && device?.groupIds?.length) {
+        const groups = this.getAllGroups().filter(g => device.groupIds!.includes(g.id))
+        for (const g of groups) {
+          const found = pick(g.templateId)
+          if (found) { t = found; break }
+        }
+      }
+    }
+    if (!t) t = pick(this.data.settings.defaultTemplateId)
+    if (!t) t = this.getTemplateById(DEFAULT_TEMPLATE_ID)!
+    return resolveTemplate(t)
   }
 
   countByPairingState(): { legacy: number; unpaired: number; paired: number } {

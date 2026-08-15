@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Device, DeviceGroup, ContentItem, Project, PendingPairRequest } from '../types'
+import type { Device, DeviceGroup, ContentItem, Project, PendingPairRequest, Template } from '../types'
 
 function useServerUrl() {
   const [url, setUrl] = useState('')
@@ -48,6 +48,7 @@ export default function DevicesPage() {
 
   // Pairing
   const [pending, setPending]           = useState<PendingPairRequest[]>([])
+  const [templates, setTemplates]       = useState<Template[]>([])
   const [pairCode, setPairCode]         = useState('')
   const [pairName, setPairName]         = useState('')
   const [pairGroupIds, setPairGroupIds] = useState<string[]>([])
@@ -61,6 +62,7 @@ export default function DevicesPage() {
     fetch(`${serverUrl}/api/devices`).then(r => r.json()).then(d => setDevices(d.devices ?? []))
     fetch(`${serverUrl}/api/groups`).then(r => r.json()).then(d => setGroups(d.groups ?? [])).catch(() => {})
     fetch(`${serverUrl}/api/pair/pending`).then(r => r.json()).then(d => setPending(d.requests ?? [])).catch(() => {})
+    fetch(`${serverUrl}/api/templates`).then(r => r.json()).then(d => setTemplates(d.templates ?? [])).catch(() => {})
     fetch(`${serverUrl}/api/content`).then(r => r.json()).then(d => setContent(d.items ?? []))
     fetch(`${serverUrl}/api/projects`).then(r => r.json()).then(d => setProjects(d.projects ?? []))
     fetch(`${serverUrl}/api/discovery`).then(r => r.json()).then(d => setDiscoveryInfo(d)).catch(() => {})
@@ -127,6 +129,15 @@ export default function DevicesPage() {
 
   async function handleRevoke(d: Device) {
     await fetch(`${serverUrl}/api/devices/${d.id}/revoke`, { method: 'POST' })
+    load()
+  }
+
+  async function assignTemplate(scope: 'device' | 'group', id: string, templateId: string) {
+    await fetch(`${serverUrl}/api/templates/assign`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scope, id, templateId: templateId || null }),
+    })
     load()
   }
 
@@ -508,6 +519,22 @@ export default function DevicesPage() {
                     {d.ipAddress ? ` · ${d.ipAddress}` : ''}
                     {d.lastSeen ? ` · Last seen ${relTime(d.lastSeen)}` : ''}
                   </div>
+                  {templates.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                      <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>Template</span>
+                      <select
+                        className="form-select"
+                        value={d.templateId ?? ''}
+                        onChange={e => assignTemplate('device', d.id, e.target.value)}
+                        style={{ fontSize: 12, padding: '3px 8px', width: 'auto', minWidth: 160 }}
+                      >
+                        <option value="">Inherit (group or default)</option>
+                        {templates.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}{t.builtin ? ' (built-in)' : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
                 <div className="device-actions">
                   <button

@@ -152,7 +152,11 @@ export function createDevicesRouter(
     const item = db.getContentById(contentId)
     if (!item) { res.status(404).json({ error: 'Content not found' }); return }
 
-    ws.send(JSON.stringify({ type: 'manual_push', content: item }))
+    ws.send(JSON.stringify({
+      type: 'manual_push',
+      content: item,
+      template: db.resolveTemplateForDevice(req.params.id),
+    }))
     res.json({ ok: true })
   })
 
@@ -170,7 +174,10 @@ export function createDevicesRouter(
     const items = db.getContentByProjectId(projectId)
     if (items.length === 0) { res.status(400).json({ error: 'Project has no content items' }); return }
 
-    ws.send(JSON.stringify({ type: 'push_project', project, items }))
+    ws.send(JSON.stringify({
+      type: 'push_project', project, items,
+      template: db.resolveTemplateForDevice(req.params.id, project.templateId),
+    }))
     res.json({ ok: true, count: items.length })
   })
 

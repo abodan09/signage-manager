@@ -28,14 +28,15 @@ export function createGroupsRouter(db: JsonDB, tvClients: Map<string, WebSocket>
     }
   }
 
-  /** Sends a message to every online device in the group. */
-  function sendToGroup(groupId: string, msg: object) {
+  /** Sends to every online device in the group. Serialised PER DEVICE, because
+   *  each screen resolves its own template (a device-level assignment beats the
+   *  group's) — a shared buffer would send one screen's layout to all of them. */
+  function sendToGroup(groupId: string, build: (deviceId: string) => object) {
     const devices = db.getDevicesByGroupId(groupId)
-    const data = JSON.stringify(msg)
     let sent = 0
     devices.forEach(d => {
       const ws = tvClients.get(d.id)
-      if (ws && ws.readyState === WebSocket.OPEN) { ws.send(data); sent++ }
+      if (ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify(build(d.id))); sent++ }
     })
     return { sent, total: devices.length, offline: devices.length - sent }
   }
@@ -122,7 +123,9 @@ export function createGroupsRouter(db: JsonDB, tvClients: Map<string, WebSocket>
     const item = contentId ? db.getContentById(contentId) : undefined
     if (!item) { res.status(404).json({ error: 'Content not found' }); return }
 
-    const result = sendToGroup(group.id, { type: 'manual_push', content: item })
+    const result = sendToGroup(group.id, deviceId => ({
+      type: 'manual_push', content: item, template: db.resolveTemplateForDevice(deviceId),
+    }))
     if (result.total === 0) { res.status(400).json({ error: 'This group has no devices yet' }); return }
     if (result.sent === 0) { res.status(503).json({ error: 'No devices in this group are online' }); return }
     res.json({ ok: true, ...result })
@@ -140,7 +143,10 @@ export function createGroupsRouter(db: JsonDB, tvClients: Map<string, WebSocket>
     const items = db.getContentByProjectId(project.id)
     if (items.length === 0) { res.status(400).json({ error: 'Project has no content items' }); return }
 
-    const result = sendToGroup(group.id, { type: 'push_project', project, items })
+    const result = sendToGroup(group.id, deviceId => ({
+      type: 'push_project', project, items,
+      template: db.resolveTemplateForDevice(deviceId, project.templateId),
+    }))
     if (result.total === 0) { res.status(400).json({ error: 'This group has no devices yet' }); return }
     if (result.sent === 0) { res.status(503).json({ error: 'No devices in this group are online' }); return }
     res.json({ ok: true, count: items.length, ...result })

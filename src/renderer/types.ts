@@ -59,6 +59,7 @@ export interface Device {
   platform?: string
   playerVersion?: string
   pairedAt?: string
+  templateId?: string
 }
 
 export interface PendingPairRequest {
@@ -79,6 +80,44 @@ export interface ServerSettings {
   pairedCount: number
 }
 
+export type PresetId =
+  | 'fullscreen' | 'fullscreen-ticker' | 'lower-third'
+  | 'branded-frame' | 'welcome-lobby' | 'portrait-poster'
+
+export interface Theme {
+  bgColor: string
+  brandColor: string
+  textColor: string
+  bandColor: string
+  bandOpacity: number
+  fontStack: 'sans' | 'sans-narrow' | 'serif' | 'mono'
+  fontScale: number
+  logoPath?: string
+  showLogo: boolean
+  showClock: boolean
+  clockFormat: '12h' | '24h'
+  showClockDate: boolean
+  tickerEnabled: boolean
+  transitionMs: number
+}
+
+export interface Template {
+  id: string
+  name: string
+  preset: PresetId
+  theme: Theme
+  createdAt: string
+  updatedAt: string
+  builtin?: boolean
+}
+
+export interface PresetInfo {
+  id: PresetId
+  name: string
+  description: string
+  orientation: 'landscape' | 'portrait' | 'any'
+}
+
 export interface DeviceGroup {
   id: string
   name: string
@@ -86,6 +125,7 @@ export interface DeviceGroup {
   orderIndex: number
   createdAt: string
   updatedAt: string
+  templateId?: string
   // populated by GET /api/groups
   deviceCount?: number
   onlineCount?: number

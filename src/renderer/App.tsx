@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import ContentPage from './pages/ContentPage'
 import DevicesPage from './pages/DevicesPage'
 import SettingsPage from './pages/SettingsPage'
+import TemplatesPage from './pages/TemplatesPage'
 import UpdateBanner from './components/UpdateBanner'
 import HelpDialog from './components/HelpDialog'
 import ReportIssueDialog from './components/ReportIssueDialog'
@@ -234,6 +235,7 @@ export default function App() {
             <Route path="/"          element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/content"   element={<ContentPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/devices"   element={<DevicesPage />} />
             <Route path="/settings"  element={<SettingsPage />} />
           </Routes>

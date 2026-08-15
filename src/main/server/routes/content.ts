@@ -37,7 +37,7 @@ export function createContentRouter(
   })
 
   // GET /api/content/active  (used by TV player)
-  router.get('/active', (_req, res) => {
+  router.get('/active', (req, res) => {
     const items = db.getAllContent()
       .filter(c => c.isActive)
       .map(c => {
@@ -59,7 +59,10 @@ export function createContentRouter(
         return c
       })
       .filter(c => c.isActive)
-    res.json({ items })
+    // Presentation is per-screen even though the playlist is not: every device
+    // gets the same items wrapped in its own resolved template.
+    const deviceId = typeof req.query.deviceId === 'string' ? req.query.deviceId : undefined
+    res.json({ items, template: db.resolveTemplateForDevice(deviceId) })
   })
 
   // POST /api/content  (multipart for file types, JSON for html/text)

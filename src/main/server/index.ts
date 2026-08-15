@@ -12,6 +12,7 @@ import { createPairRouter } from './routes/pair'
 import { createPlayerRouter } from './routes/player'
 import { createProjectsRouter } from './routes/projects'
 import { createSettingsRouter } from './routes/settings'
+import { createTemplatesRouter } from './routes/templates'
 import { startDiscovery, getLocalIP } from './discovery'
 import { PairingStore, sha256 } from './pairing'
 import { track, setTvCountProvider } from '../telemetry'
@@ -44,6 +45,9 @@ const FEATURE_EVENTS: Array<[string, RegExp, string]> = [
   ['POST',   /^\/api\/pair\/approve\/?$/,                   'device_paired'],
   ['POST',   /^\/api\/devices\/[^/]+\/revoke\/?$/,          'device_revoked'],
   ['PATCH',  /^\/api\/settings\/?$/,                        'pairing_mode_changed'],
+  ['POST',   /^\/api\/templates\/?$/,                       'template_created'],
+  ['PUT',    /^\/api\/templates\/assign\/?$/,               'template_assigned'],
+  ['PUT',    /^\/api\/templates\/[^/]+\/?$/,                'template_updated'],
   ['GET',    /^\/tv\/player\/?$/,                           'player_opened'],
 ]
 
@@ -119,6 +123,7 @@ export async function startServer(userData: string, port: number, appVersion = '
   app.use('/api/pair', createPairRouter(db, pairing, tvClients))
   app.use('/api/projects', createProjectsRouter(db, uploadsDir, wss, tvClients))
   app.use('/api/settings', createSettingsRouter(db, tvClients))
+  app.use('/api/templates', createTemplatesRouter(db, tvClients))
   app.use('/tv', createPlayerRouter(appVersion))
 
   app.get('/api/health', (_req, res) => {

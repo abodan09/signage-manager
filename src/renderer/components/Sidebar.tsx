@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 const NAV = [
   { to: '/dashboard', icon: '⬛', label: 'Dashboard' },
   { to: '/content',   icon: '🖼️', label: 'Content Library' },
+  { to: '/templates', icon: '🎨', label: 'Templates' },
   { to: '/devices',   icon: '📺', label: 'Devices' },
   { to: '/settings',  icon: '⚙️', label: 'Settings' },
 ]
