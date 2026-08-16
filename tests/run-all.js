@@ -9,6 +9,7 @@ const SUITES = [
   ['device groups',      'test-groups.js'],
   ['screen pairing',     'test-pairing.js'],
   ['templates',          'test-templates.js'],
+  ['designs & packs',    'test-designs.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]

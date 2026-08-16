@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { ContentItem, Project } from '../types'
 import ContentForm from '../components/ContentForm'
 import ProjectForm from '../components/ProjectForm'
@@ -10,7 +11,7 @@ function useServerUrl() {
 }
 
 const TYPE_BADGE: Record<string, string> = {
-  image: 'badge-blue', video: 'badge-yellow', html: 'badge-green', text: 'badge-gray',
+  image: 'badge-blue', video: 'badge-yellow', html: 'badge-green', text: 'badge-gray', design: 'badge-blue',
 }
 const SCHEDULE_BADGE: Record<string, string> = {
   loop: 'badge-blue', scheduled: 'badge-yellow', manual: 'badge-gray',
@@ -20,6 +21,7 @@ type Tab = 'content' | 'projects'
 
 export default function ContentPage() {
   const serverUrl = useServerUrl()
+  const navigate = useNavigate()
   const [tab, setTab]         = useState<Tab>('content')
 
   // ── Content state ──────────────────────────────────────────────────────────
@@ -171,7 +173,15 @@ export default function ContentPage() {
                     </div>
                   )}
                   <div className="content-actions">
-                    <button className="btn btn-ghost btn-sm" onClick={() => { setEditItem(item); setShowForm(true) }}>Edit</button>
+                    {/* A design item is a pointer at a Designer document, so its
+                        "Edit" has to open the Designer, not the content form. */}
+                    {item.type === 'design' && item.designId ? (
+                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/designer/${item.designId}`)}>
+                        Edit design
+                      </button>
+                    ) : (
+                      <button className="btn btn-ghost btn-sm" onClick={() => { setEditItem(item); setShowForm(true) }}>Edit</button>
+                    )}
                     <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(item)}>
                       {item.isActive ? 'Disable' : 'Enable'}
                     </button>
@@ -336,5 +346,5 @@ export default function ContentPage() {
 }
 
 function typeIcon(t: string) {
-  return { image: '🖼️', video: '🎬', html: '🌐', text: '✏️' }[t] ?? '📄'
+  return { image: '🖼️', video: '🎬', html: '🌐', text: '✏️', design: '🎨' }[t] ?? '📄'
 }

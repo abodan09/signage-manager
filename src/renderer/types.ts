@@ -1,4 +1,4 @@
-export type ContentType = 'image' | 'video' | 'html' | 'text'
+export type ContentType = 'image' | 'video' | 'html' | 'text' | 'design'
 export type ScheduleMode = 'loop' | 'scheduled' | 'manual'
 export type TextPosition = 'center' | 'top' | 'bottom' | 'ticker'
 
@@ -10,6 +10,7 @@ export interface ContentItem {
   fileName?: string
   mimeType?: string
   htmlUrl?: string
+  designId?: string
   textContent?: string
   textBgColor?: string
   textFgColor?: string
@@ -129,6 +130,122 @@ export interface DeviceGroup {
   // populated by GET /api/groups
   deviceCount?: number
   onlineCount?: number
+}
+
+// ── Designs (Designer documents) — mirrors src/main/server/types.ts ──────────
+
+export type SceneFontId =
+  | 'sans' | 'sans-narrow' | 'serif' | 'mono'
+  | 'inter' | 'oswald' | 'bebas' | 'playfair' | 'pacifico' | 'roboto-slab'
+
+export type SceneElementType = 'text' | 'shape' | 'image' | 'qr'
+export type ShapeKind = 'rect' | 'ellipse' | 'triangle' | 'line'
+export type SceneAlign = 'left' | 'center' | 'right'
+export type SceneVAlign = 'top' | 'middle' | 'bottom'
+export type SceneFit = 'contain' | 'cover' | 'fill'
+
+export interface SceneElementBase {
+  id: string
+  type: SceneElementType
+  name?: string
+  x: number
+  y: number
+  w: number
+  h: number
+  rotation: number
+  opacity: number
+  locked?: boolean
+}
+
+export interface TextElement extends SceneElementBase {
+  type: 'text'
+  text: string
+  font: SceneFontId
+  fontSize: number
+  bold: boolean
+  italic: boolean
+  underline: boolean
+  align: SceneAlign
+  valign: SceneVAlign
+  color: string
+  lineHeight: number
+  letterSpacing: number
+  bgColor: string | null
+  bgOpacity: number
+  radius: number
+}
+
+export interface ShapeElement extends SceneElementBase {
+  type: 'shape'
+  kind: ShapeKind
+  fill: string | null
+  fillOpacity: number
+  stroke: string | null
+  strokeWidth: number
+  radius: number
+}
+
+export interface ImageElement extends SceneElementBase {
+  type: 'image'
+  src: string | null
+  fit: SceneFit
+  radius: number
+}
+
+export interface QrElement extends SceneElementBase {
+  type: 'qr'
+  data: string
+  fg: string
+  bg: string | null
+}
+
+export type SceneElement = TextElement | ShapeElement | ImageElement | QrElement
+
+export interface SceneBackground {
+  color: string
+  gradient?: { from: string; to: string; angle: number }
+  imagePath?: string
+  imageFit?: SceneFit
+}
+
+export interface Design {
+  id: string
+  name: string
+  category?: string
+  templateKey?: string
+  width: number
+  height: number
+  background: SceneBackground
+  elements: SceneElement[]
+  createdAt: string
+  updatedAt: string
+  /** Added by GET /api/designs — true when a playlist item shows this design. */
+  published?: boolean
+}
+
+// ── Template packs ──────────────────────────────────────────────────────────
+
+export interface PackTemplate {
+  key: string
+  category: string
+  name: string
+  description?: string
+  tags?: string[]
+  design: Omit<Design, 'id' | 'createdAt' | 'updatedAt'>
+}
+
+export interface PackCategory {
+  category: string
+  name: string
+  description: string
+  icon: string
+  version: string
+  templateCount: number
+  file: string
+  installed: boolean
+  installedVersion?: string
+  updateAvailable: boolean
+  availableOffline: boolean
 }
 
 export interface UpdateInfo {

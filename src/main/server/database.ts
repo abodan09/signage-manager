@@ -1,7 +1,9 @@
 import fs from 'fs'
 import path from 'path'
 import { randomUUID } from 'crypto'
-import type { AppDB, AppSettings, ContentItem, Device, DeviceGroup, Project, ResolvedTemplate, Template } from './types'
+import type {
+  AppDB, AppSettings, ContentItem, Design, Device, DeviceGroup, InstalledPack, Project, ResolvedTemplate, Template,
+} from './types'
 import { builtinTemplates, DEFAULT_TEMPLATE_ID, isBuiltinId, resolveTemplate } from './templates'
 
 export class JsonDB {
@@ -22,6 +24,8 @@ export class JsonDB {
         if (!raw.deviceGroups) raw.deviceGroups = []
         if (!raw.devices) raw.devices = []
         if (!raw.templates) raw.templates = []
+        if (!raw.designs) raw.designs = []
+        if (!raw.installedPacks) raw.installedPacks = []
         if (!raw.settings) raw.settings = { serverId: randomUUID(), pairingMode: 'open' }
         if (!raw.settings.serverId) raw.settings.serverId = randomUUID()
         if (raw.settings.pairingMode !== 'required') raw.settings.pairingMode = 'open'
@@ -42,7 +46,7 @@ export class JsonDB {
       // corrupt file – start fresh
     }
     return {
-      content: [], devices: [], projects: [], deviceGroups: [], templates: [],
+      content: [], devices: [], projects: [], deviceGroups: [], templates: [], designs: [], installedPacks: [],
       settings: { serverId: randomUUID(), pairingMode: 'open', defaultTemplateId: DEFAULT_TEMPLATE_ID },
     }
   }
@@ -341,6 +345,77 @@ export class JsonDB {
     if (!t) t = pick(this.data.settings.defaultTemplateId)
     if (!t) t = this.getTemplateById(DEFAULT_TEMPLATE_ID)!
     return resolveTemplate(t)
+  }
+
+  // ── Designs ────────────────────────────────────────────────────────────────
+
+  getAllDesigns(): Design[] {
+    return [...this.data.designs].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+  }
+
+  getDesignById(id: string): Design | undefined {
+    return this.data.designs.find(d => d.id === id)
+  }
+
+  insertDesign(design: Design): Design {
+    this.data.designs.push(design)
+    this.save()
+    return design
+  }
+
+  updateDesign(id: string, updates: Partial<Design>): Design | null {
+    const idx = this.data.designs.findIndex(d => d.id === id)
+    if (idx === -1) return null
+    this.data.designs[idx] = {
+      ...this.data.designs[idx],
+      ...updates,
+      id: this.data.designs[idx].id,
+      updatedAt: new Date().toISOString(),
+    }
+    this.save()
+    return this.data.designs[idx]
+  }
+
+  /** Deletes the design AND every content item that displays it — a playlist
+   *  entry pointing at a deleted scene would render as a black slot forever. */
+  deleteDesign(id: string): { deleted: boolean; removedContentIds: string[] } {
+    const before = this.data.designs.length
+    this.data.designs = this.data.designs.filter(d => d.id !== id)
+    if (this.data.designs.length === before) return { deleted: false, removedContentIds: [] }
+    const removedContentIds = this.data.content.filter(c => c.designId === id).map(c => c.id)
+    this.data.content = this.data.content.filter(c => c.designId !== id)
+    this.save()
+    return { deleted: true, removedContentIds }
+  }
+
+  getContentByDesignId(designId: string): ContentItem[] {
+    return this.data.content.filter(c => c.designId === designId)
+  }
+
+  // ── Template packs ─────────────────────────────────────────────────────────
+
+  getInstalledPacks(): InstalledPack[] {
+    return [...this.data.installedPacks]
+  }
+
+  getInstalledPack(category: string): InstalledPack | undefined {
+    return this.data.installedPacks.find(p => p.category === category)
+  }
+
+  setPackInstalled(pack: InstalledPack): InstalledPack {
+    const idx = this.data.installedPacks.findIndex(p => p.category === pack.category)
+    if (idx === -1) this.data.installedPacks.push(pack)
+    else this.data.installedPacks[idx] = pack
+    this.save()
+    return pack
+  }
+
+  removePack(category: string): boolean {
+    const before = this.data.installedPacks.length
+    this.data.installedPacks = this.data.installedPacks.filter(p => p.category !== category)
+    const removed = this.data.installedPacks.length < before
+    if (removed) this.save()
+    return removed
   }
 
   countByPairingState(): { legacy: number; unpaired: number; paired: number } {

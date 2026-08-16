@@ -1,0 +1,833 @@
+/* Restaurants — menu boards, specials and front-of-house notices.
+ *
+ * Sample venue throughout: "The Copper Skillet". Prices are plausible casual
+ * -dining figures the operator will overwrite; dish names are real so the
+ * template reads like a finished board on the wall, not a wireframe.
+ */
+
+export default {
+  category: 'restaurants',
+  name: 'Restaurants',
+  description: 'Menu boards, specials and promos for restaurants, cafes and bars.',
+  icon: '🍽️',
+  templates: [
+    // ── menu boards ──────────────────────────────────────────────────────────
+    {
+      key: 'breakfast-menu',
+      name: 'Breakfast Menu',
+      description: 'Morning plates, bakery and hot drinks in two columns.',
+      tags: ['menu', 'breakfast'],
+      recipe: 'menuBoard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'espresso',
+        title: 'Breakfast',
+        subtitle: 'SERVED 7 - 11 AM',
+        sections: [
+          {
+            name: 'PLATES',
+            items: [
+              ['Full English', '9.50', 'Two eggs, bacon, sausage, beans, sourdough'],
+              ['Buttermilk Pancakes', '7.90', 'Maple syrup, blueberries, whipped butter'],
+              ['Avocado Smash', '8.40'],
+            ],
+          },
+          {
+            name: 'FROM THE BAKERY',
+            items: [
+              ['Butter Croissant', '2.80'],
+              ['Pain au Chocolat', '3.10'],
+              ['Cinnamon Bun', '3.40'],
+            ],
+          },
+          {
+            name: 'SIDES',
+            items: [
+              ['Streaky Bacon', '2.50'],
+              ['Grilled Halloumi', '3.00'],
+              ['Hash Browns', '2.20'],
+            ],
+          },
+          {
+            name: 'MORNING DRINKS',
+            items: [
+              ['Filter Coffee', '2.60'],
+              ['Fresh Orange Juice', '3.20'],
+              ['Pot of Breakfast Tea', '2.40'],
+            ],
+          },
+        ],
+      },
+    },
+    {
+      key: 'lunch-menu',
+      name: 'Lunch Menu',
+      description: 'Sandwiches, bowls and salads for the midday service.',
+      tags: ['menu', 'lunch'],
+      recipe: 'menuBoard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'charcoal',
+        title: 'Lunch',
+        subtitle: 'NOON TO 4 PM',
+        sections: [
+          {
+            name: 'SANDWICHES',
+            items: [
+              ['Reuben on Rye', '11.50'],
+              ['Chicken Caesar Wrap', '10.20'],
+              ['Grilled Cheese and Tomato', '8.90'],
+            ],
+          },
+          {
+            name: 'BOWLS',
+            items: [
+              ['Warm Grain Bowl', '11.90', 'Roast squash, feta, pumpkin seeds'],
+              ['Chicken Katsu Curry', '12.80'],
+              ['Salmon Poke', '13.50'],
+            ],
+          },
+          {
+            name: 'SALADS',
+            items: [
+              ['Greek with Feta', '9.60'],
+              ['Caesar and Anchovy', '9.90'],
+              ['Beetroot and Goat Cheese', '10.40'],
+            ],
+          },
+          {
+            name: 'ADD A SIDE',
+            items: [
+              ['Cup of Soup', '3.50'],
+              ['Skin-On Fries', '3.90'],
+              ['House Slaw', '2.80'],
+            ],
+          },
+        ],
+      },
+    },
+    {
+      key: 'dinner-menu',
+      name: 'Dinner Menu',
+      description: 'Evening a la carte with starters, mains and puddings.',
+      tags: ['menu', 'dinner'],
+      recipe: 'menuBoard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'crimson',
+        display: 'playfair',
+        title: 'Dinner',
+        subtitle: 'FROM 5 PM',
+        sections: [
+          {
+            name: 'STARTERS',
+            items: [
+              ['Burrata and Heritage Tomato', '9.50'],
+              ['Salt Cod Croquettes', '8.20'],
+              ['Charred Padron Peppers', '6.80'],
+            ],
+          },
+          {
+            name: 'MAINS',
+            items: [
+              ['Dry-Aged Ribeye', '28.00', 'Bone marrow butter, triple-cooked chips'],
+              ['Pan-Roast Sea Bass', '22.50'],
+              ['Wild Mushroom Risotto', '18.00'],
+            ],
+          },
+          {
+            name: 'SIDES',
+            items: [
+              ['Truffle Parmesan Fries', '5.50'],
+              ['Tenderstem Broccoli', '5.00'],
+              ['Buttered Greens', '4.50'],
+            ],
+          },
+          {
+            name: 'TO FINISH',
+            items: [
+              ['Sticky Toffee Pudding', '8.00'],
+              ['Dark Chocolate Tart', '8.50'],
+              ['British Cheese Board', '12.00'],
+            ],
+          },
+        ],
+      },
+    },
+    {
+      key: 'dessert-menu',
+      name: 'Dessert Menu',
+      description: 'Single-column pudding board for a portrait screen.',
+      tags: ['menu', 'desserts'],
+      recipe: 'menuBoard',
+      orientation: 'portrait',
+      spec: {
+        palette: 'rose',
+        display: 'playfair',
+        title: 'Desserts',
+        subtitle: 'SWEET FINISH',
+        sections: [
+          {
+            name: 'PUDDINGS',
+            items: [
+              ['Sticky Toffee Pudding', '8.00', 'Salted caramel sauce, clotted cream'],
+              ['Warm Chocolate Fondant', '8.50'],
+              ['Lemon Posset', '6.90'],
+            ],
+          },
+          {
+            name: 'ICE CREAM AND SORBET',
+            items: [
+              ['Vanilla Bean', '3.00'],
+              ['Salted Caramel', '3.00'],
+              ['Raspberry Sorbet', '3.00'],
+            ],
+          },
+        ],
+      },
+    },
+    {
+      key: 'coffee-menu',
+      name: 'Coffee and Espresso',
+      description: 'Espresso bar board sized for a counter-top portrait screen.',
+      tags: ['menu', 'coffee', 'cafe'],
+      recipe: 'menuBoard',
+      orientation: 'portrait',
+      spec: {
+        palette: 'espresso',
+        title: 'Coffee',
+        subtitle: 'ESPRESSO BAR',
+        sections: [
+          {
+            name: 'ESPRESSO BAR',
+            items: [
+              ['Espresso', '2.40'],
+              ['Cortado', '3.10'],
+              ['Flat White', '3.40'],
+              ['Cappuccino', '3.40'],
+              ['Latte', '3.50'],
+            ],
+          },
+          {
+            name: 'NOT COFFEE',
+            items: [
+              ['Chai Latte', '3.60'],
+              ['Hot Chocolate', '3.50'],
+            ],
+          },
+        ],
+        footer: 'OAT, SOY AND LACTOSE-FREE MILK AT NO EXTRA CHARGE',
+      },
+    },
+    {
+      key: 'wine-list',
+      name: 'Wine List',
+      description: 'By the glass and bottle, white through fortified.',
+      tags: ['menu', 'wine', 'bar'],
+      recipe: 'menuBoard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'violet',
+        display: 'playfair',
+        title: 'Wine List',
+        subtitle: 'GLASS / BOTTLE',
+        sections: [
+          {
+            name: 'WHITE',
+            items: [
+              ['Picpoul de Pinet', '7.50 / 29'],
+              ['Marlborough Sauvignon', '8.20 / 32'],
+              ['Chablis, Domaine Seguinot', '11.00 / 44'],
+            ],
+          },
+          {
+            name: 'RED',
+            items: [
+              ['Rioja Crianza', '8.00 / 31'],
+              ['Cotes du Rhone', '7.80 / 30'],
+              ['Mendoza Malbec', '8.60 / 34'],
+            ],
+          },
+          {
+            name: 'SPARKLING',
+            items: [
+              ['Prosecco Extra Dry', '7.20 / 28'],
+              ['Champagne Brut NV', '13.50 / 62'],
+            ],
+          },
+          {
+            name: 'SWEET AND FORTIFIED',
+            items: [
+              ['Ten Year Tawny Port', '6.50'],
+              ['Sauternes, 50ml', '8.00'],
+            ],
+          },
+        ],
+      },
+    },
+    {
+      key: 'cocktail-list',
+      name: 'Cocktail List',
+      description: 'Classics, long drinks, zero proof and draught beer.',
+      tags: ['menu', 'cocktails', 'bar'],
+      recipe: 'menuBoard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'indigo',
+        title: 'Cocktails',
+        subtitle: 'MIXED TO ORDER',
+        sections: [
+          {
+            name: 'HOUSE CLASSICS',
+            items: [
+              ['Old Fashioned', '11.00', 'Rye, demerara, orange bitters'],
+              ['Negroni', '10.50'],
+              ['Espresso Martini', '11.50'],
+            ],
+          },
+          {
+            name: 'LONG AND COLD',
+            items: [
+              ['Aperol Spritz', '9.50'],
+              ['Paloma', '10.00'],
+              ['Mojito', '10.00'],
+            ],
+          },
+          {
+            name: 'ZERO PROOF',
+            items: [
+              ['Seedlip and Tonic', '7.00'],
+              ['Ginger and Lime Fizz', '6.50'],
+              ['Virgin Mary', '6.50'],
+            ],
+          },
+          {
+            name: 'BEER AND CIDER',
+            items: [
+              ['Draught Lager, Pint', '5.80'],
+              ['Pale Ale, 330ml', '5.50'],
+              ['Dry Cider, Pint', '5.60'],
+            ],
+          },
+        ],
+      },
+    },
+    {
+      key: 'pizza-menu',
+      name: 'Pizza Menu',
+      description: 'Stone-baked classics, house pies and extra toppings.',
+      tags: ['menu', 'pizza'],
+      recipe: 'menuBoard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'amber',
+        title: 'Pizza',
+        subtitle: 'STONE BAKED, 12 INCH',
+        sections: [
+          {
+            name: 'CLASSICS',
+            items: [
+              ['Margherita', '10.00', 'San Marzano, fior di latte, basil'],
+              ['Marinara', '8.50'],
+              ['Diavola', '13.00'],
+            ],
+          },
+          {
+            name: 'HOUSE FAVOURITES',
+            items: [
+              ['Nduja and Hot Honey', '14.00'],
+              ['Truffle and Mushroom', '14.50'],
+              ['Quattro Formaggi', '13.50'],
+            ],
+          },
+          {
+            name: 'EXTRA TOPPINGS',
+            items: [
+              ['Buffalo Mozzarella', '2.50'],
+              ['Spicy Salami', '2.00'],
+              ['Rocket and Parmesan', '2.00'],
+            ],
+          },
+          {
+            name: 'FROM THE DOUGH',
+            items: [
+              ['Garlic Bread', '5.00'],
+              ['Nutella Calzone', '7.50'],
+            ],
+          },
+        ],
+        footer: 'GLUTEN-FREE BASE AVAILABLE - JUST ASK',
+      },
+    },
+    {
+      key: 'burger-menu',
+      name: 'Burger Menu',
+      description: 'Beef, chicken and veg burgers with loaded sides and shakes.',
+      tags: ['menu', 'burgers'],
+      recipe: 'menuBoard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'steel',
+        title: 'Burgers',
+        subtitle: 'ALL SERVED WITH FRIES',
+        sections: [
+          {
+            name: 'BEEF',
+            items: [
+              ['The Classic', '12.50', 'Aged patty, cheddar, pickles, house sauce'],
+              ['Bacon and Blue', '14.50'],
+              ['Double Smash', '15.00'],
+            ],
+          },
+          {
+            name: 'CHICKEN AND VEG',
+            items: [
+              ['Buttermilk Fried Chicken', '13.00'],
+              ['Halloumi and Harissa', '12.00'],
+              ['Black Bean Burger', '12.00'],
+            ],
+          },
+          {
+            name: 'LOADED SIDES',
+            items: [
+              ['Chilli Cheese Fries', '6.50'],
+              ['Beer-Battered Onion Rings', '4.50'],
+              ['Buffalo Wings', '7.50'],
+            ],
+          },
+          {
+            name: 'SHAKES',
+            items: [
+              ['Salted Caramel', '5.50'],
+              ['Vanilla Malt', '5.00'],
+              ['Chocolate Fudge', '5.50'],
+            ],
+          },
+        ],
+      },
+    },
+    {
+      key: 'kids-menu',
+      name: 'Kids Menu',
+      description: 'Pick a main, a side and a pudding for one flat price.',
+      tags: ['menu', 'kids', 'family'],
+      recipe: 'menuBoard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'teal',
+        title: 'Kids Menu',
+        subtitle: 'UNDER 12',
+        sections: [
+          {
+            name: 'PICK A MAIN',
+            items: [
+              ['Mini Cheeseburger'],
+              ['Chicken Goujons'],
+              ['Cheese and Tomato Pizza'],
+            ],
+          },
+          {
+            name: 'PICK A SIDE',
+            items: [
+              ['Skin-On Fries'],
+              ['Garden Peas'],
+              ['Cucumber Sticks'],
+            ],
+          },
+          {
+            name: 'PICK A PUDDING',
+            items: [
+              ['Two Scoops of Ice Cream'],
+              ['Fresh Fruit Pot'],
+              ['Chocolate Brownie'],
+            ],
+          },
+        ],
+        footer: 'THREE COURSES 7.50 - INCLUDES A SOFT DRINK',
+      },
+    },
+
+    // ── specials and offers ──────────────────────────────────────────────────
+    {
+      key: 'daily-specials',
+      name: 'Daily Specials',
+      description: 'Three rotating specials with prices, one highlighted.',
+      tags: ['specials', 'promo'],
+      recipe: 'priceCards',
+      orientation: 'landscape',
+      spec: {
+        palette: 'sand',
+        title: 'Today\'s Specials',
+        subtitle: 'Chalked up fresh every morning',
+        cards: [
+          { name: 'STARTER', price: '6.50', desc: 'Roast tomato soup with basil oil and warm sourdough' },
+          { name: 'MAIN', price: '14.50', desc: 'Braised beef shin, buttered mash, gremolata', featured: true },
+          { name: 'PUDDING', price: '6.00', desc: 'Apple and blackberry crumble with custard' },
+        ],
+        footer: 'SPECIALS CHANGE DAILY - ASK YOUR SERVER',
+      },
+    },
+    {
+      key: 'weekly-specials',
+      name: 'Weekly Specials',
+      description: 'One offer per day of the week with the price alongside.',
+      tags: ['specials', 'weekly'],
+      recipe: 'scheduleRows',
+      orientation: 'landscape',
+      spec: {
+        palette: 'forest',
+        title: 'This Week',
+        subtitle: 'DINE IN ONLY',
+        colTime: 'DAY',
+        colName: 'SPECIAL',
+        colMeta: 'PRICE',
+        rows: [
+          ['MON', 'Burger and a Beer', '12.00'],
+          ['TUE', 'Taco Tuesday, Three Tacos', '9.50'],
+          ['WED', 'Steak Night with Fries', '18.00'],
+          ['THU', 'Half Price Pasta', 'From 6.00'],
+          ['FRI', 'Fish and Chips', '13.50'],
+          ['SAT', 'Bottomless Brunch', '29.00'],
+          ['SUN', 'Roast of the Day', '16.50'],
+        ],
+      },
+    },
+    {
+      key: 'happy-hour',
+      name: 'Happy Hour',
+      description: 'Loud angled promo for the early-evening drinks window.',
+      tags: ['promo', 'bar', 'happy hour'],
+      recipe: 'promoBurst',
+      orientation: 'landscape',
+      spec: {
+        palette: 'rose',
+        eyebrow: 'MONDAY TO FRIDAY',
+        title: 'Happy Hour',
+        body: 'Half price cocktails, house wine and draught beer. Bar only, no bookings.',
+        code: '4 PM - 7 PM',
+      },
+    },
+    {
+      key: 'pizza-tuesday',
+      name: 'Two For One Night',
+      description: 'Single huge offer figure for a weekly deal night.',
+      tags: ['promo', 'offer', 'pizza'],
+      recipe: 'bigNumber',
+      orientation: 'landscape',
+      spec: {
+        palette: 'crimson',
+        eyebrow: 'EVERY TUESDAY',
+        value: '2 FOR 1',
+        valueSize: 0.24,
+        label: 'ON EVERY PIZZA',
+        body: 'Dine in from 5 pm. The cheapest pizza on the table is the free one.',
+        footer: 'ONE OFFER PER TABLE - NOT WITH OTHER PROMOTIONS',
+      },
+    },
+    {
+      key: 'combo-deals',
+      name: 'Combo Deals',
+      description: 'Three bundle prices for lunch, family and date night.',
+      tags: ['offers', 'combo'],
+      recipe: 'priceCards',
+      orientation: 'landscape',
+      spec: {
+        palette: 'crimson',
+        title: 'Meal Deals',
+        subtitle: 'Eat in or take away',
+        cards: [
+          { name: 'LUNCH BOX', price: '8.95', desc: 'Any sandwich, a side and a soft drink' },
+          { name: 'FAMILY BUNDLE', price: '32.00', desc: 'Two large pizzas, garlic bread and four drinks', featured: true },
+          { name: 'DATE NIGHT', price: '45.00', desc: 'Two mains, a side and a bottle of house wine' },
+        ],
+        qr: 'https://example.com/deals',
+        qrLabel: 'See all deals',
+      },
+    },
+    {
+      key: 'soup-of-the-day',
+      name: 'Soup of the Day',
+      description: 'Photo split for the daily soup with cup and bowl pricing.',
+      tags: ['specials', 'soup'],
+      recipe: 'heroSplit',
+      orientation: 'landscape',
+      spec: {
+        palette: 'paper',
+        display: 'roboto-slab',
+        eyebrow: 'SOUP OF THE DAY',
+        title: 'Roast Squash and Sage',
+        titleSize: 0.085,
+        body: 'Made this morning with squash from Marsh Farm. Vegan on request.',
+        cta: 'CUP 4.50  -  BOWL 6.50',
+        flip: true,
+      },
+    },
+    {
+      key: 'chef-recommendation',
+      name: 'Chef Recommendation',
+      description: 'Full-bleed photo with the dish the kitchen is proudest of.',
+      tags: ['specials', 'chef'],
+      recipe: 'heroOverlay',
+      orientation: 'landscape',
+      spec: {
+        palette: 'espresso',
+        eyebrow: 'CHEF\'S RECOMMENDATION',
+        title: 'Slow-Braised Lamb Shoulder',
+        titleSize: 0.11,
+        body: 'Six hours with rosemary and garlic, served with dauphinoise potatoes.',
+        cta: 'ASK YOUR SERVER',
+        anchor: 'bottom',
+        scrim: 68,
+      },
+    },
+    {
+      key: 'seasonal-menu',
+      name: 'Seasonal Menu',
+      description: 'Portrait teaser poster for the new seasonal card.',
+      tags: ['menu', 'seasonal'],
+      recipe: 'heroOverlay',
+      orientation: 'portrait',
+      spec: {
+        palette: 'forest',
+        eyebrow: 'NEW THIS SEASON',
+        title: 'Autumn Menu',
+        body: 'Game, squash, wild mushrooms and warm spice. On the table from October.',
+        cta: 'SEE THE MENU',
+        scrim: 60,
+        qr: 'https://example.com/menu/autumn',
+        qrLabel: 'Read the menu',
+      },
+    },
+    {
+      key: 'catering-promo',
+      name: 'Catering and Events',
+      description: 'Private hire and platters pitch with an enquiry QR.',
+      tags: ['catering', 'events'],
+      recipe: 'heroSplit',
+      orientation: 'landscape',
+      spec: {
+        palette: 'charcoal',
+        display: 'oswald',
+        eyebrow: 'PRIVATE EVENTS AND CATERING',
+        title: 'Feed Your Whole Team',
+        body: 'Platters, buffets and drinks packages for ten to one hundred guests.',
+        cta: 'ENQUIRE AT THE BAR',
+        qr: 'https://example.com/catering',
+        qrLabel: 'Get a quote',
+      },
+    },
+
+    // ── front of house ───────────────────────────────────────────────────────
+    {
+      key: 'allergen-notice',
+      name: 'Allergen Notice',
+      description: 'Four-step allergen and dietary guidance for the entrance.',
+      tags: ['notice', 'allergens', 'safety'],
+      recipe: 'stepList',
+      orientation: 'landscape',
+      spec: {
+        palette: 'clinical',
+        title: 'Allergens and Dietary Needs',
+        steps: [
+          ['Tell us before you order', 'We record every allergy against your table number.'],
+          ['Ask for the allergen guide', 'A full ingredient matrix is kept at the pass.'],
+          ['Check the menu marks', 'V is vegetarian, VG is vegan, GF is gluten free.'],
+          ['We cannot promise zero trace', 'Every dish is prepared in one shared kitchen.'],
+        ],
+        footer: 'FOURTEEN MAJOR ALLERGENS - FULL LIST ON REQUEST',
+      },
+    },
+    {
+      key: 'table-service',
+      name: 'How to Order',
+      description: 'Table QR ordering instructions in four numbered steps.',
+      tags: ['service', 'how-to'],
+      recipe: 'stepList',
+      orientation: 'landscape',
+      spec: {
+        palette: 'sand',
+        title: 'How to Order',
+        steps: [
+          ['Take any free table', 'Note the number on the wooden block.'],
+          ['Scan the code on the table', 'The menu opens in your browser, no app needed.'],
+          ['Order and pay in one go', 'Card, Apple Pay and Google Pay all accepted.'],
+          ['We bring it over', 'Around fifteen minutes when the kitchen is busy.'],
+        ],
+        footer: 'PREFER TO ORDER AT THE BAR? THAT WORKS TOO',
+      },
+    },
+    {
+      key: 'order-online',
+      name: 'Order Online QR',
+      description: 'Collection and delivery details with a scan-to-order code.',
+      tags: ['qr', 'ordering', 'delivery'],
+      recipe: 'infoCard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'slate',
+        title: 'Order Online',
+        fields: [
+          { label: 'COLLECTION', value: 'Ready in 20 minutes' },
+          { label: 'DELIVERY', value: 'Within 3 miles, from 3.50' },
+          { label: 'FIRST ORDER CODE', value: 'SKILLET10', mono: true },
+        ],
+        qr: 'https://example.com/order',
+        qrLabel: 'Order and pay',
+        body: 'Browse the full menu, pay online and pick your collection slot.',
+      },
+    },
+    {
+      key: 'loyalty-programme',
+      name: 'Loyalty Programme',
+      description: 'Three steps explaining the free-coffee stamp card.',
+      tags: ['loyalty', 'cafe'],
+      recipe: 'stepList',
+      orientation: 'landscape',
+      spec: {
+        palette: 'amber',
+        title: 'Coffee Club',
+        steps: [
+          ['Scan at the till', 'Show the app or your card with every order.'],
+          ['Collect a bean', 'One bean for each hot drink you buy.'],
+          ['Ninth drink is free', 'Any size, any milk, no expiry date.'],
+        ],
+        footer: 'ASK AT THE COUNTER TO JOIN - IT IS FREE',
+      },
+    },
+    {
+      key: 'opening-hours',
+      name: 'Opening Hours',
+      description: 'Kitchen and bar hours for every day of the week.',
+      tags: ['hours', 'info'],
+      recipe: 'scheduleRows',
+      orientation: 'landscape',
+      spec: {
+        palette: 'mono',
+        title: 'Opening Hours',
+        subtitle: 'LAST ORDERS 30 MIN BEFORE CLOSE',
+        colTime: 'DAY',
+        colName: 'KITCHEN',
+        colMeta: 'BAR',
+        rows: [
+          ['MON', 'Closed', 'Closed'],
+          ['TUE', '12:00 - 21:30', 'until 23:00'],
+          ['WED', '12:00 - 21:30', 'until 23:00'],
+          ['THU', '12:00 - 22:00', 'until 23:30'],
+          ['FRI', '12:00 - 22:30', 'until 01:00'],
+          ['SAT', '10:00 - 22:30', 'until 01:00'],
+          ['SUN', '10:00 - 20:00', 'until 22:00'],
+        ],
+      },
+    },
+    {
+      key: 'delivery-partners',
+      name: 'Delivery and Collection',
+      description: 'Delivery apps, fees and cut-off times in a two-column list.',
+      tags: ['delivery', 'info'],
+      recipe: 'directory',
+      orientation: 'landscape',
+      spec: {
+        palette: 'ocean',
+        title: 'Delivery and Collection',
+        entries: [
+          ['Deliveroo', '25 min'],
+          ['Uber Eats', '30 min'],
+          ['Just Eat', '35 min'],
+          ['Order direct with us', '20 min'],
+          ['Click and collect', '15 min'],
+          ['Minimum order', '12.00'],
+          ['Delivery fee', '2.50'],
+          ['Free delivery over', '30.00'],
+          ['Delivery radius', '3 miles'],
+          ['Last orders', '21:45'],
+        ],
+        footer: 'ORDER DIRECT AND MORE OF IT STAYS IN THE KITCHEN',
+      },
+    },
+    {
+      key: 'now-hiring',
+      name: 'Now Hiring',
+      description: 'Portrait recruitment poster with a scan-to-apply code.',
+      tags: ['hiring', 'jobs'],
+      recipe: 'announcement',
+      orientation: 'portrait',
+      spec: {
+        palette: 'forest',
+        eyebrow: 'JOIN THE TEAM',
+        title: 'We Are Hiring',
+        titleSize: 0.12,
+        body: 'Chef de partie, bartenders and weekend servers. Full and part-time shifts.',
+        qr: 'https://example.com/jobs',
+        qrLabel: 'See open roles',
+      },
+    },
+    {
+      key: 'review-us',
+      name: 'Review Us QR',
+      description: 'Polite ask for a review with a scannable review link.',
+      tags: ['qr', 'reviews'],
+      recipe: 'announcement',
+      orientation: 'landscape',
+      spec: {
+        palette: 'ocean',
+        eyebrow: 'ENJOYED YOUR MEAL',
+        title: 'Leave Us a Review',
+        titleSize: 0.12,
+        body: 'Thirty seconds of your time makes a real difference to a small kitchen.',
+        qr: 'https://example.com/review',
+        qrLabel: 'Rate your visit',
+      },
+    },
+    {
+      key: 'guest-quote',
+      name: 'Guest Review Quote',
+      description: 'Pull quote from a five-star guest review.',
+      tags: ['reviews', 'social proof'],
+      recipe: 'quoteCard',
+      orientation: 'landscape',
+      spec: {
+        palette: 'paper',
+        quote: 'Best Sunday roast we have had outside my mother\'s kitchen.',
+        quoteSize: 0.058,
+        author: 'ELLIE R.  -  FIVE STARS ON GOOGLE',
+      },
+    },
+    {
+      key: 'kitchen-facts',
+      name: 'From Our Kitchen',
+      description: 'Four proof-point tiles on sourcing, ageing and ratings.',
+      tags: ['about', 'sourcing'],
+      recipe: 'statTiles',
+      orientation: 'landscape',
+      spec: {
+        palette: 'teal',
+        title: 'From Our Kitchen',
+        subtitle: 'THE COPPER SKILLET',
+        tiles: [
+          { label: 'BREAD', value: 'Daily', sub: 'Baked in-house from 6 am' },
+          { label: 'BEEF', value: '35 Day', sub: 'Dry-aged, grass fed' },
+          { label: 'SUPPLIERS', value: '12', sub: 'All within forty miles' },
+          { label: 'GUEST RATING', value: '4.8', sub: 'Across 1,200 reviews' },
+        ],
+        footer: 'ASK US WHERE ANYTHING ON YOUR PLATE CAME FROM',
+      },
+    },
+    {
+      key: 'market-fresh',
+      name: 'Fresh This Week',
+      description: 'Three-frame photo strip for market produce and specials.',
+      tags: ['photos', 'produce'],
+      recipe: 'photoStrip',
+      orientation: 'landscape',
+      spec: {
+        palette: 'forest',
+        title: 'Fresh This Week',
+        subtitle: 'Straight from the market to the pass',
+        frames: 3,
+        captions: ['Heritage tomatoes', 'Line-caught sea bass', 'Sourdough at 6 am'],
+        qr: 'https://example.com/specials',
+        qrLabel: 'This week',
+      },
+    },
+  ],
+}

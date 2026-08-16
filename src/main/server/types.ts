@@ -1,4 +1,4 @@
-export type ContentType = 'image' | 'video' | 'html' | 'text'
+export type ContentType = 'image' | 'video' | 'html' | 'text' | 'design'
 export type ScheduleMode = 'loop' | 'scheduled' | 'manual'
 export type TextPosition = 'center' | 'top' | 'bottom' | 'ticker'
 
@@ -12,6 +12,8 @@ export interface ContentItem {
   mimeType?: string
   // html
   htmlUrl?: string
+  // design — the id of a Design rendered by GET /tv/scene/:id
+  designId?: string
   // text
   textContent?: string
   textBgColor?: string
@@ -94,6 +96,9 @@ export interface AppSettings {
   serverId: string
   pairingMode: 'open' | 'required'
   defaultTemplateId: string
+  /** Set once the operator has chosen (or declined) template categories, so the
+   *  first-run picker never reappears on an install that deliberately has none. */
+  templatesOnboardedAt?: string
 }
 
 // ── Templates ────────────────────────────────────────────────────────────────
@@ -197,11 +202,162 @@ export interface DeviceGroup {
   templateId?: string
 }
 
+// ── Designs (free-form canvas documents made in the Designer) ────────────────
+
+/** Fonts a design may use. Every id resolves to a CSS stack in fonts.ts; ids
+ *  with a bundled woff2 also get an @font-face served from /fonts, so scenes
+ *  look identical on TVs that have no system fonts beyond one sans. */
+export type SceneFontId =
+  | 'sans' | 'sans-narrow' | 'serif' | 'mono'
+  | 'inter' | 'oswald' | 'bebas' | 'playfair' | 'pacifico' | 'roboto-slab'
+
+export type SceneElementType = 'text' | 'shape' | 'image' | 'qr'
+export type ShapeKind = 'rect' | 'ellipse' | 'triangle' | 'line'
+export type SceneAlign = 'left' | 'center' | 'right'
+export type SceneVAlign = 'top' | 'middle' | 'bottom'
+export type SceneFit = 'contain' | 'cover' | 'fill'
+
+/** Coordinates are in the design's own pixel space (width×height below); the
+ *  scene renderer scales the whole stage to the panel, so one document fits
+ *  every resolution. Array order is z-order — last element paints on top. */
+export interface SceneElementBase {
+  id: string
+  type: SceneElementType
+  name?: string
+  x: number
+  y: number
+  w: number
+  h: number
+  rotation: number   // degrees
+  opacity: number    // 0–100
+  locked?: boolean
+}
+
+export interface TextElement extends SceneElementBase {
+  type: 'text'
+  text: string
+  font: SceneFontId
+  fontSize: number
+  bold: boolean
+  italic: boolean
+  underline: boolean
+  align: SceneAlign
+  valign: SceneVAlign
+  color: string
+  lineHeight: number      // multiplier
+  letterSpacing: number   // px
+  /** null = no band behind the text */
+  bgColor: string | null
+  bgOpacity: number       // 0–100, applies to bgColor only
+  radius: number          // band corner radius
+}
+
+export interface ShapeElement extends SceneElementBase {
+  type: 'shape'
+  kind: ShapeKind
+  /** null = hollow (stroke only) */
+  fill: string | null
+  fillOpacity: number     // 0–100
+  stroke: string | null
+  strokeWidth: number
+  radius: number          // rect corner radius
+}
+
+export interface ImageElement extends SceneElementBase {
+  type: 'image'
+  /** An /uploads/ path, or null = placeholder frame the user fills with their
+   *  own photo. Placeholders draw a hint in the Designer and nothing on TVs. */
+  src: string | null
+  fit: SceneFit
+  radius: number
+}
+
+export interface QrElement extends SceneElementBase {
+  type: 'qr'
+  data: string
+  fg: string
+  /** null = transparent behind the modules */
+  bg: string | null
+}
+
+export type SceneElement = TextElement | ShapeElement | ImageElement | QrElement
+
+export interface SceneBackground {
+  color: string
+  gradient?: { from: string; to: string; angle: number }
+  imagePath?: string
+  imageFit?: SceneFit
+}
+
+/** Stored in db.json. Unlike zone Templates, geometry IS user data here — the
+ *  whole point of the Designer — so it is strictly whitelisted by
+ *  sanitizeDesign() and rendered only through renderSceneHtml(), which escapes
+ *  every string. Nothing a design contains can inject markup into a screen. */
+export interface Design {
+  id: string
+  name: string
+  /** Template-pack provenance, so the Designer's template rail can offer the
+   *  rest of the same category. */
+  category?: string
+  templateKey?: string
+  width: number
+  height: number
+  background: SceneBackground
+  elements: SceneElement[]
+  createdAt: string
+  updatedAt: string
+}
+
+// ── Template packs (per-industry template catalogs, installed on demand) ─────
+
+/** A template as it ships inside a pack: a Design without identity/timestamps. */
+export type PackDesign = Omit<Design, 'id' | 'createdAt' | 'updatedAt'>
+
+export interface PackTemplate {
+  key: string
+  name: string
+  description?: string
+  tags?: string[]
+  design: PackDesign
+}
+
+export interface TemplatePack {
+  formatVersion: 1
+  category: string
+  name: string
+  description: string
+  icon: string
+  version: string
+  templates: PackTemplate[]
+}
+
+export interface PackRegistryEntry {
+  category: string
+  name: string
+  description: string
+  icon: string
+  version: string
+  templateCount: number
+  /** Relative to the registry URL, e.g. "restaurants.json". */
+  file: string
+}
+
+/** Recorded in db.json when the operator installs a category. The pack body
+ *  lives in <userData>/template-packs/<category>.json, not in the db. */
+export interface InstalledPack {
+  category: string
+  version: string
+  templateCount: number
+  installedAt: string
+}
+
 export interface AppDB {
   content: ContentItem[]
   devices: Device[]
   projects: Project[]
   deviceGroups: DeviceGroup[]
   templates: Template[]
+  designs: Design[]
+  installedPacks: InstalledPack[]
   settings: AppSettings
 }

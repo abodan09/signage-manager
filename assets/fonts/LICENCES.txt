@@ -1,0 +1,15 @@
+Fonts bundled with Signage Manager
+=================================
+
+Inter — SIL OFL 1.1
+Oswald — SIL OFL 1.1
+Bebas Neue — SIL OFL 1.1
+Playfair Display — SIL OFL 1.1
+Pacifico — SIL OFL 1.1
+Roboto Slab — Apache 2.0
+
+All faces are redistributable under their respective licences.
+SIL Open Font License 1.1: https://scripts.sil.org/OFL
+Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0
+
+Re-download with: node scripts/fetch-fonts.mjs

@@ -3,9 +3,12 @@ import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import ContentPage from './pages/ContentPage'
+import DesignerPage from './pages/DesignerPage'
 import DevicesPage from './pages/DevicesPage'
+import LayoutsPage from './pages/LayoutsPage'
 import SettingsPage from './pages/SettingsPage'
 import TemplatesPage from './pages/TemplatesPage'
+import { TemplateSetupWizard } from './components/CategoryPicker'
 import UpdateBanner from './components/UpdateBanner'
 import HelpDialog from './components/HelpDialog'
 import ReportIssueDialog from './components/ReportIssueDialog'
@@ -201,11 +204,26 @@ export default function App() {
   const [showCheckUpdate, setShowCheckUpdate]   = useState(false)
   const [showReportIssue, setShowReportIssue]   = useState(false)
   const [version, setVersion]                   = useState('')
+  const [serverUrl, setServerUrl]               = useState('')
+  const [showTemplateSetup, setShowTemplateSetup] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
     window.electronAPI.trackEvent?.('page_view', { page: location.pathname.replace(/^\//, '') || 'dashboard' })
   }, [location.pathname])
+
+  // First run: offer the template categories once, before the operator has to
+  // go looking for them. The server decides when to ask, so the prompt never
+  // reappears for an install that deliberately has no categories.
+  useEffect(() => {
+    window.electronAPI.getServerUrl().then(url => {
+      setServerUrl(url)
+      fetch(`${url}/api/settings`)
+        .then(r => r.json())
+        .then(s => { if (s.needsTemplateSetup) setShowTemplateSetup(true) })
+        .catch(() => { /* server still starting — Templates offers the same choice */ })
+    })
+  }, [])
 
   useEffect(() => {
     window.electronAPI.getVersion().then(setVersion)
@@ -236,12 +254,17 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/content"   element={<ContentPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/designer/:id" element={<DesignerPage />} />
+            <Route path="/layouts"   element={<LayoutsPage />} />
             <Route path="/devices"   element={<DevicesPage />} />
             <Route path="/settings"  element={<SettingsPage />} />
           </Routes>
         </main>
       </div>
 
+      {showTemplateSetup && serverUrl && (
+        <TemplateSetupWizard serverUrl={serverUrl} onClose={() => setShowTemplateSetup(false)} />
+      )}
       {showHelp        && <HelpDialog onClose={() => setShowHelp(false)} />}
       {showAbout       && <AboutDialog version={version} onClose={() => setShowAbout(false)} />}
       {showCheckUpdate && <CheckUpdatesDialog onClose={() => setShowCheckUpdate(false)} />}

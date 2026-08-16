@@ -514,6 +514,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
       qs('#frame').src = item.htmlUrl || '';
       startProgress(dur);
       mainTimer = setTimeout(nextMain, dur);
+
+    } else if (item.type === 'design') {
+      // A design is rendered by the manager itself, so the frame is same-origin
+      // and needs no token: /tv is open to the LAN exactly like this page.
+      showLayer('html-layer');
+      qs('#frame').src = BASE + '/tv/scene/' + encodeURIComponent(item.designId || '');
+      startProgress(dur);
+      mainTimer = setTimeout(nextMain, dur);
+
+    } else {
+      // Unknown type — never leave the rotation without a pending timer, or the
+      // wall freezes on whatever was showing before.
+      mainTimer = setTimeout(nextMain, dur);
     }
   }
 

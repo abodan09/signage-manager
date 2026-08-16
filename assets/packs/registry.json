@@ -1,0 +1,104 @@
+{
+  "formatVersion": 1,
+  "packs": [
+    {
+      "category": "church",
+      "name": "Church",
+      "description": "Service times, sermon series, giving and prayer QRs, groups and seasonal service announcements for congregations.",
+      "icon": "⛪",
+      "version": "1.0.0",
+      "templateCount": 27,
+      "file": "church.json"
+    },
+    {
+      "category": "education",
+      "name": "Education",
+      "description": "Timetables, exam boards, canteen menus and campus notices for schools and colleges.",
+      "icon": "🎓",
+      "version": "1.0.0",
+      "templateCount": 29,
+      "file": "education.json"
+    },
+    {
+      "category": "gym",
+      "name": "Gym",
+      "description": "Class timetables, membership offers, rules and motivation for gyms, studios and leisure centres.",
+      "icon": "🏋️",
+      "version": "1.0.0",
+      "templateCount": 26,
+      "file": "gym.json"
+    },
+    {
+      "category": "healthcare",
+      "name": "Healthcare",
+      "description": "Waiting room boards, wait times, hygiene steps and clinic notices for practices, clinics and hospitals.",
+      "icon": "🏥",
+      "version": "1.0.0",
+      "templateCount": 29,
+      "file": "healthcare.json"
+    },
+    {
+      "category": "hospitality",
+      "name": "Hospitality",
+      "description": "Lobby welcomes, guest info, dining hours and amenity boards for hotels, resorts and inns.",
+      "icon": "🛎️",
+      "version": "1.0.0",
+      "templateCount": 28,
+      "file": "hospitality.json"
+    },
+    {
+      "category": "manufacturing",
+      "name": "Manufacturing",
+      "description": "Safety boards, production KPIs, shift information and plant notices for factories and workshops.",
+      "icon": "🏭",
+      "version": "1.0.0",
+      "templateCount": 28,
+      "file": "manufacturing.json"
+    },
+    {
+      "category": "offices",
+      "name": "Offices",
+      "description": "Lobby welcomes, meeting room schedules, KPIs and staff notices for offices and workplaces.",
+      "icon": "🏢",
+      "version": "1.0.0",
+      "templateCount": 28,
+      "file": "offices.json"
+    },
+    {
+      "category": "personalize",
+      "name": "Personalize",
+      "description": "Everyday screens any business needs: greetings, notices, opening hours, wifi, hiring and celebrations.",
+      "icon": "✨",
+      "version": "1.0.0",
+      "templateCount": 28,
+      "file": "personalize.json"
+    },
+    {
+      "category": "restaurants",
+      "name": "Restaurants",
+      "description": "Menu boards, specials and promos for restaurants, cafes and bars.",
+      "icon": "🍽️",
+      "version": "1.0.0",
+      "templateCount": 30,
+      "file": "restaurants.json"
+    },
+    {
+      "category": "retail",
+      "name": "Retail",
+      "description": "Sale promos, product spotlights, store hours and wayfinding for shops and retail parks.",
+      "icon": "🛍️",
+      "version": "1.0.0",
+      "templateCount": 28,
+      "file": "retail.json"
+    },
+    {
+      "category": "transportation",
+      "name": "Transportation",
+      "description": "Departure boards, live times, fares and travel notices for rail, bus, transit and airports.",
+      "icon": "🚆",
+      "version": "1.0.0",
+      "templateCount": 30,
+      "file": "transportation.json"
+    }
+  ]
+}

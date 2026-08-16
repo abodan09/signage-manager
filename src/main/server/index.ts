@@ -6,13 +6,17 @@ import fs from 'fs'
 import { WebSocketServer, WebSocket } from 'ws'
 import { JsonDB } from './database'
 import { createContentRouter } from './routes/content'
+import { createDesignsRouter } from './routes/designs'
 import { createDevicesRouter } from './routes/devices'
 import { createGroupsRouter } from './routes/groups'
+import { createPacksRouter } from './routes/packs'
 import { createPairRouter } from './routes/pair'
 import { createPlayerRouter } from './routes/player'
 import { createProjectsRouter } from './routes/projects'
+import { createSceneRouter } from './routes/scene'
 import { createSettingsRouter } from './routes/settings'
 import { createTemplatesRouter } from './routes/templates'
+import { PackStore } from './packs'
 import { startDiscovery, getLocalIP } from './discovery'
 import { PairingStore, sha256 } from './pairing'
 import { track, setTvCountProvider } from '../telemetry'
@@ -48,6 +52,12 @@ const FEATURE_EVENTS: Array<[string, RegExp, string]> = [
   ['POST',   /^\/api\/templates\/?$/,                       'template_created'],
   ['PUT',    /^\/api\/templates\/assign\/?$/,               'template_assigned'],
   ['PUT',    /^\/api\/templates\/[^/]+\/?$/,                'template_updated'],
+  ['POST',   /^\/api\/packs\/[^/]+\/install\/?$/,           'pack_installed'],
+  ['DELETE', /^\/api\/packs\/[^/]+\/?$/,                    'pack_removed'],
+  ['POST',   /^\/api\/designs\/[^/]+\/publish\/?$/,         'design_published'],
+  ['POST',   /^\/api\/designs\/?$/,                         'design_created'],
+  ['PUT',    /^\/api\/designs\/[^/]+\/?$/,                  'design_updated'],
+  ['DELETE', /^\/api\/designs\/[^/]+\/?$/,                  'design_deleted'],
   ['GET',    /^\/tv\/player\/?$/,                           'player_opened'],
 ]
 
@@ -79,11 +89,24 @@ function isLoopback(addr: string | undefined): boolean {
   return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1'
 }
 
-export async function startServer(userData: string, port: number, appVersion = '1.0.0'): Promise<number> {
+/** Where the shipped assets live. Packaged the app runs from inside app.asar
+ *  (dist/main/server/index.js → ../../../assets); in dev it is the repo root. */
+function resolveAssetsDir(): string {
+  return path.join(__dirname, '..', '..', '..', 'assets')
+}
+
+export async function startServer(
+  userData: string,
+  port: number,
+  appVersion = '1.0.0',
+  assetsDir = resolveAssetsDir(),
+): Promise<number> {
   fs.mkdirSync(path.join(userData, 'uploads'), { recursive: true })
 
   const db = new JsonDB(userData)
   const uploadsDir = path.join(userData, 'uploads')
+  const fontsDir = path.join(assetsDir, 'fonts')
+  const packs = new PackStore(userData, assetsDir, db)
   const pairing = new PairingStore()
   pairing.startSweeper()
 
@@ -117,14 +140,20 @@ export async function startServer(userData: string, port: number, appVersion = '
   })
 
   app.use('/uploads', express.static(uploadsDir))
+  // Display faces for designed scenes. TVs carry almost no fonts of their own,
+  // so the manager serves them; immutable filenames make a long cache correct.
+  app.use('/fonts', express.static(fontsDir, { maxAge: '30d', fallthrough: true }))
   app.use('/api/content', createContentRouter(db, uploadsDir, wss, tvClients))
+  app.use('/api/designs', createDesignsRouter(db, packs, uploadsDir, tvClients))
   app.use('/api/devices', createDevicesRouter(db, wss, tvClients))
   app.use('/api/groups', createGroupsRouter(db, tvClients))
+  app.use('/api/packs', createPacksRouter(db, packs))
   app.use('/api/pair', createPairRouter(db, pairing, tvClients))
   app.use('/api/projects', createProjectsRouter(db, uploadsDir, wss, tvClients))
   app.use('/api/settings', createSettingsRouter(db, tvClients))
   app.use('/api/templates', createTemplatesRouter(db, tvClients))
   app.use('/tv', createPlayerRouter(appVersion))
+  app.use('/tv', createSceneRouter(db, packs, fontsDir))
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, connectedTVs: tvClients.size })

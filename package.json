@@ -9,12 +9,15 @@
     "start": "npm run build && electron .",
     "test": "node tests/run-all.js",
     "generate-icons": "node scripts/generate-icons.mjs",
-    "dist": "node scripts/generate-icons.mjs && npm run build && electron-builder"
+    "fetch-fonts": "node scripts/fetch-fonts.mjs",
+    "build-packs": "node scripts/build-packs.mjs",
+    "dist": "node scripts/generate-icons.mjs && npm run build && npm run build-packs && electron-builder"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "multer": "^1.4.5-lts.1",
+    "qrcode-generator": "^1.5.0",
     "uuid": "^9.0.1",
     "ws": "^8.16.0"
   },
