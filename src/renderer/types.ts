@@ -138,8 +138,15 @@ export type SceneFontId =
   | 'sans' | 'sans-narrow' | 'serif' | 'mono'
   | 'inter' | 'oswald' | 'bebas' | 'playfair' | 'pacifico' | 'roboto-slab'
 
-export type SceneElementType = 'text' | 'shape' | 'image' | 'qr'
-export type ShapeKind = 'rect' | 'ellipse' | 'triangle' | 'line'
+export type SceneElementType = 'text' | 'shape' | 'image' | 'qr' | 'widget'
+export type ShapeKind =
+  | 'rect' | 'ellipse' | 'triangle' | 'line'
+  | 'triangle-down' | 'diamond' | 'pentagon' | 'hexagon' | 'star' | 'burst'
+  | 'arrow-right' | 'arrow-left' | 'chevron' | 'banner' | 'shield' | 'badge'
+export type QrKind =
+  | 'url' | 'text' | 'email' | 'phone' | 'sms' | 'wifi'
+  | 'whatsapp' | 'facebook' | 'instagram' | 'x' | 'appstore'
+export type WidgetKind = 'clock' | 'date' | 'weather' | 'scroll'
 export type SceneAlign = 'left' | 'center' | 'right'
 export type SceneVAlign = 'top' | 'middle' | 'bottom'
 export type SceneFit = 'contain' | 'cover' | 'fill'
@@ -195,11 +202,27 @@ export interface ImageElement extends SceneElementBase {
 export interface QrElement extends SceneElementBase {
   type: 'qr'
   data: string
+  kind?: QrKind
+  fields?: Record<string, string>
   fg: string
   bg: string | null
 }
 
-export type SceneElement = TextElement | ShapeElement | ImageElement | QrElement
+export interface WidgetElement extends SceneElementBase {
+  type: 'widget'
+  kind: WidgetKind
+  config: Record<string, unknown>
+  font: SceneFontId
+  fontSize: number
+  bold: boolean
+  color: string
+  align: SceneAlign
+  bgColor: string | null
+  bgOpacity: number
+  radius: number
+}
+
+export type SceneElement = TextElement | ShapeElement | ImageElement | QrElement | WidgetElement
 
 export interface SceneBackground {
   color: string

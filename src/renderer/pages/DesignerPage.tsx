@@ -6,7 +6,7 @@ import { useSceneFonts } from '../scene/fonts'
 import { Inspector } from '../designer/Inspector'
 import {
   BackgroundPanel, ElementsPanel, LayersPanel, PANELS, PhotosPanel, PanelId,
-  QrPanel, TemplatesPanel, TextPanel,
+  QrPanel, TemplatesPanel, TextPanel, WidgetsPanel,
 } from '../designer/Panels'
 import { PushToScreens } from '../designer/PushToScreens'
 
@@ -89,6 +89,17 @@ export default function DesignerPage() {
       .catch(() => { /* the photo panel just shows nothing */ })
   }, [serverUrl])
   useEffect(() => { loadAssets() }, [loadAssets])
+
+  // A weather widget points at a configured Weather app rather than carrying
+  // its own location, so the inspector needs the list to choose from.
+  const [weatherApps, setWeatherApps] = useState<Array<{ id: string; name: string }>>([])
+  useEffect(() => {
+    if (!serverUrl) return
+    fetch(`${serverUrl}/api/apps/instances`)
+      .then(r => r.json())
+      .then(d => setWeatherApps((d.instances ?? []).filter((i: { appId: string }) => i.appId === 'weather')))
+      .catch(() => { /* the widget then prompts to set one up */ })
+  }, [serverUrl])
 
   // ── viewport measuring (drives "fit" zoom) ─────────────────────────────────
 
@@ -177,6 +188,7 @@ export default function DesignerPage() {
       shape: { kind: 'rect', fill: '#3b82f6', fillOpacity: 100, stroke: null, strokeWidth: 0, radius: 0 },
       image: { src: null, fit: 'cover', radius: 0 },
       qr: { data: 'https://example.com', fg: '#000000', bg: '#ffffff' },
+      widget: { kind: 'clock', config: {}, font: 'inter', fontSize: 96, bold: false, color: '#ffffff', align: 'center', bgColor: null, bgOpacity: 100, radius: 0 },
     }
     const type = partial.type ?? 'text'
     const el = { ...base, ...defaults[type], ...partial, id: base.id } as SceneElement
@@ -492,6 +504,7 @@ export default function DesignerPage() {
             <TemplatesPanel serverUrl={serverUrl} design={design}
               onApply={t => (design.elements.length ? setConfirmTemplate(t) : applyTemplate(t))} />
           )}
+          {panel === 'widgets' && <WidgetsPanel serverUrl={serverUrl} onAdd={addElement} />}
           {panel === 'text' && <TextPanel onAdd={addElement} />}
           {panel === 'elements' && <ElementsPanel onAdd={addElement} />}
           {panel === 'photos' && (
@@ -616,6 +629,7 @@ export default function DesignerPage() {
               onOrder={dir => reorder(selected.id, dir)}
               onAlign={alignToCanvas}
               onPickImage={() => setPanel('photos')}
+              weatherApps={weatherApps}
             />
           ) : (
             <div style={{ padding: 20, color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6 }}>

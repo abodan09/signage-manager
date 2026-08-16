@@ -213,8 +213,23 @@ export type SceneFontId =
   | 'sans' | 'sans-narrow' | 'serif' | 'mono'
   | 'inter' | 'oswald' | 'bebas' | 'playfair' | 'pacifico' | 'roboto-slab'
 
-export type SceneElementType = 'text' | 'shape' | 'image' | 'qr'
-export type ShapeKind = 'rect' | 'ellipse' | 'triangle' | 'line'
+export type SceneElementType = 'text' | 'shape' | 'image' | 'qr' | 'widget'
+export type ShapeKind =
+  | 'rect' | 'ellipse' | 'triangle' | 'line'
+  | 'triangle-down' | 'diamond' | 'pentagon' | 'hexagon' | 'star' | 'burst'
+  | 'arrow-right' | 'arrow-left' | 'chevron' | 'banner' | 'shield' | 'badge'
+
+/** What a QR code stands for. The payload a phone actually reads is derived
+ *  from these, because the encodings are unobvious — a Wi-Fi code is not a URL
+ *  and an operator should not have to know its grammar. */
+export type QrKind =
+  | 'url' | 'text' | 'email' | 'phone' | 'sms' | 'wifi'
+  | 'whatsapp' | 'facebook' | 'instagram' | 'x' | 'appstore'
+
+/** Live elements. Everything else in a design is fixed at save time; these
+ *  redraw on the screen — which is what separates a signage design from a
+ *  poster. */
+export type WidgetKind = 'clock' | 'date' | 'weather' | 'scroll'
 export type SceneAlign = 'left' | 'center' | 'right'
 export type SceneVAlign = 'top' | 'middle' | 'bottom'
 export type SceneFit = 'contain' | 'cover' | 'fill'
@@ -276,13 +291,33 @@ export interface ImageElement extends SceneElementBase {
 
 export interface QrElement extends SceneElementBase {
   type: 'qr'
+  /** The encoded payload. Derived from kind + fields, and the only thing the
+   *  renderer reads, so an old design with no kind still scans. */
   data: string
+  kind?: QrKind
+  /** Whatever the chosen kind needs: {url} | {ssid,password,security} | … */
+  fields?: Record<string, string>
   fg: string
   /** null = transparent behind the modules */
   bg: string | null
 }
 
-export type SceneElement = TextElement | ShapeElement | ImageElement | QrElement
+/** A live element. `config` is validated per kind, exactly like an app's. */
+export interface WidgetElement extends SceneElementBase {
+  type: 'widget'
+  kind: WidgetKind
+  config: Record<string, unknown>
+  font: SceneFontId
+  fontSize: number
+  bold: boolean
+  color: string
+  align: SceneAlign
+  bgColor: string | null
+  bgOpacity: number
+  radius: number
+}
+
+export type SceneElement = TextElement | ShapeElement | ImageElement | QrElement | WidgetElement
 
 export interface SceneBackground {
   color: string

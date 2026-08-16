@@ -1,9 +1,10 @@
 import qrFactory from 'qrcode-generator'
 import type {
-  Design, ImageElement, PackDesign, QrElement, SceneAlign, SceneBackground, SceneElement,
-  SceneFit, SceneVAlign, ShapeElement, ShapeKind, TextElement,
+  Design, ImageElement, PackDesign, QrElement, QrKind, SceneAlign, SceneBackground, SceneElement,
+  SceneFit, SceneVAlign, ShapeElement, ShapeKind, TextElement, WidgetElement, WidgetKind,
 } from './types'
 import { SCENE_FONTS, isSceneFontId } from './fonts'
+import { buildQrData, getQrKind } from './qr-kinds'
 
 // Designs are the one place where layout IS user data (the Designer exists to
 // edit it), so the compensating controls both live here:
@@ -19,6 +20,14 @@ import { SCENE_FONTS, isSceneFontId } from './fonts'
 const HEX = /^#[0-9a-fA-F]{6}$/
 const UPLOADS_RE = /^\/uploads\/[A-Za-z0-9._-]+$/
 const ID_RE = /^[A-Za-z0-9_-]{1,40}$/
+
+/** Every shape a design may contain. Kept beside SHAPE_POINTS below so adding
+ *  a shape means touching one place, not two that can disagree. */
+export const SHAPE_KINDS: ShapeKind[] = [
+  'rect', 'ellipse', 'line', 'triangle', 'triangle-down', 'diamond', 'pentagon',
+  'hexagon', 'star', 'burst', 'arrow-right', 'arrow-left', 'chevron',
+  'banner', 'shield', 'badge',
+]
 
 export const SCENE_LIMITS = {
   minSide: 240,
@@ -110,7 +119,7 @@ function sanitizeElement(input: unknown, canvasW: number, canvasH: number, idx: 
   }
 
   if (src.type === 'shape') {
-    const kind = oneOf<ShapeKind>(src.kind ?? 'rect', ['rect', 'ellipse', 'triangle', 'line'], 'kind'); if (!kind.ok) return err(at(kind.error))
+    const kind = oneOf<ShapeKind>(src.kind ?? 'rect', SHAPE_KINDS, 'kind'); if (!kind.ok) return err(at(kind.error))
     const fill = hexOrNull(src.fill, 'fill'); if (!fill.ok) return err(at(fill.error))
     const fillOpacity = num(src.fillOpacity ?? 100, 0, 100, 'fillOpacity'); if (!fillOpacity.ok) return err(at(fillOpacity.error))
     const stroke = hexOrNull(src.stroke, 'stroke'); if (!stroke.ok) return err(at(stroke.error))
@@ -137,14 +146,97 @@ function sanitizeElement(input: unknown, canvasW: number, canvasH: number, idx: 
   }
 
   if (src.type === 'qr') {
-    const data = typeof src.data === 'string' ? src.data.slice(0, SCENE_LIMITS.maxQrLen) : ''
     const fg = hex(src.fg ?? '#000000', 'fg'); if (!fg.ok) return err(at(fg.error))
     const bg = hexOrNull(src.bg ?? '#ffffff', 'bg'); if (!bg.ok) return err(at(bg.error))
-    const el: QrElement = { ...base.value, type: 'qr', data, fg: fg.value, bg: bg.value }
+
+    // A kind plus its fields is the source of truth when present; `data` is
+    // recomputed from them so a stored payload can never drift from what the
+    // Designer showed. Designs saved before kinds existed keep their payload.
+    let data = typeof src.data === 'string' ? src.data.slice(0, SCENE_LIMITS.maxQrLen) : ''
+    let kind: QrKind | undefined
+    let fields: Record<string, string> | undefined
+
+    if (src.kind !== undefined && src.kind !== null && src.kind !== '') {
+      if (!getQrKind(String(src.kind))) return err(at('unknown QR code type'))
+      kind = String(src.kind) as QrKind
+      const rawFields = (src.fields && typeof src.fields === 'object' ? src.fields : {}) as Record<string, unknown>
+      fields = {}
+      for (const spec of getQrKind(kind)!.fields) {
+        const v = rawFields[spec.key]
+        fields[spec.key] = typeof v === 'string' ? v.slice(0, 400) : ''
+      }
+      data = buildQrData(kind, fields).slice(0, SCENE_LIMITS.maxQrLen)
+    }
+
+    const el: QrElement = {
+      ...base.value, type: 'qr', data, fg: fg.value, bg: bg.value,
+      ...(kind ? { kind, fields } : {}),
+    }
+    return { ok: true, value: el }
+  }
+
+  if (src.type === 'widget') {
+    const kind = oneOf<WidgetKind>(src.kind ?? 'clock', ['clock', 'date', 'weather', 'scroll'], 'widget kind')
+    if (!kind.ok) return err(at(kind.error))
+    const font = isSceneFontId(src.font) ? src.font : 'inter'
+    const fontSize = num(src.fontSize ?? 64, 6, 800, 'fontSize'); if (!fontSize.ok) return err(at(fontSize.error))
+    const color = hex(src.color ?? '#ffffff', 'color'); if (!color.ok) return err(at(color.error))
+    const align = oneOf<SceneAlign>(src.align ?? 'center', ['left', 'center', 'right'], 'align'); if (!align.ok) return err(at(align.error))
+    const bgColor = hexOrNull(src.bgColor, 'bgColor'); if (!bgColor.ok) return err(at(bgColor.error))
+    const bgOpacity = num(src.bgOpacity ?? 100, 0, 100, 'bgOpacity'); if (!bgOpacity.ok) return err(at(bgOpacity.error))
+    const radius = num(src.radius ?? 0, 0, 400, 'radius'); if (!radius.ok) return err(at(radius.error))
+
+    const cfg = sanitizeWidgetConfig(kind.value, src.config)
+    if (!cfg.ok) return err(at(cfg.error))
+
+    const el: WidgetElement = {
+      ...base.value, type: 'widget', kind: kind.value, config: cfg.value,
+      font, fontSize: fontSize.value, bold: src.bold === true, color: color.value,
+      align: align.value, bgColor: bgColor.value, bgOpacity: bgOpacity.value, radius: radius.value,
+    }
     return { ok: true, value: el }
   }
 
   return err(at('unknown element type'))
+}
+
+/** Per-kind widget settings. Small enough to keep inline; if a fifth widget
+ *  arrives this wants the app framework's declarative field treatment. */
+function sanitizeWidgetConfig(kind: WidgetKind, input: unknown): Ok<Record<string, unknown>> | Err {
+  const src = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  const str = (k: string, max = 120) => String(src[k] ?? '').slice(0, max)
+
+  if (kind === 'clock') {
+    const f = String(src.format ?? '24h')
+    if (!['24h', '12h', '12h-ampm'].includes(f)) return err('clock format must be 24h, 12h or 12h-ampm')
+    out.format = f
+    out.showSeconds = src.showSeconds === true
+    out.timezoneOffset = Number.isFinite(Number(src.timezoneOffset)) ? Number(src.timezoneOffset) : null
+    out.label = str('label', 40)
+  } else if (kind === 'date') {
+    const f = String(src.format ?? 'long')
+    if (!['long', 'short', 'numeric', 'weekday'].includes(f)) return err('date format must be long, short, numeric or weekday')
+    out.format = f
+    out.timezoneOffset = Number.isFinite(Number(src.timezoneOffset)) ? Number(src.timezoneOffset) : null
+  } else if (kind === 'weather') {
+    // Points at a configured Weather app rather than duplicating its settings:
+    // one place to set the location, one fetch, one cache.
+    const id = str('appInstanceId', 60)
+    if (id && !/^[A-Za-z0-9-]{1,60}$/.test(id)) return err('weather widget has a bad app reference')
+    out.appInstanceId = id
+    const show = String(src.show ?? 'temp')
+    if (!['temp', 'temp-icon', 'full'].includes(show)) return err('weather widget show must be temp, temp-icon or full')
+    out.show = show
+  } else {
+    const text = String(src.text ?? '').slice(0, SCENE_LIMITS.maxTextLen)
+    const speed = Number(src.speed ?? 10)
+    if (!Number.isFinite(speed) || speed < 1 || speed > 20) return err('scroll speed must be 1–20')
+    out.text = text
+    out.speed = Math.round(speed)
+    out.direction = src.direction === 'right' ? 'right' : 'left'
+  }
+  return { ok: true, value: out }
 }
 
 function sanitizeBackground(input: unknown): Ok<SceneBackground> | Err {
@@ -212,6 +304,17 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
+/** A CSS declaration block, safe inside style="…".
+ *
+ *  Font stacks contain double quotes — 'Inter', Arial becomes "Inter", Arial —
+ *  and an unescaped one closes the attribute early, silently throwing away
+ *  every declaration after it. That turned every bundled font into a default
+ *  serif at default size on real screens, while the React canvas (which sets
+ *  styles as properties, not markup) showed it correctly. */
+function styleAttr(css: string): string {
+  return css.replace(/"/g, '&quot;')
+}
+
 function rgba(hexColor: string, pct: number): string {
   const m = /^#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/.exec(hexColor)
   if (!m) return 'transparent'
@@ -247,23 +350,54 @@ function qrSvg(el: QrElement): string {
   return buildQrSvg(el.data, el.fg, el.bg)
 }
 
+/** The geometry of every shape, as points on a 0..1 grid so one definition
+ *  stretches to any box. Shared with the Designer's canvas, which draws the
+ *  same paths — a shape that previewed one way must not print another. */
+export const SHAPE_POINTS: Record<string, number[][]> = {
+  'triangle':      [[0.5, 0], [1, 1], [0, 1]],
+  'triangle-down': [[0, 0], [1, 0], [0.5, 1]],
+  'diamond':       [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]],
+  'pentagon':      [[0.5, 0], [1, 0.38], [0.81, 1], [0.19, 1], [0, 0.38]],
+  'hexagon':       [[0.25, 0], [0.75, 0], [1, 0.5], [0.75, 1], [0.25, 1], [0, 0.5]],
+  'star':          [[0.5, 0], [0.61, 0.35], [0.98, 0.35], [0.68, 0.57], [0.79, 0.91],
+                    [0.5, 0.7], [0.21, 0.91], [0.32, 0.57], [0.02, 0.35], [0.39, 0.35]],
+  'burst':         [[0.5, 0], [0.6, 0.16], [0.78, 0.09], [0.79, 0.28], [0.97, 0.32],
+                    [0.86, 0.47], [0.99, 0.61], [0.81, 0.68], [0.83, 0.87], [0.65, 0.83],
+                    [0.56, 1], [0.42, 0.88], [0.26, 0.96], [0.23, 0.78], [0.05, 0.74],
+                    [0.14, 0.58], [0.01, 0.45], [0.18, 0.36], [0.14, 0.18], [0.33, 0.2]],
+  'arrow-right':   [[0, 0.28], [0.6, 0.28], [0.6, 0.05], [1, 0.5], [0.6, 0.95], [0.6, 0.72], [0, 0.72]],
+  'arrow-left':    [[1, 0.28], [0.4, 0.28], [0.4, 0.05], [0, 0.5], [0.4, 0.95], [0.4, 0.72], [1, 0.72]],
+  'chevron':       [[0, 0], [0.55, 0], [1, 0.5], [0.55, 1], [0, 1], [0.45, 0.5]],
+  'banner':        [[0, 0], [1, 0], [1, 1], [0.5, 0.78], [0, 1]],
+  'shield':        [[0.5, 0], [1, 0.16], [1, 0.6], [0.5, 1], [0, 0.6], [0, 0.16]],
+  'badge':         [[0.5, 0], [0.66, 0.11], [0.86, 0.09], [0.92, 0.28], [1, 0.44],
+                    [0.88, 0.6], [0.9, 0.8], [0.71, 0.86], [0.58, 1], [0.4, 0.94],
+                    [0.2, 0.97], [0.13, 0.79], [0, 0.66], [0.1, 0.48], [0.05, 0.28], [0.24, 0.19], [0.34, 0.03]],
+}
+
 function shapeSvg(el: ShapeElement): string {
   const w = Math.max(1, el.w), h = Math.max(1, el.h)
   const fill = el.fill ? rgba(el.fill, el.fillOpacity) : 'none'
-  const stroke = el.stroke && el.strokeWidth > 0 ? ` stroke="${el.stroke}" stroke-width="${el.strokeWidth}"` : ''
-  const inset = el.stroke && el.strokeWidth > 0 ? el.strokeWidth / 2 : 0
+  const hasStroke = !!el.stroke && el.strokeWidth > 0
+  const stroke = hasStroke ? ` stroke="${el.stroke}" stroke-width="${el.strokeWidth}" stroke-linejoin="round"` : ''
+  const inset = hasStroke ? el.strokeWidth / 2 : 0
   let body = ''
+
   if (el.kind === 'rect') {
     body = `<rect x="${inset}" y="${inset}" width="${w - inset * 2}" height="${h - inset * 2}" rx="${el.radius}" fill="${fill}"${stroke}/>`
   } else if (el.kind === 'ellipse') {
-    body = `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2 - inset}" ry="${h / 2 - inset}" fill="${fill}"${stroke}/>`
-  } else if (el.kind === 'triangle') {
-    body = `<polygon points="${w / 2},${inset} ${w - inset},${h - inset} ${inset},${h - inset}" fill="${fill}"${stroke}/>`
-  } else {
-    // line: horizontal through the middle of the box; rotate the element to angle it
+    body = `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${Math.max(0.5, w / 2 - inset)}" ry="${Math.max(0.5, h / 2 - inset)}" fill="${fill}"${stroke}/>`
+  } else if (el.kind === 'line') {
+    // Horizontal through the middle; rotate the element to angle it.
     const sw = Math.max(1, el.strokeWidth || 4)
-    body = `<line x1="0" y1="${h / 2}" x2="${w}" y2="${h / 2}" stroke="${el.stroke ?? el.fill ?? '#ffffff'}" stroke-width="${sw}"/>`
+    body = `<line x1="0" y1="${h / 2}" x2="${w}" y2="${h / 2}" stroke="${el.stroke ?? el.fill ?? '#ffffff'}" stroke-width="${sw}" stroke-linecap="round"/>`
+  } else {
+    const pts = SHAPE_POINTS[el.kind] ?? SHAPE_POINTS.triangle
+    const iw = w - inset * 2, ih = h - inset * 2
+    const points = pts.map(([px, py]) => `${(inset + px * iw).toFixed(2)},${(inset + py * ih).toFixed(2)}`).join(' ')
+    body = `<polygon points="${points}" fill="${fill}"${stroke}/>`
   }
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none">${body}</svg>`
 }
 
@@ -285,7 +419,7 @@ function elementHtml(el: SceneElement, zIndex: number): string {
       `line-height:${el.lineHeight};letter-spacing:${el.letterSpacing}px;` +
       'white-space:pre-wrap;word-wrap:break-word;'
     const text = escapeHtml(el.text)
-    return `<div style="${style}display:flex;align-items:${vAlign};${band}"><div style="${inner}">${text}</div></div>`
+    return `<div style="${styleAttr(style)}display:flex;align-items:${vAlign};${band}"><div style="${styleAttr(inner)}">${text}</div></div>`
   }
 
   if (el.type === 'shape') {
@@ -300,9 +434,136 @@ function elementHtml(el: SceneElement, zIndex: number): string {
     return `<div style="${style}overflow:hidden;${radius}"><img src="${escapeHtml(el.src)}" alt="" style="width:100%;height:100%;object-fit:${el.fit};display:block"></div>`
   }
 
+  if (el.type === 'widget') {
+    const w = el as WidgetElement
+    const font = SCENE_FONTS[w.font] ?? SCENE_FONTS.inter
+    const band = w.bgColor ? `background:${rgba(w.bgColor, w.bgOpacity)};border-radius:${w.radius}px;` : ''
+    const inner =
+      `width:100%;text-align:${w.align};color:${w.color};font-family:${font.css};` +
+      `font-size:${w.fontSize}px;font-weight:${w.bold ? '700' : '400'};line-height:1.15;` +
+      'white-space:pre-wrap;word-wrap:break-word;overflow:hidden'
+    // The element carries its own settings; one script below drives every
+    // widget on the page, so a design with six clocks still ships one loop.
+    return `<div style="${styleAttr(style)}display:flex;align-items:center;${band}overflow:hidden" ` +
+      `data-widget="${escapeHtml(w.kind)}" data-config="${escapeHtml(JSON.stringify(w.config))}">` +
+      `<div style="${styleAttr(inner)}"></div></div>`
+  }
+
   // qr
   return `<div style="${style}">${qrSvg(el)}</div>`
 }
+
+/** Drives every live element on a scene page. ES5, and silent about failure:
+ *  a widget that cannot reach the manager keeps whatever it last drew. */
+const WIDGET_RUNTIME = `
+(function(){
+  var nodes = document.querySelectorAll('[data-widget]');
+  if (!nodes.length) return;
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var items = [];
+
+  function pad2(n){ return (n < 10 ? '0' : '') + n; }
+  function esc(s){
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function nowIn(offset){
+    var d = new Date();
+    if (offset === null || offset === undefined) return d;
+    return new Date(d.getTime() + d.getTimezoneOffset() * 60000 + offset * 1000);
+  }
+
+  for (var i = 0; i < nodes.length; i++) {
+    var cfg = {};
+    try { cfg = JSON.parse(nodes[i].getAttribute('data-config') || '{}'); } catch (e) {}
+    items.push({ el: nodes[i], inner: nodes[i].firstChild, kind: nodes[i].getAttribute('data-widget'), cfg: cfg });
+  }
+
+  function drawClock(it){
+    var d = nowIn(it.cfg.timezoneOffset);
+    var h = d.getHours(), suffix = '';
+    if (it.cfg.format === '12h' || it.cfg.format === '12h-ampm') {
+      suffix = it.cfg.format === '12h-ampm' ? (h >= 12 ? ' PM' : ' AM') : '';
+      h = h % 12; if (h === 0) h = 12;
+    } else {
+      h = pad2(h);
+    }
+    var t = h + ':' + pad2(d.getMinutes()) + (it.cfg.showSeconds ? ':' + pad2(d.getSeconds()) : '') + suffix;
+    it.inner.innerHTML = (it.cfg.label ? esc(it.cfg.label) + ' ' : '') + esc(t);
+  }
+
+  function drawDate(it){
+    var d = nowIn(it.cfg.timezoneOffset), out;
+    if (it.cfg.format === 'short') out = MON[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    else if (it.cfg.format === 'numeric') out = pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear();
+    else if (it.cfg.format === 'weekday') out = DAYS[d.getDay()];
+    else out = DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate();
+    it.inner.innerHTML = esc(out);
+  }
+
+  function drawScroll(it){
+    if (it.started) return;
+    it.started = true;
+    var span = document.createElement('span');
+    span.style.display = 'inline-block';
+    span.style.whiteSpace = 'nowrap';
+    span.innerHTML = esc(it.cfg.text || '');
+    it.inner.innerHTML = '';
+    it.inner.style.whiteSpace = 'nowrap';
+    it.inner.appendChild(span);
+    var w = it.el.offsetWidth;
+    var x = it.cfg.direction === 'right' ? -span.offsetWidth : w;
+    var step = (Number(it.cfg.speed) || 10) / 8;
+    function tick(){
+      x += it.cfg.direction === 'right' ? step : -step;
+      if (it.cfg.direction === 'right' && x > w) x = -span.offsetWidth;
+      if (it.cfg.direction !== 'right' && x < -span.offsetWidth) x = w;
+      span.style.transform = 'translateX(' + x.toFixed(1) + 'px)';
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* Weather reads a configured Weather app's cache rather than fetching for
+     itself, so a design and a weather board on the same wall agree, and the
+     manager still makes one request. */
+  function drawWeather(it){
+    if (!it.cfg.appInstanceId) { it.inner.innerHTML = 'Weather'; return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/tv/app/' + it.cfg.appInstanceId + '/data?t=' + Date.now(), true);
+    xhr.timeout = 15000;
+    xhr.onreadystatechange = function(){
+      if (xhr.readyState !== 4 || xhr.status < 200 || xhr.status >= 300) return;
+      try {
+        var w = JSON.parse(xhr.responseText).data;
+        if (!w) return;
+        var t = w.temp + '\\u00b0';
+        if (it.cfg.show === 'temp') it.inner.innerHTML = esc(t);
+        else if (it.cfg.show === 'temp-icon') it.inner.innerHTML = esc(t + ' ' + w.condition);
+        else it.inner.innerHTML = esc(w.place + '  ' + t + '  ' + w.condition);
+      } catch (e) {}
+    };
+    xhr.send();
+  }
+
+  function tickAll(){
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (it.kind === 'clock') drawClock(it);
+      else if (it.kind === 'date') drawDate(it);
+      else if (it.kind === 'scroll') drawScroll(it);
+    }
+  }
+  function weatherAll(){
+    for (var i = 0; i < items.length; i++) if (items[i].kind === 'weather') drawWeather(items[i]);
+  }
+
+  tickAll(); weatherAll();
+  setInterval(tickAll, 1000);
+  setInterval(weatherAll, 300000);
+})();
+`
 
 /** Renders a design as a self-contained TV-safe page. ES5 only, no CSS vars,
  *  no grid, no flex gap, no inset — the same Chrome 53 floor as the player. */
@@ -357,6 +618,7 @@ ${parts.join('\n')}
   window.addEventListener('resize', fit);
   fit();
 })();
+${design.elements.some(e => e.type === 'widget') ? WIDGET_RUNTIME : ''}
 </script>
 </body>
 </html>`

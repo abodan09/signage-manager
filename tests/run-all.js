@@ -10,6 +10,7 @@ const SUITES = [
   ['screen pairing',     'test-pairing.js'],
   ['templates',          'test-templates.js'],
   ['designs & packs',    'test-designs.js'],
+  ['designer',           'test-designer.js'],
   ['apps & instagram',   'test-apps.js'],
   ['youtube app',        'test-youtube.js'],
   ['weather app',        'test-weather.js'],

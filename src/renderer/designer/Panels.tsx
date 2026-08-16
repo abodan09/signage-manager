@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Design, PackTemplate, SceneBackground, SceneElement, SceneFit } from '../types'
-import { SceneThumb } from '../scene/SceneView'
+import type {
+  Design, PackTemplate, QrKind, SceneBackground, SceneElement, SceneFit, ShapeKind, WidgetKind,
+} from '../types'
+import { SceneThumb, SHAPE_POINTS } from '../scene/SceneView'
 import { FONT_OPTIONS } from '../scene/fonts'
+// One definition of what a QR code means, shared with the server that encodes
+// it — a second copy here would drift and produce codes that scan wrong.
+import { QR_KINDS, buildQrData, validateQr } from '../../main/server/qr-kinds'
 
 /** The left side-menu panels. Each one is a way to put something new on the
  *  canvas or to restyle the canvas itself; the properties of whatever is
  *  already selected live in the Inspector on the right. */
 
-export type PanelId = 'templates' | 'elements' | 'text' | 'photos' | 'qr' | 'background' | 'layers'
+export type PanelId = 'templates' | 'widgets' | 'elements' | 'text' | 'photos' | 'qr' | 'background' | 'layers'
 
 export const PANELS: Array<{ id: PanelId; icon: string; label: string }> = [
   { id: 'templates',  icon: '🗂️', label: 'Templates' },
+  { id: 'widgets',    icon: '🧩', label: 'Widgets' },
   { id: 'text',       icon: '🔠', label: 'Text' },
   { id: 'elements',   icon: '⬛', label: 'Elements' },
   { id: 'photos',     icon: '🖼️', label: 'Photos' },
@@ -129,40 +135,127 @@ export function TextPanel({ onAdd }: { onAdd: (partial: Partial<SceneElement>) =
 
 // ── Elements ─────────────────────────────────────────────────────────────────
 
-const SHAPES = [
-  { kind: 'rect' as const, label: 'Rectangle', glyph: '▭' },
-  { kind: 'ellipse' as const, label: 'Circle', glyph: '◯' },
-  { kind: 'triangle' as const, label: 'Triangle', glyph: '△' },
-  { kind: 'line' as const, label: 'Line', glyph: '─' },
+const SHAPE_KINDS: ShapeKind[] = [
+  'rect', 'ellipse', 'triangle', 'triangle-down', 'diamond', 'pentagon',
+  'hexagon', 'star', 'burst', 'arrow-right', 'arrow-left', 'chevron',
+  'banner', 'shield', 'badge', 'line',
 ]
+
+/** Each shape previews as the real thing, drawn by the same code the canvas
+ *  uses — a picker of approximate glyphs would misrepresent what you get. */
+function ShapeButton({ kind, onAdd }: { kind: ShapeKind; onAdd: (p: Partial<SceneElement>) => void }) {
+  const pts = SHAPE_POINTS[kind]
+  return (
+    <button className="btn btn-ghost" title={kind}
+      style={{ height: 52, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={() => onAdd({
+        type: 'shape', kind, fillOpacity: 100,
+        w: kind === 'line' ? 600 : 360, h: kind === 'line' ? 16 : 300,
+        ...(kind === 'line'
+          ? { fill: null, stroke: '#3b82f6', strokeWidth: 8 }
+          : { fill: '#3b82f6' }),
+      } as Partial<SceneElement>)}>
+      <svg viewBox="0 0 32 32" width={26} height={26} preserveAspectRatio="none">
+        {kind === 'rect' && <rect x={2} y={6} width={28} height={20} rx={3} fill="currentColor" />}
+        {kind === 'ellipse' && <ellipse cx={16} cy={16} rx={14} ry={12} fill="currentColor" />}
+        {kind === 'line' && <rect x={1} y={14} width={30} height={4} rx={2} fill="currentColor" />}
+        {pts && <polygon points={pts.map(([x, y]) => `${2 + x * 28},${2 + y * 28}`).join(' ')} fill="currentColor" />}
+      </svg>
+    </button>
+  )
+}
 
 export function ElementsPanel({ onAdd }: { onAdd: (partial: Partial<SceneElement>) => void }) {
   return (
     <div>
       <div style={sectionTitle}>Shapes</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        {SHAPES.map(s => (
-          <button key={s.kind} className="btn btn-ghost"
-            style={{ flexDirection: 'column', height: 84, gap: 6 }}
-            onClick={() => onAdd({
-              type: 'shape', kind: s.kind, fill: '#3b82f6', fillOpacity: 100,
-              w: s.kind === 'line' ? 600 : 400, h: s.kind === 'line' ? 20 : 300,
-              ...(s.kind === 'line' ? { fill: null, stroke: '#3b82f6', strokeWidth: 8 } : {}),
-            } as Partial<SceneElement>)}>
-            <span style={{ fontSize: 26 }}>{s.glyph}</span>
-            <span style={{ fontSize: 11 }}>{s.label}</span>
-          </button>
-        ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 18 }}>
+        {SHAPE_KINDS.map(k => <ShapeButton key={k} kind={k} onAdd={onAdd} />)}
       </div>
-      <div style={{ ...sectionTitle, marginTop: 18 }}>Bands</div>
+
+      <div style={sectionTitle}>Bands and rules</div>
       <button className="btn btn-ghost" style={{ width: '100%', marginBottom: 8 }}
         onClick={() => onAdd({ type: 'shape', kind: 'rect', fill: '#000000', fillOpacity: 55, w: 1920, h: 220, x: 0 } as Partial<SceneElement>)}>
         Full-width band
       </button>
-      <button className="btn btn-ghost" style={{ width: '100%' }}
+      <button className="btn btn-ghost" style={{ width: '100%', marginBottom: 8 }}
         onClick={() => onAdd({ type: 'shape', kind: 'rect', fill: '#f59e0b', fillOpacity: 100, w: 260, h: 10, radius: 5 } as Partial<SceneElement>)}>
         Accent rule
       </button>
+      <button className="btn btn-ghost" style={{ width: '100%' }}
+        onClick={() => onAdd({ type: 'shape', kind: 'rect', fill: null, stroke: '#ffffff', strokeWidth: 6, w: 1720, h: 880, radius: 24 } as Partial<SceneElement>)}>
+        Outline frame
+      </button>
+    </div>
+  )
+}
+
+// ── Widgets ──────────────────────────────────────────────────────────────────
+
+const WIDGETS: Array<{
+  kind: WidgetKind; label: string; icon: string; hint: string; defaults: Partial<SceneElement>
+}> = [
+  {
+    kind: 'clock', label: 'Time', icon: '🕐', hint: 'A live clock that ticks on the screen.',
+    defaults: { w: 620, h: 190, fontSize: 140, bold: true, config: { format: '24h', showSeconds: false, timezoneOffset: null, label: '' } } as Partial<SceneElement>,
+  },
+  {
+    kind: 'date', label: 'Date', icon: '📅', hint: 'Today’s date, always current.',
+    defaults: { w: 820, h: 110, fontSize: 60, config: { format: 'long', timezoneOffset: null } } as Partial<SceneElement>,
+  },
+  {
+    kind: 'weather', label: 'Weather', icon: '⛅', hint: 'Reads a Weather app you have already set up.',
+    defaults: { w: 700, h: 130, fontSize: 72, config: { appInstanceId: '', show: 'temp-icon' } } as Partial<SceneElement>,
+  },
+  {
+    kind: 'scroll', label: 'Scrolling Text', icon: '🎞️', hint: 'A message that travels across the design.',
+    defaults: { w: 1600, h: 110, fontSize: 56, config: { text: 'Your scrolling message', speed: 10, direction: 'left' } } as Partial<SceneElement>,
+  },
+]
+
+/** Widgets are the live half of a design. Everything else is fixed the moment
+ *  it is saved; these keep changing on the wall. */
+export function WidgetsPanel({ serverUrl, onAdd }: {
+  serverUrl: string
+  onAdd: (partial: Partial<SceneElement>) => void
+}) {
+  const [weatherApps, setWeatherApps] = useState<Array<{ id: string; name: string }>>([])
+
+  useEffect(() => {
+    if (!serverUrl) return
+    fetch(`${serverUrl}/api/apps/instances`)
+      .then(r => r.json())
+      .then(d => setWeatherApps((d.instances ?? []).filter((i: { appId: string }) => i.appId === 'weather')))
+      .catch(() => { /* the weather widget just prompts to set one up */ })
+  }, [serverUrl])
+
+  return (
+    <div>
+      <div style={sectionTitle}>Live widgets</div>
+      {WIDGETS.map(w => (
+        <button key={w.kind} className="btn btn-ghost"
+          style={{ width: '100%', justifyContent: 'flex-start', height: 'auto', padding: '11px 12px', marginBottom: 8, textAlign: 'left' }}
+          onClick={() => onAdd({
+            type: 'widget', kind: w.kind, color: '#ffffff', align: 'center', font: 'inter',
+            ...w.defaults,
+            ...(w.kind === 'weather' && weatherApps.length
+              ? { config: { appInstanceId: weatherApps[0].id, show: 'temp-icon' } }
+              : {}),
+          } as Partial<SceneElement>)}>
+          <span style={{ fontSize: 20, marginRight: 10 }}>{w.icon}</span>
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: 'block', fontSize: 13, fontWeight: 500 }}>{w.label}</span>
+            <span style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.35 }}>{w.hint}</span>
+          </span>
+        </button>
+      ))}
+
+      {!weatherApps.length && (
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 12, lineHeight: 1.5 }}>
+          The Weather widget needs a Weather app first — set one up under Apps, then
+          come back and it will appear here.
+        </div>
+      )}
     </div>
   )
 }
@@ -241,39 +334,85 @@ export function PhotosPanel({
 
 // ── QR ───────────────────────────────────────────────────────────────────────
 
-const QR_KINDS = [
-  { label: 'Website', prefix: 'https://', hint: 'https://your-site.com' },
-  { label: 'Menu / order page', prefix: 'https://', hint: 'https://your-site.com/menu' },
-  { label: 'Phone call', prefix: 'tel:', hint: 'tel:+15551234567' },
-  { label: 'Email', prefix: 'mailto:', hint: 'mailto:hello@your-site.com' },
-  { label: 'Plain text', prefix: '', hint: 'Anything a camera should read' },
-]
+/** The typed QR builder. The operator picks what the code should DO and fills
+ *  in plain fields; the payload grammar (a Wi-Fi string is not a URL) is the
+ *  app's problem, not theirs. Shared with the Inspector so editing an existing
+ *  code offers the same form. */
+export function QrBuilder({ kind, fields, onChange }: {
+  kind: QrKind
+  fields: Record<string, string>
+  onChange: (kind: QrKind, fields: Record<string, string>) => void
+}) {
+  const spec = QR_KINDS.find(k => k.kind === kind) ?? QR_KINDS[0]
+  return (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 12 }}>
+        {QR_KINDS.map(k => (
+          <button key={k.kind}
+            className={`type-tab ${k.kind === kind ? 'active' : ''}`}
+            style={{ padding: '8px 6px', fontSize: 11, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={() => onChange(k.kind, {})}>
+            <span>{k.icon}</span><span>{k.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {spec.fields.map(f => (
+        <div className="form-group" key={f.key}>
+          <label className="form-label">
+            {f.label}{!f.optional && <span style={{ color: 'var(--danger)' }}> *</span>}
+          </label>
+          {f.options
+            ? (
+              <select className="form-select" value={fields[f.key] ?? f.options[0].value}
+                onChange={e => onChange(kind, { ...fields, [f.key]: e.target.value })}>
+                {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            )
+            : (
+              <input className="form-input" value={fields[f.key] ?? ''} placeholder={f.placeholder}
+                onChange={e => onChange(kind, { ...fields, [f.key]: e.target.value })} />
+            )}
+        </div>
+      ))}
+
+      <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{spec.hint}</div>
+    </>
+  )
+}
 
 export function QrPanel({ onAdd }: { onAdd: (partial: Partial<SceneElement>) => void }) {
-  const [value, setValue] = useState('https://')
+  const [kind, setKind] = useState<QrKind>('url')
+  const [fields, setFields] = useState<Record<string, string>>({})
+
+  const problem = validateQr(kind, fields)
+  const preview = buildQrData(kind, fields)
+
   return (
     <div>
       <div style={sectionTitle}>Add a QR code</div>
-      <div className="form-group">
-        <label className="form-label">Content</label>
-        <input className="form-input" value={value} onChange={e => setValue(e.target.value)}
-          placeholder="https://your-site.com" />
-      </div>
-      <button className="btn btn-primary" style={{ width: '100%', marginBottom: 16 }}
-        disabled={!value.trim()}
-        onClick={() => onAdd({ type: 'qr', data: value.trim(), fg: '#000000', bg: '#ffffff', w: 320, h: 320 } as Partial<SceneElement>)}>
+      <QrBuilder kind={kind} fields={fields} onChange={(k, f) => { setKind(k); setFields(f) }} />
+
+      <button className="btn btn-primary" style={{ width: '100%', margin: '14px 0 10px' }}
+        disabled={!!problem}
+        onClick={() => onAdd({
+          type: 'qr', kind, fields, data: preview,
+          fg: '#000000', bg: '#ffffff', w: 320, h: 320,
+        } as Partial<SceneElement>)}>
         Add QR code
       </button>
 
-      <div style={sectionTitle}>Quick starts</div>
-      {QR_KINDS.map(k => (
-        <button key={k.label} className="btn btn-ghost"
-          style={{ width: '100%', justifyContent: 'flex-start', marginBottom: 6 }}
-          onClick={() => setValue(k.prefix)}>
-          <span style={{ fontSize: 12 }}>{k.label}</span>
-        </button>
-      ))}
-      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 12, lineHeight: 1.5 }}>
+      {problem
+        ? <div style={{ fontSize: 11, color: 'var(--warning)', marginBottom: 10 }}>{problem}</div>
+        : (
+          <div style={{
+            fontSize: 10, color: 'var(--text-secondary)', wordBreak: 'break-all',
+            background: 'var(--bg-primary)', border: '1px solid var(--border)',
+            borderRadius: 6, padding: '6px 8px', marginBottom: 10, fontFamily: 'monospace',
+          }}>{preview}</div>
+        )}
+
+      <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
         Keep the code at least 300&nbsp;px on a 1080p screen, and leave a light
         margin around it — phones need the contrast to lock on from across a room.
       </div>

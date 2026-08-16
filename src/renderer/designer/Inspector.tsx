@@ -1,8 +1,10 @@
 import type {
   ImageElement, QrElement, SceneAlign, SceneElement, SceneFit, SceneFontId,
-  SceneVAlign, ShapeElement, ShapeKind, TextElement,
+  SceneVAlign, ShapeElement, ShapeKind, TextElement, WidgetElement,
 } from '../types'
 import { FONT_OPTIONS } from '../scene/fonts'
+import { QrBuilder } from './Panels'
+import { buildQrData, validateQr } from '../../main/server/qr-kinds'
 
 /** The right-hand properties panel. Every control writes a partial patch back
  *  through onPatch, so the page keeps a single history entry per gesture. */
@@ -72,7 +74,7 @@ function Seg<T extends string>({ value, options, onChange }: {
 }
 
 export function Inspector({
-  el, base, onPatch, onDelete, onDuplicate, onOrder, onAlign, assets, onPickImage,
+  el, base, onPatch, onDelete, onDuplicate, onOrder, onAlign, assets, onPickImage, weatherApps = [],
 }: {
   el: SceneElement
   base: string
@@ -83,6 +85,7 @@ export function Inspector({
   onAlign: (how: 'left' | 'hcenter' | 'right' | 'top' | 'vcenter' | 'bottom') => void
   assets: Array<{ path: string; name: string }>
   onPickImage: () => void
+  weatherApps?: Array<{ id: string; name: string }>
 }) {
   const patch = onPatch as (p: Record<string, unknown>) => void
 
@@ -136,6 +139,186 @@ export function Inspector({
       {el.type === 'shape' && <ShapeProps el={el as ShapeElement} patch={patch} />}
       {el.type === 'image' && <ImageProps el={el as ImageElement} patch={patch} base={base} assets={assets} onPickImage={onPickImage} />}
       {el.type === 'qr' && <QrProps el={el as QrElement} patch={patch} />}
+      {el.type === 'widget' && <WidgetProps el={el as WidgetElement} patch={patch} weatherApps={weatherApps} />}
+    </div>
+  )
+}
+
+function WidgetProps({ el, patch, weatherApps }: {
+  el: WidgetElement
+  patch: (p: Record<string, unknown>) => void
+  weatherApps: Array<{ id: string; name: string }>
+}) {
+  const cfg = (el.config ?? {}) as Record<string, unknown>
+  const setCfg = (p: Record<string, unknown>) => patch({ config: { ...cfg, ...p } })
+
+  return (
+    <>
+      {el.kind === 'clock' && (
+        <>
+          <div className="form-group">
+            <label className="form-label">Format</label>
+            <select className="form-select" value={String(cfg.format ?? '24h')}
+              onChange={e => setCfg({ format: e.target.value })}>
+              <option value="24h">24 hour (15:30)</option>
+              <option value="12h">12 hour (3:30)</option>
+              <option value="12h-ampm">12 hour with AM/PM (3:30 PM)</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <span className="toggle">
+                <input type="checkbox" checked={cfg.showSeconds === true}
+                  onChange={e => setCfg({ showSeconds: e.target.checked })} />
+                <span className="toggle-slider" />
+              </span>
+              <span style={{ fontSize: 13 }}>Show seconds</span>
+            </label>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Label</label>
+            <input className="form-input" value={String(cfg.label ?? '')} placeholder="e.g. London"
+              onChange={e => setCfg({ label: e.target.value })} />
+          </div>
+          <TimezoneField cfg={cfg} setCfg={setCfg} />
+        </>
+      )}
+
+      {el.kind === 'date' && (
+        <>
+          <div className="form-group">
+            <label className="form-label">Format</label>
+            <select className="form-select" value={String(cfg.format ?? 'long')}
+              onChange={e => setCfg({ format: e.target.value })}>
+              <option value="long">Monday, January 5</option>
+              <option value="short">Jan 5, 2026</option>
+              <option value="numeric">05/01/2026</option>
+              <option value="weekday">Monday</option>
+            </select>
+          </div>
+          <TimezoneField cfg={cfg} setCfg={setCfg} />
+        </>
+      )}
+
+      {el.kind === 'weather' && (
+        <>
+          <div className="form-group">
+            <label className="form-label">Weather app</label>
+            <select className="form-select" value={String(cfg.appInstanceId ?? '')}
+              onChange={e => setCfg({ appInstanceId: e.target.value })}>
+              <option value="">Choose a Weather app…</option>
+              {weatherApps.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+              {weatherApps.length
+                ? 'The location and units come from that app, so they are set in one place.'
+                : 'Set up a Weather app first, under Apps.'}
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Show</label>
+            <select className="form-select" value={String(cfg.show ?? 'temp-icon')}
+              onChange={e => setCfg({ show: e.target.value })}>
+              <option value="temp">Temperature only</option>
+              <option value="temp-icon">Temperature and conditions</option>
+              <option value="full">Place, temperature and conditions</option>
+            </select>
+          </div>
+        </>
+      )}
+
+      {el.kind === 'scroll' && (
+        <>
+          <div className="form-group">
+            <label className="form-label">Message</label>
+            <textarea className="form-textarea" rows={3} value={String(cfg.text ?? '')}
+              onChange={e => setCfg({ text: e.target.value })} />
+          </div>
+          <Row>
+            <Field title="Speed">
+              <NumberInput value={Number(cfg.speed ?? 10)} min={1} max={20}
+                onChange={n => setCfg({ speed: Math.max(1, Math.min(20, n)) })} />
+            </Field>
+            <Field title="Direction">
+              <select className="form-select" value={String(cfg.direction ?? 'left')}
+                onChange={e => setCfg({ direction: e.target.value })}>
+                <option value="left">Right to left</option>
+                <option value="right">Left to right</option>
+              </select>
+            </Field>
+          </Row>
+        </>
+      )}
+
+      <div style={{ height: 1, background: 'var(--border)', margin: '6px 0 16px' }} />
+
+      <Row>
+        <Field title="Font">
+          <select className="form-select" value={el.font} onChange={e => patch({ font: e.target.value as SceneFontId })}>
+            {FONT_OPTIONS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </select>
+        </Field>
+        <div style={{ width: 90 }}>
+          <span style={label}>Size</span>
+          <NumberInput value={el.fontSize} min={6} max={800} onChange={n => patch({ fontSize: Math.max(6, n) })} />
+        </div>
+      </Row>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+        <button className={`type-tab ${el.bold ? 'active' : ''}`} style={{ fontWeight: 700 }}
+          onClick={() => patch({ bold: !el.bold })}>B</button>
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <span style={label}>Align</span>
+        <Seg<SceneAlign> value={el.align} onChange={v => patch({ align: v })}
+          options={[{ v: 'left', label: '⇤' }, { v: 'center', label: '↔' }, { v: 'right', label: '⇥' }]} />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Colour</label>
+        <ColorInput value={el.color} onChange={v => patch({ color: v ?? '#ffffff' })} />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Band behind it</label>
+        <ColorInput value={el.bgColor} allowNone onChange={v => patch({ bgColor: v })} />
+      </div>
+      {el.bgColor && (
+        <Row>
+          <Field title="Band opacity"><NumberInput value={el.bgOpacity} min={0} max={100}
+            onChange={n => patch({ bgOpacity: Math.max(0, Math.min(100, n)) })} /></Field>
+          <Field title="Corner radius"><NumberInput value={el.radius} min={0} max={400}
+            onChange={n => patch({ radius: Math.max(0, n) })} /></Field>
+        </Row>
+      )}
+    </>
+  )
+}
+
+/** A widget can show another place's time. Offsets rather than zone names: the
+ *  scene page runs on TV browsers with no timezone database to consult. */
+function TimezoneField({ cfg, setCfg }: {
+  cfg: Record<string, unknown>
+  setCfg: (p: Record<string, unknown>) => void
+}) {
+  const ZONES = [
+    { v: '', label: 'This screen’s own time' },
+    { v: '-28800', label: 'Los Angeles (UTC−8)' },
+    { v: '-18000', label: 'New York (UTC−5)' },
+    { v: '0', label: 'London (UTC)' },
+    { v: '3600', label: 'Paris / Berlin (UTC+1)' },
+    { v: '7200', label: 'Cairo / Athens (UTC+2)' },
+    { v: '14400', label: 'Dubai (UTC+4)' },
+    { v: '19800', label: 'Mumbai (UTC+5:30)' },
+    { v: '28800', label: 'Singapore (UTC+8)' },
+    { v: '32400', label: 'Tokyo (UTC+9)' },
+    { v: '39600', label: 'Sydney (UTC+11)' },
+  ]
+  const current = cfg.timezoneOffset === null || cfg.timezoneOffset === undefined ? '' : String(cfg.timezoneOffset)
+  return (
+    <div className="form-group">
+      <label className="form-label">Time zone</label>
+      <select className="form-select" value={current}
+        onChange={e => setCfg({ timezoneOffset: e.target.value === '' ? null : Number(e.target.value) })}>
+        {ZONES.map(z => <option key={z.v} value={z.v}>{z.label}</option>)}
+      </select>
     </div>
   )
 }
@@ -285,16 +468,34 @@ function ImageProps({ el, patch, base, assets, onPickImage }: {
 }
 
 function QrProps({ el, patch }: { el: QrElement; patch: (p: Record<string, unknown>) => void }) {
+  // Codes made before typed kinds existed keep their raw payload and get the
+  // plain box; anything made since edits through the same builder that created it.
+  const typed = !!el.kind
   return (
     <>
-      <div className="form-group">
-        <label className="form-label">Content</label>
-        <textarea className="form-textarea" value={el.data} rows={3} placeholder="https://your-site.com"
-          onChange={e => patch({ data: e.target.value })} />
-        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-          A web address, or any text a phone camera should read.
+      {typed ? (
+        <div style={{ marginBottom: 12 }}>
+          <QrBuilder
+            kind={el.kind!}
+            fields={el.fields ?? {}}
+            onChange={(kind, fields) => patch({ kind, fields, data: buildQrData(kind, fields) })} />
+          {validateQr(el.kind!, el.fields ?? {}) && (
+            <div style={{ fontSize: 11, color: 'var(--warning)', marginTop: 8 }}>
+              {validateQr(el.kind!, el.fields ?? {})}
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="form-group">
+          <label className="form-label">Content</label>
+          <textarea className="form-textarea" value={el.data} rows={3} placeholder="https://your-site.com"
+            onChange={e => patch({ data: e.target.value })} />
+          <button className="btn btn-ghost btn-sm" style={{ marginTop: 6 }}
+            onClick={() => patch({ kind: 'url', fields: { url: el.data }, data: el.data })}>
+            Use the guided builder
+          </button>
+        </div>
+      )}
       <div className="form-group">
         <label className="form-label">Code colour</label>
         <ColorInput value={el.fg} onChange={v => patch({ fg: v ?? '#000000' })} />
