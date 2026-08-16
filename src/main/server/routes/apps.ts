@@ -177,10 +177,62 @@ export function createAppsRouter(db: JsonDB, apps: AppStore, tvClients: Map<stri
     res.json({ connections: apps.publicConnections() })
   })
 
+  /** POST /api/apps/connections/microsoft/signin — open a sign-in window.
+   *
+   *  Returns 202 straight away and does not wait. Signing in to Microsoft takes
+   *  as long as the operator takes, which with MFA on a phone can be minutes;
+   *  holding an Express request open for that would tie up a socket and time
+   *  out in the browser long before the person finished. The renderer polls
+   *  GET /connections to learn how it went. */
+  router.post('/connections/:provider/signin', (req, res) => {
+    if (req.params.provider !== 'microsoft') {
+      res.status(404).json({ error: 'That service does not support signing in here.' }); return
+    }
+    const url = String((req.body as { url?: unknown })?.url ?? '').trim()
+    if (!/^https:\/\/[^\s<>"']+$/i.test(url)) {
+      res.status(400).json({ error: 'Enter the SharePoint page address first, then sign in.' })
+      return
+    }
+
+    res.status(202).json({ ok: true })
+
+    // Required lazily and after responding: this pulls in Electron, which the
+    // test harness does not have.
+    void (async () => {
+      try {
+        const { signIn } = require('../apps/sharepoint/session') as typeof import('../apps/sharepoint/session')
+        const result = await signIn(url)
+        if (!result.signedIn) return
+        apps.setConnection({
+          provider: 'microsoft',
+          accountName: result.host,
+          // No token: this connection is a browser session in a private
+          // partition, not an OAuth grant. The field is required by the shared
+          // shape, and storing '' here buys the whole existing connection UI,
+          // the needsConnection badge, and provider invalidation for free.
+          accessToken: '',
+          connectedAt: new Date().toISOString(),
+          meta: { kind: 'session', partition: 'persist:sharepoint' },
+        })
+        broadcast({ type: 'playlist_update' })
+      } catch (e: unknown) {
+        console.warn('[apps] microsoft sign-in failed:', e instanceof Error ? e.message : e)
+      }
+    })()
+  })
+
   // DELETE /api/apps/connections/:provider — sign out
-  router.delete('/connections/:provider', (req, res) => {
+  router.delete('/connections/:provider', async (req, res) => {
     if (!apps.clearConnection(req.params.provider)) {
       res.status(404).json({ error: 'No account is connected for that service.' }); return
+    }
+    // Dropping the stored record alone would be a lie: the cookie jar would
+    // still be there and every capture would keep working.
+    if (req.params.provider === 'microsoft') {
+      try {
+        const { signOut } = require('../apps/sharepoint/session') as typeof import('../apps/sharepoint/session')
+        await signOut()
+      } catch { /* no Electron, or nothing stored */ }
     }
     broadcast({ type: 'playlist_update' })
     res.json({ ok: true })

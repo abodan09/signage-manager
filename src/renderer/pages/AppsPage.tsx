@@ -212,9 +212,18 @@ export default function AppsPage() {
                     Last update failed: {inst.lastError}
                   </div>
                 )}
+                {/* Only a warning when the app has actually failed. Some apps —
+                    SharePoint against a public page — work perfectly with no
+                    account at all, and colouring that orange trains operators
+                    to ignore the one case that matters. */}
                 {inst.needsConnection && (
-                  <div style={{ fontSize: 11, color: 'var(--warning)', marginBottom: 6 }}>
-                    No account connected yet.
+                  <div style={{
+                    fontSize: 11, marginBottom: 6,
+                    color: inst.lastError ? 'var(--warning)' : 'var(--text-secondary)',
+                  }}>
+                    {inst.lastError
+                      ? 'No account connected — this app needs one to keep working.'
+                      : 'No account connected. Only needed for private content.'}
                   </div>
                 )}
 

@@ -310,7 +310,32 @@ export class AppStore {
       baseUrl,
       connection: def?.provider ? this.connections[def.provider] : undefined,
       mirror: (url: string) => this.mirrorImage(url),
+      writeMedia: (name: string, data: Buffer) => this.writeMedia(name, data),
     }
+  }
+
+  /** Stores an image the manager generated. The name is the caller's to choose
+   *  and is rewritten in place on every update, so a capture that refreshes
+   *  every ten minutes leaves one file rather than a growing pile.
+   *
+   *  Note for anyone wiring up pruneMedia() later: files written here are
+   *  deliberately not in mediaIndex, which is keyed by source URL. Pruning by
+   *  index membership would delete them on sight. */
+  writeMedia(name: string, data: Buffer): string {
+    const safe = name.replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 80)
+    if (!safe) throw new Error('writeMedia needs a usable file name')
+    const tmp = path.join(this.mediaDir, `${safe}.tmp`)
+    fs.writeFileSync(tmp, data)
+    fs.renameSync(tmp, path.join(this.mediaDir, safe))
+    return `/app-media/${safe}`
+  }
+
+  /** Removes a generated file. Called when an instance goes away, so a deleted
+   *  screen does not leave its last capture readable on the LAN. */
+  removeMedia(name: string) {
+    const safe = name.replace(/[^a-zA-Z0-9._-]/g, '')
+    if (!safe) return
+    try { fs.unlinkSync(path.join(this.mediaDir, safe)) } catch { /* already gone */ }
   }
 
   /** A name the app learned from its first fetch, or null. */

@@ -83,6 +83,10 @@ export interface AppContext {
    *  "/app-media/ab12.jpg", or null if it could not be fetched. Anything a
    *  screen must still show tomorrow should go through this. */
   mirror(url: string): Promise<string | null>
+  /** Stores an image the manager *made* rather than fetched, and returns its
+   *  local path. `mirror` only accepts an http URL, so an app that renders or
+   *  captures its own picture had no way to reach the media directory. */
+  writeMedia(name: string, data: Buffer): string
 }
 
 export interface AppRefreshResult {

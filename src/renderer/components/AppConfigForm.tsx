@@ -158,6 +158,89 @@ const CAPTION: CSSProperties = {
   marginBottom: 2, textTransform: 'capitalize',
 }
 
+/** A linked account. The first control here that edits nothing — the connection
+ *  lives outside config, so this shows status and offers the two buttons.
+ *
+ *  Sign-in opens a real browser window in the main process and can take minutes
+ *  with MFA, so the request returns immediately and this polls for the result
+ *  rather than holding a spinner on a hanging fetch. */
+function ConnectionField({ serverUrl, field, config }: {
+  serverUrl: string
+  field: AppField
+  config: Config
+}) {
+  const provider = field.provider ?? ''
+  const [account, setAccount] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const load = () => {
+    if (!serverUrl || !provider) return
+    fetch(`${serverUrl}/api/apps/connections`)
+      .then(r => r.json())
+      .catch(() => ({}))
+      .then((d: { connections?: Array<{ provider: string; accountName?: string }> }) => {
+        const c = (d.connections ?? []).find(x => x.provider === provider)
+        setAccount(c ? (c.accountName || 'Connected') : null)
+      })
+  }
+  useEffect(load, [serverUrl, provider])
+
+  async function signIn() {
+    setBusy(true); setError('')
+    try {
+      const res = await fetch(`${serverUrl}/api/apps/connections/${provider}/signin`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: config.url ?? '' }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.error || 'Could not start sign-in')
+      // The window is open now; the operator drives it. Poll until it lands.
+      let tries = 0
+      const timer = setInterval(() => {
+        tries++
+        load()
+        if (tries > 60) { clearInterval(timer); setBusy(false) }
+      }, 2000)
+      setTimeout(() => { clearInterval(timer); setBusy(false); load() }, 125_000)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Could not start sign-in')
+      setBusy(false)
+    }
+  }
+
+  async function signOut() {
+    setBusy(true); setError('')
+    try {
+      await fetch(`${serverUrl}/api/apps/connections/${provider}`, { method: 'DELETE' })
+    } finally {
+      setBusy(false); load()
+    }
+  }
+
+  return (
+    <div style={{
+      border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+      padding: 10, background: 'var(--bg-primary)',
+      display: 'flex', alignItems: 'center', gap: 10,
+    }}>
+      <span style={{
+        width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+        background: account ? 'var(--success, #22c55e)' : 'var(--text-secondary)',
+      }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13 }}>{account ?? 'Not signed in'}</div>
+        {error && <div style={{ color: 'var(--danger)', fontSize: 11 }}>{error}</div>}
+      </div>
+      {account
+        ? <button className="btn btn-ghost btn-sm" disabled={busy} onClick={signOut}>Sign out</button>
+        : <button className="btn btn-ghost btn-sm" disabled={busy} onClick={signIn}>
+            {busy ? 'Waiting for sign-in…' : 'Sign In'}
+          </button>}
+    </div>
+  )
+}
+
 /** Picks one of the manager's playlists. The stored value is a project id; the
  *  word shown to the operator is "playlist", which is what they call it
  *  everywhere else in the product. Loaded eagerly rather than on open, or a
@@ -304,11 +387,12 @@ function ZonesEditor({ serverUrl, value, onChange }: {
   )
 }
 
-function Control({ field, value, onChange, serverUrl }: {
+function Control({ field, value, onChange, serverUrl, config }: {
   field: AppField
   value: unknown
   onChange: (v: unknown) => void
   serverUrl: string
+  config: Config
 }) {
   switch (field.type) {
     case 'note':
@@ -322,6 +406,9 @@ function Control({ field, value, onChange, serverUrl }: {
 
     case 'project':
       return <ProjectPicker serverUrl={serverUrl} value={value as string} onChange={onChange} />
+
+    case 'connection':
+      return <ConnectionField serverUrl={serverUrl} field={field} config={config} />
 
     case 'checkbox':
       return (
@@ -421,7 +508,7 @@ function Row({ field, config, onChange, serverUrl }: {
   if (field.type === 'checkbox') {
     return (
       <div className="form-group">
-        <Control field={field} value={config[field.key]} onChange={v => onChange(field.key, v)} serverUrl={serverUrl} />
+        <Control field={field} value={config[field.key]} onChange={v => onChange(field.key, v)} serverUrl={serverUrl} config={config} />
         {field.help && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{field.help}</div>}
       </div>
     )
@@ -432,7 +519,7 @@ function Row({ field, config, onChange, serverUrl }: {
       <label className="form-label">
         {field.label}{field.required && <span style={{ color: 'var(--danger)' }}> *</span>}
       </label>
-      <Control field={field} value={config[field.key]} onChange={v => onChange(field.key, v)} serverUrl={serverUrl} />
+      <Control field={field} value={config[field.key]} onChange={v => onChange(field.key, v)} serverUrl={serverUrl} config={config} />
       {field.help && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{field.help}</div>}
     </div>
   )
