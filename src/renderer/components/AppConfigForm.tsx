@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import type { AppField } from '../types'
 
 /** Renders any app's settings from its declared fields.
@@ -147,6 +148,16 @@ const ZONE_TINTS = ['#2e7d9a', '#3aa99a', '#e8e6a8', '#a67cb8', '#d98b5f', '#6b8
 /** The zone editor: a row per region, and a live plan of the screen. The
  *  percentages are the real mechanism, so they are what the operator edits —
  *  the preview is there to make a mistake obvious, not to be dragged. */
+/** The caption above each zone's number boxes. Declared here rather than
+ *  borrowed from the Designer's inspector: nothing in this file imports from
+ *  there, and a bare `label` identifier was a ReferenceError that only fired
+ *  once a zone row rendered — invisible to `npm run build`, which typechecks
+ *  src/main and lets Vite strip the renderer's types unchecked. */
+const CAPTION: CSSProperties = {
+  display: 'block', fontSize: 11, color: 'var(--text-secondary)',
+  marginBottom: 2, textTransform: 'capitalize',
+}
+
 function ZonesEditor({ serverUrl, value, onChange }: {
   serverUrl: string
   value: Zone[]
@@ -222,7 +233,7 @@ function ZonesEditor({ serverUrl, value, onChange }: {
           <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
             {(['top', 'left', 'width', 'height'] as const).map(k => (
               <div key={k} style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ ...label, marginBottom: 2 }}>{k} %</span>
+                <span style={CAPTION}>{k} %</span>
                 <input className="form-input" type="number" min={0} max={100} step={0.1} value={z[k]}
                   onChange={e => set(i, { [k]: num(e.target.value, z[k]) } as Partial<Zone>)} />
               </div>
