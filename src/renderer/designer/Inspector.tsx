@@ -27,6 +27,10 @@ function NumberInput({ value, onChange, min, max, step = 1 }: {
     <input className="form-input" type="number" value={Math.round(value * 100) / 100}
       min={min} max={max} step={step}
       onChange={e => {
+        // A number input reports '' while the text is mid-edit or invalid for
+        // the locale (a comma decimal separator, say). Number('') is 0, which
+        // would silently snap the value to the field's minimum as you type.
+        if (e.target.value === '') return
         const n = Number(e.target.value)
         if (Number.isFinite(n)) onChange(n)
       }} />
