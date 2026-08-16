@@ -39,9 +39,12 @@ export function createDesignsRouter(
     })
   }
 
-  // GET /api/designs — the operator's saved designs, newest first
-  router.get('/', (_req, res) => {
-    const designs = db.getAllDesigns()
+  /** GET /api/designs — the operator's saved designs, newest first.
+   *  `?templates=1` returns their own saved templates instead; the two are the
+   *  same shape but never belong in the same list. */
+  router.get('/', (req, res) => {
+    const wantTemplates = req.query.templates === '1'
+    const designs = db.getAllDesigns().filter(d => !!d.isTemplate === wantTemplates)
     // Which designs are already on the wall, so the gallery can say so without
     // a second round-trip.
     const published = new Set(db.getAllContent().filter(c => c.designId).map(c => c.designId))
@@ -142,6 +145,46 @@ export function createDesignsRouter(
     if (!result.deleted) { res.status(404).json({ error: 'Design not found' }); return }
     if (result.removedContentIds.length) broadcast({ type: 'playlist_update' })
     res.json({ ok: true, removedFromPlaylist: result.removedContentIds.length })
+  })
+
+  /** POST /api/designs/:id/save-as-template — add this design to the team's
+   *  own template library.
+   *
+   *  A copy, deliberately: the operator carries on editing the design, and the
+   *  template stays as it was when they saved it. Stored as an ordinary design
+   *  flagged `isTemplate`, so it needs no second storage shape and shows up in
+   *  the Designer's rail beside the shipped packs. */
+  router.post('/:id/save-as-template', (req, res) => {
+    const design = db.getDesignById(req.params.id)
+    if (!design) { res.status(404).json({ error: 'Design not found' }); return }
+
+    const raw = (req.body ?? {}) as Record<string, unknown>
+    const name = (typeof raw.name === 'string' && raw.name.trim() ? raw.name : design.name).trim().slice(0, 80)
+
+    const existing = db.getAllDesigns().find(d => d.isTemplate && d.name === name)
+    const now = new Date().toISOString()
+    const saved = existing
+      ? db.updateDesign(existing.id, {
+        width: design.width, height: design.height,
+        background: design.background, elements: design.elements,
+      })
+      : db.insertDesign({
+        id: uuid(),
+        ...JSON.parse(JSON.stringify({
+          name,
+          category: design.category,
+          templateKey: design.templateKey,
+          width: design.width,
+          height: design.height,
+          background: design.background,
+          elements: design.elements,
+        })),
+        isTemplate: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+
+    res.status(existing ? 200 : 201).json({ template: saved, replaced: !!existing })
   })
 
   /** POST /api/designs/:id/publish — put the design on the wall.

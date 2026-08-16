@@ -1,7 +1,8 @@
 import qrFactory from 'qrcode-generator'
 import type {
   Design, ImageElement, PackDesign, QrElement, QrKind, SceneAlign, SceneBackground, SceneElement,
-  SceneFit, SceneVAlign, ShapeElement, ShapeKind, TextElement, WidgetElement, WidgetKind,
+  SceneFit, SceneGradient, SceneOutline, SceneShadow, SceneVAlign, ShapeElement, ShapeKind,
+  TextElement, WidgetElement, WidgetKind,
 } from './types'
 import { SCENE_FONTS, isSceneFontId } from './fonts'
 import { buildQrData, getQrKind } from './qr-kinds'
@@ -67,6 +68,36 @@ function oneOf<T extends string>(v: unknown, allowed: readonly T[], label: strin
   return { ok: true, value: v as T }
 }
 
+/** Effects are optional everywhere: absent stays absent, so a design that
+ *  never used one carries no extra fields and looks exactly as before. */
+function sanitizeShadow(input: unknown): Ok<SceneShadow | undefined> | Err {
+  if (input === null || input === undefined) return { ok: true, value: undefined }
+  const s = (typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const color = hex(s.color ?? '#000000', 'shadow colour'); if (!color.ok) return color
+  const blur = num(s.blur ?? 12, 0, 200, 'shadow blur'); if (!blur.ok) return blur
+  const x = num(s.x ?? 0, -200, 200, 'shadow offset'); if (!x.ok) return x
+  const y = num(s.y ?? 6, -200, 200, 'shadow offset'); if (!y.ok) return y
+  const opacity = num(s.opacity ?? 50, 0, 100, 'shadow opacity'); if (!opacity.ok) return opacity
+  return { ok: true, value: { color: color.value, blur: blur.value, x: x.value, y: y.value, opacity: opacity.value } }
+}
+
+function sanitizeGradient(input: unknown): Ok<SceneGradient | undefined> | Err {
+  if (input === null || input === undefined) return { ok: true, value: undefined }
+  const g = (typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const from = hex(g.from, 'gradient from'); if (!from.ok) return from
+  const to = hex(g.to, 'gradient to'); if (!to.ok) return to
+  const angle = num(g.angle ?? 90, 0, 360, 'gradient angle'); if (!angle.ok) return angle
+  return { ok: true, value: { from: from.value, to: to.value, angle: Math.round(angle.value) } }
+}
+
+function sanitizeOutline(input: unknown): Ok<SceneOutline | undefined> | Err {
+  if (input === null || input === undefined) return { ok: true, value: undefined }
+  const o = (typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const color = hex(o.color ?? '#000000', 'outline colour'); if (!color.ok) return color
+  const width = num(o.width ?? 2, 0, 40, 'outline width'); if (!width.ok) return width
+  return { ok: true, value: { color: color.value, width: width.value } }
+}
+
 function sanitizeBase(src: Record<string, unknown>, canvasW: number, canvasH: number) {
   const R = SCENE_LIMITS.coordRange
   const id = typeof src.id === 'string' && ID_RE.test(src.id) ? src.id : null
@@ -108,12 +139,16 @@ function sanitizeElement(input: unknown, canvasW: number, canvasH: number, idx: 
     const bgColor = hexOrNull(src.bgColor, 'bgColor'); if (!bgColor.ok) return err(at(bgColor.error))
     const bgOpacity = num(src.bgOpacity ?? 100, 0, 100, 'bgOpacity'); if (!bgOpacity.ok) return err(at(bgOpacity.error))
     const radius = num(src.radius ?? 0, 0, 400, 'radius'); if (!radius.ok) return err(at(radius.error))
+    const shadow = sanitizeShadow(src.shadow); if (!shadow.ok) return err(at(shadow.error))
+    const outline = sanitizeOutline(src.outline); if (!outline.ok) return err(at(outline.error))
     const el: TextElement = {
       ...base.value, type: 'text', text, font, fontSize: fontSize.value,
       bold: src.bold === true, italic: src.italic === true, underline: src.underline === true,
       align: align.value, valign: valign.value, color: color.value,
       lineHeight: lineHeight.value, letterSpacing: letterSpacing.value,
       bgColor: bgColor.value, bgOpacity: bgOpacity.value, radius: radius.value,
+      ...(shadow.value ? { shadow: shadow.value } : {}),
+      ...(outline.value ? { outline: outline.value } : {}),
     }
     return { ok: true, value: el }
   }
@@ -125,10 +160,14 @@ function sanitizeElement(input: unknown, canvasW: number, canvasH: number, idx: 
     const stroke = hexOrNull(src.stroke, 'stroke'); if (!stroke.ok) return err(at(stroke.error))
     const strokeWidth = num(src.strokeWidth ?? 0, 0, 120, 'strokeWidth'); if (!strokeWidth.ok) return err(at(strokeWidth.error))
     const radius = num(src.radius ?? 0, 0, 400, 'radius'); if (!radius.ok) return err(at(radius.error))
+    const shadow = sanitizeShadow(src.shadow); if (!shadow.ok) return err(at(shadow.error))
+    const gradient = sanitizeGradient(src.gradient); if (!gradient.ok) return err(at(gradient.error))
     const el: ShapeElement = {
       ...base.value, type: 'shape', kind: kind.value,
       fill: fill.value, fillOpacity: fillOpacity.value,
       stroke: stroke.value, strokeWidth: strokeWidth.value, radius: radius.value,
+      ...(shadow.value ? { shadow: shadow.value } : {}),
+      ...(gradient.value ? { gradient: gradient.value } : {}),
     }
     return { ok: true, value: el }
   }
@@ -141,7 +180,11 @@ function sanitizeElement(input: unknown, canvasW: number, canvasH: number, idx: 
     }
     const fit = oneOf<SceneFit>(src.fit ?? 'cover', ['contain', 'cover', 'fill'], 'fit'); if (!fit.ok) return err(at(fit.error))
     const radius = num(src.radius ?? 0, 0, 400, 'radius'); if (!radius.ok) return err(at(radius.error))
-    const el: ImageElement = { ...base.value, type: 'image', src: srcPath, fit: fit.value, radius: radius.value }
+    const shadow = sanitizeShadow(src.shadow); if (!shadow.ok) return err(at(shadow.error))
+    const el: ImageElement = {
+      ...base.value, type: 'image', src: srcPath, fit: fit.value, radius: radius.value,
+      ...(shadow.value ? { shadow: shadow.value } : {}),
+    }
     return { ok: true, value: el }
   }
 
@@ -375,9 +418,19 @@ export const SHAPE_POINTS: Record<string, number[][]> = {
                     [0.2, 0.97], [0.13, 0.79], [0, 0.66], [0.1, 0.48], [0.05, 0.28], [0.24, 0.19], [0.34, 0.03]],
 }
 
+/** CSS shadow value. text-shadow and box-shadow take the same syntax and both
+ *  work everywhere, unlike filter: drop-shadow(), which the oldest TV browsers
+ *  in the fleet do not have. */
+export function shadowCss(s: SceneShadow): string {
+  return `${s.x}px ${s.y}px ${s.blur}px ${rgba(s.color, s.opacity)}`
+}
+
 function shapeSvg(el: ShapeElement): string {
   const w = Math.max(1, el.w), h = Math.max(1, el.h)
-  const fill = el.fill ? rgba(el.fill, el.fillOpacity) : 'none'
+  const gradId = el.gradient ? `g${Math.abs(hashOf(el.id))}` : ''
+  const fill = el.gradient
+    ? `url(#${gradId})`
+    : el.fill ? rgba(el.fill, el.fillOpacity) : 'none'
   const hasStroke = !!el.stroke && el.strokeWidth > 0
   const stroke = hasStroke ? ` stroke="${el.stroke}" stroke-width="${el.strokeWidth}" stroke-linejoin="round"` : ''
   const inset = hasStroke ? el.strokeWidth / 2 : 0
@@ -398,7 +451,33 @@ function shapeSvg(el: ShapeElement): string {
     body = `<polygon points="${points}" fill="${fill}"${stroke}/>`
   }
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none">${body}</svg>`
+  // A polygon's shadow is a second copy of the same shape behind it. box-shadow
+  // would draw the bounding rectangle, which is wrong for a star, and
+  // drop-shadow() is too new for the oldest panels.
+  let shadowBody = ''
+  if (el.shadow && el.kind !== 'line') {
+    const s = el.shadow
+    const shade = rgba(s.color, s.opacity)
+    shadowBody = `<g transform="translate(${s.x},${s.y})" opacity="0.999">` +
+      body.replace(/fill="[^"]*"/, `fill="${shade}"`).replace(/ stroke="[^"]*"/, '') +
+      '</g>'
+  }
+
+  const defs = el.gradient
+    ? `<defs><linearGradient id="${gradId}" gradientTransform="rotate(${el.gradient.angle} 0.5 0.5)">` +
+      `<stop offset="0%" stop-color="${el.gradient.from}"/>` +
+      `<stop offset="100%" stop-color="${el.gradient.to}"/></linearGradient></defs>`
+    : ''
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="100%" height="100%" preserveAspectRatio="none">${defs}${shadowBody}${body}</svg>`
+}
+
+/** Stable per-element id for SVG defs. Two gradients on one page must not
+ *  share an id or the second silently adopts the first's colours. */
+function hashOf(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0
+  return h
 }
 
 function elementHtml(el: SceneElement, zIndex: number): string {
@@ -412,11 +491,17 @@ function elementHtml(el: SceneElement, zIndex: number): string {
     const vAlign = el.valign === 'top' ? 'flex-start' : el.valign === 'bottom' ? 'flex-end' : 'center'
     const band = el.bgColor ? `background:${rgba(el.bgColor, el.bgOpacity)};border-radius:${el.radius}px;` : ''
     const deco = el.underline ? 'text-decoration:underline;' : ''
+    // -webkit-text-stroke is the only outline every TV WebView in the fleet
+    // understands; they are all Blink or WebKit, so the prefix is not a gamble.
+    const outline = el.outline && el.outline.width > 0
+      ? `-webkit-text-stroke:${el.outline.width}px ${el.outline.color};`
+      : ''
+    const textShadow = el.shadow ? `text-shadow:${shadowCss(el.shadow)};` : ''
     const inner =
       `width:100%;text-align:${el.align};color:${el.color};` +
       `font-family:${font.css};font-size:${el.fontSize}px;` +
       `font-weight:${el.bold ? '700' : '400'};font-style:${el.italic ? 'italic' : 'normal'};${deco}` +
-      `line-height:${el.lineHeight};letter-spacing:${el.letterSpacing}px;` +
+      `line-height:${el.lineHeight};letter-spacing:${el.letterSpacing}px;${outline}${textShadow}` +
       'white-space:pre-wrap;word-wrap:break-word;'
     const text = escapeHtml(el.text)
     return `<div style="${styleAttr(style)}display:flex;align-items:${vAlign};${band}"><div style="${styleAttr(inner)}">${text}</div></div>`
@@ -431,7 +516,10 @@ function elementHtml(el: SceneElement, zIndex: number): string {
     // at render time so a hand-edited db.json still can't point elsewhere.
     if (!el.src || !UPLOADS_RE.test(el.src)) return ''
     const radius = el.radius ? `border-radius:${el.radius}px;` : ''
-    return `<div style="${style}overflow:hidden;${radius}"><img src="${escapeHtml(el.src)}" alt="" style="width:100%;height:100%;object-fit:${el.fit};display:block"></div>`
+    // The shadow sits on the wrapper, not the picture, so a rounded corner
+    // casts a rounded shadow rather than a rectangular one.
+    const shadow = el.shadow ? `box-shadow:${shadowCss(el.shadow)};` : ''
+    return `<div style="${styleAttr(style)}overflow:hidden;${radius}${shadow}"><img src="${escapeHtml(el.src)}" alt="" style="width:100%;height:100%;object-fit:${el.fit};display:block"></div>`
   }
 
   if (el.type === 'widget') {

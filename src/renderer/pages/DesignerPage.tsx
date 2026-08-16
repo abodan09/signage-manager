@@ -59,6 +59,7 @@ export default function DesignerPage() {
   const [showResize, setShowResize] = useState(false)
   const [confirmTemplate, setConfirmTemplate] = useState<PackTemplate | null>(null)
   const [confirmClose, setConfirmClose] = useState(false)
+  const [templateRailKey, setTemplateRailKey] = useState(0)
   const [guides, setGuides] = useState<{ v: number[]; h: number[] }>({ v: [], h: [] })
 
   const past = useRef<Design[]>([])
@@ -390,6 +391,30 @@ export default function DesignerPage() {
     }
   }, [design, serverUrl])
 
+  /** Adds the current design to the team's own template library. Saves first,
+   *  so the template is what is on screen rather than the last saved version. */
+  async function saveAsTemplate() {
+    if (!design) return
+    if (dirty && !(await save())) return
+    setSaving(true); setError('')
+    try {
+      const res = await fetch(`${serverUrl}/api/designs/${design.id}/save-as-template`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: design.name }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Could not save this as a template')
+      setStatus(data.replaced ? 'Template updated' : 'Saved to your templates')
+      setTimeout(() => setStatus(''), 2600)
+      setTemplateRailKey(k => k + 1)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Could not save this as a template')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function applyTemplate(t: PackTemplate) {
     commit(d => ({
       ...d,
@@ -465,6 +490,9 @@ export default function DesignerPage() {
             onClick={async () => { if (dirty) await save(); window.open(`${serverUrl}/tv/scene/${design.id}`, '_blank') }}>
             Preview
           </button>
+          <button className="btn btn-ghost btn-sm" disabled={saving} onClick={saveAsTemplate}>
+            Save as template
+          </button>
           <button className="btn btn-ghost btn-sm" disabled={saving} onClick={save}>
             {saving ? 'Saving…' : 'Save'}
           </button>
@@ -501,7 +529,7 @@ export default function DesignerPage() {
           borderRight: '1px solid var(--border)', padding: 14, overflowY: 'auto',
         }}>
           {panel === 'templates' && (
-            <TemplatesPanel serverUrl={serverUrl} design={design}
+            <TemplatesPanel serverUrl={serverUrl} design={design} reloadKey={templateRailKey}
               onApply={t => (design.elements.length ? setConfirmTemplate(t) : applyTemplate(t))} />
           )}
           {panel === 'widgets' && <WidgetsPanel serverUrl={serverUrl} onAdd={addElement} />}

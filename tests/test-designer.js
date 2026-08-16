@@ -166,6 +166,60 @@ check('it does not close the script block', !/<\/script><script>alert/.test(nast
 check('no live tag carries an event handler', !/<[a-z][^>]*\son[a-z]+\s*=/i.test(nastyHtml))
 check('the config attribute is escaped', nastyHtml.includes('&lt;/script&gt;') || nastyHtml.includes('&lt;script&gt;'))
 
+console.log('\n=== effects ===')
+
+const fx = sanitizeDesign(withEls([
+  { id: 't', type: 'text', x: 0, y: 0, w: 800, h: 200, text: 'Hi', color: '#ffffff', fontSize: 90,
+    shadow: { color: '#000000', blur: 20, x: 4, y: 8, opacity: 60 },
+    outline: { color: '#ff0000', width: 3 } },
+  { id: 's', type: 'shape', kind: 'star', x: 0, y: 300, w: 300, h: 300,
+    gradient: { from: '#3b82f6', to: '#8b5cf6', angle: 45 },
+    shadow: { color: '#000000', blur: 10, x: 6, y: 6, opacity: 40 } },
+  { id: 'i', type: 'image', x: 0, y: 700, w: 400, h: 300, src: '/uploads/a.jpg',
+    shadow: { color: '#000000', blur: 24, x: 0, y: 12, opacity: 50 } },
+]))
+check('shadow, outline and gradient all validate', fx.ok === true, fx.error)
+check('effects are stored on the elements',
+  fx.ok && !!fx.design.elements[0].shadow && !!fx.design.elements[0].outline
+    && !!fx.design.elements[1].gradient && !!fx.design.elements[2].shadow)
+
+const fxHtml = renderSceneHtml({ ...fx.design, id: 'fx' }, '')
+check('text shadow renders as text-shadow', /text-shadow:4px 8px 20px/.test(fxHtml))
+// -webkit prefix, not the unprefixed property: every TV browser in the fleet
+// is Blink or WebKit, and none of them implement the unprefixed one.
+check('text outline renders as -webkit-text-stroke', fxHtml.includes('-webkit-text-stroke:3px #ff0000'))
+check('a shape gradient becomes an svg linearGradient', fxHtml.includes('<linearGradient'))
+check('the gradient is referenced by the fill', /fill="url\(#g\d+\)"/.test(fxHtml))
+// box-shadow on a star would draw its bounding rectangle, so a polygon shadow
+// has to be a second copy of the shape.
+check('a polygon shadow is a second polygon, not a box-shadow',
+  (fxHtml.match(/<polygon/g) || []).length >= 2)
+check('an image shadow uses box-shadow', /box-shadow:0px 12px 24px/.test(fxHtml))
+// drop-shadow() is Chrome 79+ for SVG and unsafe on the oldest panels.
+check('no filter: drop-shadow anywhere', !/drop-shadow\(/.test(fxHtml))
+
+check('a bad shadow colour is refused',
+  sanitizeDesign(withEls([{ id: 't', type: 'text', x: 0, y: 0, w: 10, h: 10, color: '#ffffff', shadow: { color: 'black' } }])).ok === false)
+check('an out-of-range blur is refused',
+  sanitizeDesign(withEls([{ id: 't', type: 'text', x: 0, y: 0, w: 10, h: 10, color: '#ffffff', shadow: { color: '#000000', blur: 9999 } }])).ok === false)
+check('a bad gradient colour is refused',
+  sanitizeDesign(withEls([{ id: 's', type: 'shape', kind: 'rect', x: 0, y: 0, w: 10, h: 10, gradient: { from: 'red', to: '#000000' } }])).ok === false)
+
+const noFx = sanitizeDesign(withEls([{ id: 't', type: 'text', x: 0, y: 0, w: 10, h: 10, text: 'x', color: '#ffffff' }]))
+check('a design without effects carries no effect fields',
+  noFx.ok && !('shadow' in noFx.design.elements[0]) && !('outline' in noFx.design.elements[0]))
+check('and renders no shadow declarations',
+  !/text-shadow|box-shadow/.test(renderSceneHtml({ ...noFx.design, id: 'n' }, '')))
+
+// Two gradients on one page must not collide on an svg id.
+const twoGrad = sanitizeDesign(withEls([
+  { id: 'g1', type: 'shape', kind: 'rect', x: 0, y: 0, w: 100, h: 100, gradient: { from: '#111111', to: '#222222', angle: 0 } },
+  { id: 'g2', type: 'shape', kind: 'rect', x: 0, y: 200, w: 100, h: 100, gradient: { from: '#333333', to: '#444444', angle: 0 } },
+]))
+const twoHtml = renderSceneHtml({ ...twoGrad.design, id: 'tg' }, '')
+const ids = [...twoHtml.matchAll(/<linearGradient id="([^"]+)"/g)].map(m => m[1])
+check('each gradient gets its own id', ids.length === 2 && ids[0] !== ids[1], ids)
+
 console.log('\n=== quoted font stacks survive the style attribute ===')
 // A font stack is "Inter", Arial — the quote closes style="…" early and every
 // declaration after it is thrown away. The React canvas sets styles as

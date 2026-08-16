@@ -164,8 +164,14 @@ export interface SceneElementBase {
   locked?: boolean
 }
 
+export interface SceneShadow { color: string; blur: number; x: number; y: number; opacity: number }
+export interface SceneGradient { from: string; to: string; angle: number }
+export interface SceneOutline { color: string; width: number }
+
 export interface TextElement extends SceneElementBase {
   type: 'text'
+  shadow?: SceneShadow | null
+  outline?: SceneOutline | null
   text: string
   font: SceneFontId
   fontSize: number
@@ -185,6 +191,8 @@ export interface TextElement extends SceneElementBase {
 export interface ShapeElement extends SceneElementBase {
   type: 'shape'
   kind: ShapeKind
+  shadow?: SceneShadow | null
+  gradient?: SceneGradient | null
   fill: string | null
   fillOpacity: number
   stroke: string | null
@@ -194,6 +202,7 @@ export interface ShapeElement extends SceneElementBase {
 
 export interface ImageElement extends SceneElementBase {
   type: 'image'
+  shadow?: SceneShadow | null
   src: string | null
   fit: SceneFit
   radius: number
@@ -240,6 +249,8 @@ export interface Design {
   height: number
   background: SceneBackground
   elements: SceneElement[]
+  /** Saved by the operator as a starting point for future designs. */
+  isTemplate?: boolean
   createdAt: string
   updatedAt: string
   /** Added by GET /api/designs — true when a playlist item shows this design. */

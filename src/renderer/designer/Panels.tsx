@@ -36,16 +36,20 @@ const sectionTitle: React.CSSProperties = {
  *  someone editing a restaurant menu almost always wants another restaurant
  *  template — but every installed category stays one click away. */
 export function TemplatesPanel({
-  serverUrl, design, onApply,
+  serverUrl, design, onApply, reloadKey,
 }: {
   serverUrl: string
   design: Design
   onApply: (t: PackTemplate) => void
+  /** Bumped after saving a template, so the rail picks it up immediately. */
+  reloadKey?: number
 }) {
   const [templates, setTemplates] = useState<PackTemplate[]>([])
+  const [mine, setMine] = useState<PackTemplate[]>([])
   const [cats, setCats] = useState<Array<{ category: string; name: string; icon: string }>>([])
   const [active, setActive] = useState<string>(design.category ?? 'all')
   const [search, setSearch] = useState('')
+  const [orientation, setOrientation] = useState<'all' | 'landscape' | 'portrait'>('all')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -53,37 +57,64 @@ export function TemplatesPanel({
     Promise.all([
       fetch(`${serverUrl}/api/packs/templates`).then(r => r.json()),
       fetch(`${serverUrl}/api/packs`).then(r => r.json()),
-    ]).then(([t, c]) => {
+      fetch(`${serverUrl}/api/designs?templates=1`).then(r => r.json()),
+    ]).then(([t, c, own]) => {
       setTemplates(t.templates ?? [])
       setCats((c.categories ?? []).filter((x: { installed: boolean }) => x.installed))
+      // The operator's own saved designs, shaped like pack templates so the
+      // rail draws and applies them through one code path.
+      setMine((own.designs ?? []).map((d: Design) => ({
+        key: d.id, category: 'yours', name: d.name, tags: [], design: d,
+      })))
     }).catch(() => { /* the panel simply stays empty */ })
       .finally(() => setLoading(false))
-  }, [serverUrl])
+  }, [serverUrl, reloadKey])
 
   const q = search.trim().toLowerCase()
-  const shown = templates.filter(t =>
-    (active === 'all' || t.category === active) &&
-    (!q || t.name.toLowerCase().includes(q) || (t.tags ?? []).some(g => g.includes(q))),
-  )
+  const pool = active === 'yours' ? mine : templates
+  const shown = pool.filter(t => {
+    if (active !== 'all' && active !== 'yours' && t.category !== active) return false
+    if (orientation === 'landscape' && t.design.width < t.design.height) return false
+    if (orientation === 'portrait' && t.design.width >= t.design.height) return false
+    if (!q) return true
+    return t.name.toLowerCase().includes(q) || (t.tags ?? []).some(g => g.includes(q))
+  })
 
   return (
     <div>
       <div style={sectionTitle}>Start from a template</div>
       <input className="form-input" placeholder="Search…" value={search}
         onChange={e => setSearch(e.target.value)} style={{ marginBottom: 10 }} />
-      <div className="days-row" style={{ marginBottom: 12 }}>
+
+      <div className="days-row" style={{ marginBottom: 8 }}>
         <button className={`day-chip ${active === 'all' ? 'selected' : ''}`} onClick={() => setActive('all')}>All</button>
+        {mine.length > 0 && (
+          <button className={`day-chip ${active === 'yours' ? 'selected' : ''}`}
+            onClick={() => setActive('yours')} title="Templates your team saved">⭐</button>
+        )}
         {cats.map(c => (
           <button key={c.category} className={`day-chip ${active === c.category ? 'selected' : ''}`}
             onClick={() => setActive(c.category)} title={c.name}>{c.icon}</button>
         ))}
       </div>
 
+      <div className="days-row" style={{ marginBottom: 12 }}>
+        {(['all', 'landscape', 'portrait'] as const).map(o => (
+          <button key={o} className={`day-chip ${orientation === o ? 'selected' : ''}`}
+            onClick={() => setOrientation(o)} style={{ fontSize: 11 }}>
+            {o === 'all' ? 'Any shape' : o === 'landscape' ? 'Landscape' : 'Portrait'}
+          </button>
+        ))}
+      </div>
+
       {loading && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Loading…</div>}
-      {!loading && !templates.length && (
+      {!loading && !templates.length && !mine.length && (
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
           No categories installed. Add one from Templates → Manage categories.
         </div>
+      )}
+      {!loading && !shown.length && (templates.length > 0 || mine.length > 0) && (
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Nothing matches that.</div>
       )}
 
       <div style={{ display: 'grid', gap: 10 }}>

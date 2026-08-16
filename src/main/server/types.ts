@@ -250,8 +250,31 @@ export interface SceneElementBase {
   locked?: boolean
 }
 
+/** A drop shadow. Offsets are in design pixels, like everything else, so a
+ *  shadow keeps its proportions when the stage scales to the panel. */
+export interface SceneShadow {
+  color: string
+  blur: number
+  x: number
+  y: number
+  opacity: number
+}
+
+export interface SceneGradient {
+  from: string
+  to: string
+  angle: number
+}
+
+export interface SceneOutline {
+  color: string
+  width: number
+}
+
 export interface TextElement extends SceneElementBase {
   type: 'text'
+  shadow?: SceneShadow | null
+  outline?: SceneOutline | null
   text: string
   font: SceneFontId
   fontSize: number
@@ -272,6 +295,9 @@ export interface TextElement extends SceneElementBase {
 export interface ShapeElement extends SceneElementBase {
   type: 'shape'
   kind: ShapeKind
+  shadow?: SceneShadow | null
+  /** Replaces the flat fill when present. */
+  gradient?: SceneGradient | null
   /** null = hollow (stroke only) */
   fill: string | null
   fillOpacity: number     // 0–100
@@ -282,6 +308,7 @@ export interface ShapeElement extends SceneElementBase {
 
 export interface ImageElement extends SceneElementBase {
   type: 'image'
+  shadow?: SceneShadow | null
   /** An /uploads/ path, or null = placeholder frame the user fills with their
    *  own photo. Placeholders draw a hint in the Designer and nothing on TVs. */
   src: string | null
@@ -341,6 +368,10 @@ export interface Design {
   height: number
   background: SceneBackground
   elements: SceneElement[]
+  /** Saved by the operator as a starting point for future designs. Kept in the
+   *  same collection so there is one storage shape and one renderer, and shown
+   *  in the Designer's template rail beside the shipped packs. */
+  isTemplate?: boolean
   createdAt: string
   updatedAt: string
 }

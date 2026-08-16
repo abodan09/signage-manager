@@ -26,6 +26,9 @@ export default function TemplatesPage() {
   const [activeCat, setActiveCat] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [manage, setManage] = useState(false)
+  const [orientation, setOrientation] = useState<'all' | 'landscape' | 'portrait'>('all')
+  const [activeTag, setActiveTag] = useState('')
+  const [previewing, setPreviewing] = useState<PackTemplate | null>(null)
   const [busyKey, setBusyKey] = useState('')
   const [error, setError] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Design | null>(null)
@@ -60,12 +63,25 @@ export default function TemplatesPage() {
     const q = search.trim().toLowerCase()
     return templates.filter(t => {
       if (activeCat !== 'all' && t.category !== activeCat) return false
+      if (orientation === 'landscape' && t.design.width < t.design.height) return false
+      if (orientation === 'portrait' && t.design.width >= t.design.height) return false
+      if (activeTag && !(t.tags ?? []).includes(activeTag)) return false
       if (!q) return true
       return t.name.toLowerCase().includes(q)
         || (t.description ?? '').toLowerCase().includes(q)
         || (t.tags ?? []).some(tag => tag.toLowerCase().includes(q))
     })
-  }, [templates, activeCat, search])
+  }, [templates, activeCat, search, orientation, activeTag])
+
+  /** Tags of whatever is currently in scope, commonest first — a tag list of
+   *  every tag in the library would be unusable. */
+  const tagOptions = useMemo(() => {
+    const counts = new Map<string, number>()
+    templates
+      .filter(t => activeCat === 'all' || t.category === activeCat)
+      .forEach(t => (t.tags ?? []).forEach(tag => counts.set(tag, (counts.get(tag) ?? 0) + 1)))
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([tag]) => tag)
+  }, [templates, activeCat])
 
   const visibleDesigns = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -191,6 +207,32 @@ export default function TemplatesPage() {
             />
           </div>
 
+          {tab === 'templates' && (
+            <div style={{ display: 'flex', gap: 16, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className="days-row">
+                {(['all', 'landscape', 'portrait'] as const).map(o => (
+                  <button key={o} className={`day-chip ${orientation === o ? 'selected' : ''}`}
+                    onClick={() => setOrientation(o)}>
+                    {o === 'all' ? 'Any shape' : o === 'landscape' ? '▭ Landscape' : '▯ Portrait'}
+                  </button>
+                ))}
+              </div>
+              {tagOptions.length > 0 && (
+                <div className="days-row" style={{ flex: 1 }}>
+                  {activeTag && (
+                    <button className="day-chip selected" onClick={() => setActiveTag('')}>✕ {activeTag}</button>
+                  )}
+                  {!activeTag && tagOptions.map(tag => (
+                    <button key={tag} className="day-chip" onClick={() => setActiveTag(tag)}>{tag}</button>
+                  ))}
+                </div>
+              )}
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 'auto' }}>
+                {visibleTemplates.length} template{visibleTemplates.length === 1 ? '' : 's'}
+              </span>
+            </div>
+          )}
+
           {tab === 'templates' ? (
             visibleTemplates.length ? (
               <div className="content-grid" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${THUMB_W}px, 1fr))` }}>
@@ -198,7 +240,8 @@ export default function TemplatesPage() {
                   const key = `${t.category}/${t.key}`
                   return (
                     <div key={key} className="content-card">
-                      <div className="content-thumb" style={{ height: THUMB_H, padding: 0 }}>
+                      <div className="content-thumb" style={{ height: THUMB_H, padding: 0, cursor: 'pointer' }}
+                        onClick={() => setPreviewing(t)}>
                         <SceneThumb design={t.design} base={serverUrl} width={THUMB_W} height={THUMB_H} />
                       </div>
                       <div className="content-body">
@@ -212,8 +255,7 @@ export default function TemplatesPage() {
                             disabled={busyKey === key} onClick={() => customise(t)}>
                             {busyKey === key ? 'Opening…' : 'Edit'}
                           </button>
-                          <button className="btn btn-ghost btn-sm"
-                            onClick={() => window.open(`${serverUrl}/tv/template/${t.category}/${t.key}`, '_blank')}>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setPreviewing(t)}>
                             Preview
                           </button>
                         </div>
@@ -262,6 +304,58 @@ export default function TemplatesPage() {
             )
           )}
         </>
+      )}
+
+      {/* Preview before committing — the thumbnail is 260px wide and a menu
+          board has prices on it that nobody can read at that size. */}
+      {previewing && (
+        <div className="modal-backdrop" onClick={() => setPreviewing(null)}>
+          <div className="modal" style={{ maxWidth: 900 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{previewing.name}</h2>
+              <button className="btn-icon" onClick={() => setPreviewing(null)}>✕</button>
+            </div>
+
+            <div style={{
+              background: '#0b1220', borderRadius: 'var(--radius)', padding: 12,
+              display: 'flex', justifyContent: 'center', marginBottom: 16,
+            }}>
+              <SceneThumb design={previewing.design} base={serverUrl}
+                width={previewing.design.width >= previewing.design.height ? 800 : 380} height={430} />
+            </div>
+
+            {previewing.description && (
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                {previewing.description}
+              </p>
+            )}
+
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+              <span className="badge badge-gray">{catName(previewing.category)}</span>
+              <span className="badge badge-gray">
+                {previewing.design.width} × {previewing.design.height}
+              </span>
+              <span className="badge badge-blue">
+                {previewing.design.width >= previewing.design.height ? 'Landscape' : 'Portrait'}
+              </span>
+              {(previewing.tags ?? []).map(tag => (
+                <span key={tag} className="badge badge-gray">{tag}</span>
+              ))}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-ghost"
+                onClick={() => window.open(`${serverUrl}/tv/template/${previewing.category}/${previewing.key}`, '_blank')}>
+                Open full screen
+              </button>
+              <button className="btn btn-primary"
+                disabled={busyKey === `${previewing.category}/${previewing.key}`}
+                onClick={() => customise(previewing)}>
+                Use this template
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {manage && (

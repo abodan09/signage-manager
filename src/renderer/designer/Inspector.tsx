@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import type {
   ImageElement, QrElement, SceneAlign, SceneElement, SceneFit, SceneFontId,
-  SceneVAlign, ShapeElement, ShapeKind, TextElement, WidgetElement,
+  SceneGradient, SceneOutline, SceneShadow, SceneVAlign, ShapeElement, ShapeKind,
+  TextElement, WidgetElement,
 } from '../types'
 import { FONT_OPTIONS } from '../scene/fonts'
 import { QrBuilder } from './Panels'
@@ -134,6 +136,10 @@ export function Inspector({
       </Row>
 
       <div style={{ height: 1, background: 'var(--border)', margin: '6px 0 16px' }} />
+
+      {(el.type === 'text' || el.type === 'shape' || el.type === 'image') && (
+        <EffectsProps el={el} patch={patch} />
+      )}
 
       {el.type === 'text' && <TextProps el={el as TextElement} patch={patch} />}
       {el.type === 'shape' && <ShapeProps el={el as ShapeElement} patch={patch} />}
@@ -320,6 +326,136 @@ function TimezoneField({ cfg, setCfg }: {
         {ZONES.map(z => <option key={z.v} value={z.v}>{z.label}</option>)}
       </select>
     </div>
+  )
+}
+
+/** Shadow, gradient and outline, in a collapsible block so the common
+ *  properties stay at the top where they are used most. */
+function EffectsProps({ el, patch }: {
+  el: SceneElement
+  patch: (p: Record<string, unknown>) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const withShadow = el as { shadow?: SceneShadow | null }
+  const withGradient = el as { gradient?: SceneGradient | null }
+  const withOutline = el as { outline?: SceneOutline | null }
+  const shadow = withShadow.shadow
+  const gradient = el.type === 'shape' ? withGradient.gradient : undefined
+  const outline = el.type === 'text' ? withOutline.outline : undefined
+
+  const active = [shadow, gradient, outline].filter(Boolean).length
+
+  return (
+    <>
+      <button onClick={() => setOpen(o => !o)}
+        style={{
+          background: 'transparent', border: 'none', color: '#60a5fa', cursor: 'pointer',
+          fontSize: 12, padding: '4px 0', marginBottom: 10, width: '100%', textAlign: 'left',
+        }}>
+        Effects {active > 0 && `(${active})`} {open ? '▾' : '▸'}
+      </button>
+
+      {open && (
+        <div style={{
+          background: 'var(--bg-primary)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)', padding: '12px 12px 2px', marginBottom: 14,
+        }}>
+          {/* ── shadow ── */}
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <span className="toggle">
+                <input type="checkbox" checked={!!shadow}
+                  onChange={e => patch({ shadow: e.target.checked ? { color: '#000000', blur: 14, x: 0, y: 8, opacity: 45 } : null })} />
+                <span className="toggle-slider" />
+              </span>
+              <span style={{ fontSize: 13 }}>Shadow</span>
+            </label>
+          </div>
+          {shadow && (
+            <>
+              <div className="form-group">
+                <label className="form-label">Shadow colour</label>
+                <ColorInput value={shadow.color} onChange={v => patch({ shadow: { ...shadow, color: v ?? '#000000' } })} />
+              </div>
+              <Row>
+                <Field title="Blur"><NumberInput value={shadow.blur} min={0} max={200}
+                  onChange={n => patch({ shadow: { ...shadow, blur: Math.max(0, n) } })} /></Field>
+                <Field title="Opacity %"><NumberInput value={shadow.opacity} min={0} max={100}
+                  onChange={n => patch({ shadow: { ...shadow, opacity: Math.max(0, Math.min(100, n)) } })} /></Field>
+              </Row>
+              <Row>
+                <Field title="Offset X"><NumberInput value={shadow.x} min={-200} max={200}
+                  onChange={n => patch({ shadow: { ...shadow, x: n } })} /></Field>
+                <Field title="Offset Y"><NumberInput value={shadow.y} min={-200} max={200}
+                  onChange={n => patch({ shadow: { ...shadow, y: n } })} /></Field>
+              </Row>
+            </>
+          )}
+
+          {/* ── gradient (shapes) ── */}
+          {el.type === 'shape' && (
+            <>
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <span className="toggle">
+                    <input type="checkbox" checked={!!gradient}
+                      onChange={e => patch({ gradient: e.target.checked ? { from: '#3b82f6', to: '#8b5cf6', angle: 90 } : null })} />
+                    <span className="toggle-slider" />
+                  </span>
+                  <span style={{ fontSize: 13 }}>Gradient fill</span>
+                </label>
+              </div>
+              {gradient && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">From → To</label>
+                    <div className="color-row">
+                      <input type="color" value={gradient.from}
+                        onChange={e => patch({ gradient: { ...gradient, from: e.target.value } })} />
+                      <input type="color" value={gradient.to}
+                        onChange={e => patch({ gradient: { ...gradient, to: e.target.value } })} />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Angle {gradient.angle}°</label>
+                    <input type="range" min={0} max={360} value={gradient.angle} style={{ width: '100%' }}
+                      onChange={e => patch({ gradient: { ...gradient, angle: Number(e.target.value) } })} />
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {/* ── outline (text) ── */}
+          {el.type === 'text' && (
+            <>
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                  <span className="toggle">
+                    <input type="checkbox" checked={!!outline}
+                      onChange={e => patch({ outline: e.target.checked ? { color: '#000000', width: 2 } : null })} />
+                    <span className="toggle-slider" />
+                  </span>
+                  <span style={{ fontSize: 13 }}>Outline</span>
+                </label>
+              </div>
+              {outline && (
+                <Row>
+                  <Field title="Outline colour">
+                    <ColorInput value={outline.color} onChange={v => patch({ outline: { ...outline, color: v ?? '#000000' } })} />
+                  </Field>
+                  <div style={{ width: 80 }}>
+                    <span style={label}>Width</span>
+                    <NumberInput value={outline.width} min={0} max={40}
+                      onChange={n => patch({ outline: { ...outline, width: Math.max(0, n) } })} />
+                  </div>
+                </Row>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </>
   )
 }
 

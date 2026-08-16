@@ -69,17 +69,39 @@ export const SHAPE_POINTS: Record<string, number[][]> = {
                     [0.2, 0.97], [0.13, 0.79], [0, 0.66], [0.1, 0.48], [0.05, 0.28], [0.24, 0.19], [0.34, 0.03]],
 }
 
+/** Matches shadowCss() in src/main/server/scenes.ts. */
+export function shadowCss(s: { color: string; blur: number; x: number; y: number; opacity: number }): string {
+  return `${s.x}px ${s.y}px ${s.blur}px ${rgba(s.color, s.opacity)}`
+}
+
 function ShapeSvg({ el }: { el: ShapeElement }) {
   const w = Math.max(1, el.w), h = Math.max(1, el.h)
-  const fill = el.fill ? rgba(el.fill, el.fillOpacity) : 'none'
+  const gradId = `g-${el.id}`
+  const fill = el.gradient ? `url(#${gradId})` : el.fill ? rgba(el.fill, el.fillOpacity) : 'none'
   const hasStroke = !!el.stroke && el.strokeWidth > 0
   const inset = hasStroke ? el.strokeWidth / 2 : 0
   const strokeProps = hasStroke
     ? { stroke: el.stroke!, strokeWidth: el.strokeWidth, strokeLinejoin: 'round' as const }
     : {}
   const pts = SHAPE_POINTS[el.kind]
+  const shade = el.shadow ? rgba(el.shadow.color, el.shadow.opacity) : ''
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width="100%" height="100%" preserveAspectRatio="none">
+      {el.gradient && (
+        <defs>
+          <linearGradient id={gradId} gradientTransform={`rotate(${el.gradient.angle} 0.5 0.5)`}>
+            <stop offset="0%" stopColor={el.gradient.from} />
+            <stop offset="100%" stopColor={el.gradient.to} />
+          </linearGradient>
+        </defs>
+      )}
+      {el.shadow && el.kind !== 'line' && (
+        <g transform={`translate(${el.shadow.x},${el.shadow.y})`}>
+          {el.kind === 'rect' && <rect x={inset} y={inset} width={w - inset * 2} height={h - inset * 2} rx={el.radius} fill={shade} />}
+          {el.kind === 'ellipse' && <ellipse cx={w / 2} cy={h / 2} rx={Math.max(0.5, w / 2 - inset)} ry={Math.max(0.5, h / 2 - inset)} fill={shade} />}
+          {pts && <polygon points={pts.map(([px, py]) => `${(inset + px * (w - inset * 2)).toFixed(2)},${(inset + py * (h - inset * 2)).toFixed(2)}`).join(' ')} fill={shade} />}
+        </g>
+      )}
       {el.kind === 'rect' && (
         <rect x={inset} y={inset} width={w - inset * 2} height={h - inset * 2} rx={el.radius} fill={fill} {...strokeProps} />
       )}
@@ -167,6 +189,10 @@ function TextBody({ el }: { el: TextElement }) {
       letterSpacing: el.letterSpacing,
       whiteSpace: 'pre-wrap',
       wordWrap: 'break-word',
+      ...(el.outline && el.outline.width > 0
+        ? { WebkitTextStroke: `${el.outline.width}px ${el.outline.color}` } as React.CSSProperties
+        : {}),
+      ...(el.shadow ? { textShadow: shadowCss(el.shadow) } : {}),
     }}>{el.text}</div>
   )
 }
@@ -214,7 +240,12 @@ export function SceneElementView({ el, base }: { el: SceneElement; base: string 
   if (el.type === 'shape') return <div style={style}><ShapeSvg el={el as ShapeElement} /></div>
   if (el.type === 'image') {
     const i = el as ImageElement
-    return <div style={{ ...style, overflow: 'hidden', borderRadius: i.radius || undefined }}><ImageBody el={i} base={base} /></div>
+    return (
+      <div style={{
+        ...style, overflow: 'hidden', borderRadius: i.radius || undefined,
+        ...(i.shadow ? { boxShadow: shadowCss(i.shadow) } : {}),
+      }}><ImageBody el={i} base={base} /></div>
+    )
   }
   if (el.type === 'widget') {
     const w = el as WidgetElement

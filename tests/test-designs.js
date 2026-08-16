@@ -230,6 +230,34 @@ const server = app.listen(0, async () => {
   check('its playlist item goes with it', after.body.items.filter(i => i.designId === did).length === 0)
   check('screens are told about the removal', pushed.some(m => m.type === 'playlist_update'))
 
+  console.log('\n=== the team\'s own template library ===')
+
+  const src = await call('POST', '/api/designs', { ...DESIGN, name: 'House style' })
+  const srcId = src.body.design.id
+  const asTpl = await call('POST', `/api/designs/${srcId}/save-as-template`, {})
+  check('a design can be saved as a template', asTpl.status === 201 && asTpl.body.template.isTemplate === true, asTpl.body)
+  check('the template is a copy, not the same record', asTpl.body.template.id !== srcId)
+
+  const designsOnly = await call('GET', '/api/designs')
+  check('templates do not clutter the designs list',
+    designsOnly.body.designs.every(d => !d.isTemplate))
+  const templatesOnly = await call('GET', '/api/designs?templates=1')
+  check('and are listed on their own', templatesOnly.body.designs.length === 1
+    && templatesOnly.body.designs[0].name === 'House style')
+
+  // Editing the design must not retroactively change the saved template.
+  await call('PUT', `/api/designs/${srcId}`, { ...DESIGN, name: 'House style', elements: [] })
+  const afterEdit = await call('GET', '/api/designs?templates=1')
+  check('editing the design leaves the template alone',
+    afterEdit.body.designs[0].elements.length === DESIGN.elements.length,
+    afterEdit.body.designs[0].elements.length)
+
+  const again = await call('POST', `/api/designs/${srcId}/save-as-template`, { name: 'House style' })
+  check('saving the same name updates rather than duplicating', again.status === 200 && again.body.replaced === true)
+  const stillOne = await call('GET', '/api/designs?templates=1')
+  check('there is still one template', stillOne.body.designs.length === 1)
+  check('and it now matches the edited design', stillOne.body.designs[0].elements.length === 0)
+
   console.log('\n=== uninstall keeps the operator\'s own work ===')
 
   const kept = await call('POST', '/api/designs', { fromTemplate: { category: 'restaurants', key: t0.key }, name: 'Mine' })
