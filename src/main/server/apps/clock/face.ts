@@ -72,15 +72,15 @@ function digitalHtml(d, scale){
     h = pad2(h);
   }
   var time = h + ':' + pad2(d.getMinutes()) + (CFG.showSeconds ? ':' + pad2(d.getSeconds()) : '');
-  return '<div class="digits" style="font-size:' + scale + 'vh">' + time +
-    (suffix ? '<span class="suffix" style="font-size:' + (scale * 0.32) + 'vh">' + suffix + '</span>' : '') +
+  return '<div class="digits" style="font-size:' + scale + 'px">' + time +
+    (suffix ? '<span class="suffix" style="font-size:' + (scale * 0.32) + 'px">' + suffix + '</span>' : '') +
     '</div>';
 }
 
 /* Ticks are drawn once per face; only the hands move. Minor ticks every
    minute, heavier ones every five, matching a real dial. */
 function faceHtml(d, size){
-  var svg = '<svg class="face" viewBox="0 0 200 200" width="' + size + 'vh" height="' + size + 'vh">';
+  var svg = '<svg class="face" viewBox="0 0 200 200" width="' + size + 'px" height="' + size + 'px">';
   for (var i = 0; i < 60; i++) {
     var major = i % 5 === 0;
     var a = i * 6 * Math.PI / 180;
@@ -111,24 +111,36 @@ function faceHtml(d, size){
 }
 
 function draw(){
-  /* Tile sizing from the count: two clocks read large, six read small, and
-     nobody has to set a font size. */
+  /* Tile sizing from the count and from the shape of the tile it produces.
+     Deriving it from the row count alone was wrong the moment a row held three
+     clocks: at three across, what limits a digital time is the WIDTH of its
+     tile, not the height of its row, and the digits ran into the clock beside
+     them. Measuring the tile in pixels and redrawing on resize costs nothing
+     and cannot be wrong on a shape nobody tested. */
   var n = CLOCKS.length;
   var perRow = n <= 1 ? 1 : n <= 4 ? 2 : 3;
   var rows = Math.ceil(n / perRow);
-  var digitScale = Math.min(26, (86 / rows) * (n === 1 ? 0.9 : 0.42));
-  var faceScale = Math.min(78, (84 / rows) * (n === 1 ? 1 : 0.86));
-  var labelScale = Math.max(1.6, digitScale * 0.16);
+
+  var tileW = (root.clientWidth / perRow) * 0.88;
+  var tileH = (root.clientHeight / rows) * 0.90;
+
+  /* Character widths the longest time occupies: hh:mm, plus :ss when seconds
+     are shown, plus a little for the AM/PM suffix — which is drawn at a third
+     the size, so it counts for less than two characters. */
+  var chars = (CFG.showSeconds ? 8 : 5) + (CFG.clock24 ? 0 : 0.9);
+  var digitPx = Math.min(tileW / (chars * 0.6), tileH * (n === 1 ? 0.52 : 0.4));
+  var facePx = Math.min(tileW, tileH * (n === 1 ? 0.94 : 0.8));
+  var labelPx = Math.max(11, Math.min(digitPx * 0.2, tileH * 0.14));
 
   var html = '';
   for (var i = 0; i < n; i++) {
     var c = CLOCKS[i];
     var d = nowFor(c);
     html += '<div class="clock" style="flex-basis:' + (100 / perRow) + '%">';
-    if (c.label) html += '<div class="label" style="font-size:' + labelScale + 'vh">' + esc(c.label) + '</div>';
-    html += CFG.style === 'analog' ? faceHtml(d, faceScale) : digitalHtml(d, digitScale);
+    if (c.label) html += '<div class="label" style="font-size:' + labelPx + 'px">' + esc(c.label) + '</div>';
+    html += CFG.style === 'analog' ? faceHtml(d, facePx) : digitalHtml(d, digitPx);
     var sub = dateLine(d);
-    if (sub) html += '<div class="sub" style="font-size:' + (labelScale * 1.15) + 'vh">' + esc(sub) + '</div>';
+    if (sub) html += '<div class="sub" style="font-size:' + (labelPx * 1.15) + 'px">' + esc(sub) + '</div>';
     html += '</div>';
   }
   root.innerHTML = html;

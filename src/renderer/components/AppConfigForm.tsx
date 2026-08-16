@@ -151,8 +151,10 @@ const ZONE_TINTS = ['#2e7d9a', '#3aa99a', '#e8e6a8', '#a67cb8', '#d98b5f', '#6b8
 /** The caption above each zone's number boxes. Declared here rather than
  *  borrowed from the Designer's inspector: nothing in this file imports from
  *  there, and a bare `label` identifier was a ReferenceError that only fired
- *  once a zone row rendered — invisible to `npm run build`, which typechecks
- *  src/main and lets Vite strip the renderer's types unchecked. */
+ *  once a zone row rendered. It reached a release because the build did not
+ *  typecheck this half of the app; it does now, but `npm run dev` still
+ *  watches only src/main, so a renderer type error stays invisible until a
+ *  build. */
 const CAPTION: CSSProperties = {
   display: 'block', fontSize: 11, color: 'var(--text-secondary)',
   marginBottom: 2, textTransform: 'capitalize',

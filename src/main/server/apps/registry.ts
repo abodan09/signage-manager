@@ -14,6 +14,7 @@ import { qrcode } from './qrcode'
 import { sharepoint } from './sharepoint'
 import { split } from './split'
 import { weather } from './weather'
+import { worldclock } from './worldclock'
 import { youtube } from './youtube'
 
 // Every app the manager can create instances of. Adding one is a single import
@@ -37,6 +38,7 @@ export const APPS: AppDefinition[] = [
   sharepoint,
   gdrive,
   onedrive,
+  worldclock,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))

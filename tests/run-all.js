@@ -27,6 +27,7 @@ const SUITES = [
   ['sharepoint',         'test-sharepoint.js'],
   ['google drive',       'test-gdrive.js'],
   ['onedrive',           'test-onedrive.js'],
+  ['world clock',        'test-worldclock.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]
