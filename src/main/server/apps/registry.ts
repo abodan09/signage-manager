@@ -1,5 +1,6 @@
 import type { AppDefinition } from './types'
 import { canva } from './canva'
+import { simpleclock } from './clock'
 import { fbcounter, igcounter } from './counters'
 import { facebook } from './facebook'
 import { gcal } from './gcal'
@@ -25,6 +26,7 @@ export const APPS: AppDefinition[] = [
   igcounter,
   fbcounter,
   qrcode,
+  simpleclock,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))

@@ -21,6 +21,7 @@ const SUITES = [
   ['google calendar app','test-gcal.js'],
   ['follower counters',   'test-counters.js'],
   ['qr code app',        'test-qrcode.js'],
+  ['simple clock',       'test-clock.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]
@@ -62,6 +63,7 @@ if (broken.length) {
   process.exit(1)
 }
 console.log('all suites green')
+
 
 
 
