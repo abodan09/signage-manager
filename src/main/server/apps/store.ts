@@ -283,6 +283,76 @@ export class AppStore {
     }
   }
 
+  /** Copies any media file — video included — to disk, streaming.
+   *
+   *  Separate from mirrorImage rather than an option on it, because almost
+   *  nothing about that one survives contact with a 300 MB video: it refuses
+   *  any non-image content type, caps at 12 MB, holds the whole body in memory,
+   *  and names files by a hash of the source URL — guessable, on an endpoint the
+   *  whole LAN can read. This streams, takes the caller's cap and name, and
+   *  aborts mid-download rather than filling a disk.
+   *
+   *  Returns null on any failure. A folder with one bad file in it must still
+   *  play the other fifty-nine. */
+  async mirrorFile(url: string, opts: {
+    name: string
+    maxBytes: number
+    accept: RegExp
+    headers?: Record<string, string>
+  }): Promise<string | null> {
+    if (!/^https?:\/\//i.test(url)) return null
+    const safe = opts.name.replace(/[^a-zA-Z0-9._-]/g, '')
+    if (!safe) return null
+
+    const final = path.join(this.mediaDir, safe)
+    // Content-addressed names: the same bytes always land on the same name, so
+    // an unchanged file costs one HEAD-free check and no download.
+    if (fs.existsSync(final)) return `/app-media/${safe}`
+
+    const tmp = `${final}.part`
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 120_000)
+    try {
+      const res = await fetch(url, { signal: controller.signal, headers: opts.headers })
+      if (!res.ok || !res.body) return null
+
+      const type = String(res.headers.get('content-type') ?? '')
+      if (!opts.accept.test(type)) return null
+      const declared = Number(res.headers.get('content-length') ?? 0)
+      if (declared && declared > opts.maxBytes) return null
+
+      const out = fs.createWriteStream(tmp)
+      let written = 0
+      let aborted = false
+      // The reader rather than a pipe, so the cap is enforced as bytes arrive.
+      // A server that lies about content-length, or omits it, must not be able
+      // to fill the operator's disk.
+      const reader = (res.body as unknown as ReadableStream<Uint8Array>).getReader()
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        written += value.byteLength
+        if (written > opts.maxBytes) { aborted = true; controller.abort(); break }
+        if (!out.write(Buffer.from(value))) {
+          await new Promise<void>(r => out.once('drain', () => r()))
+        }
+      }
+      await new Promise<void>((resolve, reject) => {
+        out.end(() => resolve())
+        out.once('error', reject)
+      })
+      if (aborted || !written) { try { fs.unlinkSync(tmp) } catch { /* gone */ } return null }
+
+      fs.renameSync(tmp, final)
+      return `/app-media/${safe}`
+    } catch {
+      try { fs.unlinkSync(tmp) } catch { /* never created */ }
+      return null
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
   /** Drops mirrored files nothing references any more. Called after a refresh,
    *  so a wall that has scrolled past a hundred posts does not fill the disk. */
   pruneMedia(keepPaths: Set<string>) {
@@ -311,6 +381,7 @@ export class AppStore {
       connection: def?.provider ? this.connections[def.provider] : undefined,
       mirror: (url: string) => this.mirrorImage(url),
       writeMedia: (name: string, data: Buffer) => this.writeMedia(name, data),
+      mirrorFile: (url, opts) => this.mirrorFile(url, opts),
     }
   }
 

@@ -87,6 +87,15 @@ export interface AppContext {
    *  local path. `mirror` only accepts an http URL, so an app that renders or
    *  captures its own picture had no way to reach the media directory. */
   writeMedia(name: string, data: Buffer): string
+  /** Copies any media file, video included, to disk by streaming it. `mirror`
+   *  refuses anything that is not an image and holds the whole body in memory,
+   *  neither of which survives a folder full of video. */
+  mirrorFile(url: string, opts: {
+    name: string
+    maxBytes: number
+    accept: RegExp
+    headers?: Record<string, string>
+  }): Promise<string | null>
 }
 
 export interface AppRefreshResult {

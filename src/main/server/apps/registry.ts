@@ -4,6 +4,7 @@ import { simpleclock } from './clock'
 import { fbcounter, igcounter } from './counters'
 import { facebook } from './facebook'
 import { gcal } from './gcal'
+import { gdrive } from './gdrive'
 import { gslides } from './gslides'
 import { instagram } from './instagram'
 import { livetv } from './livetv'
@@ -33,6 +34,7 @@ export const APPS: AppDefinition[] = [
   split,
   livetv,
   sharepoint,
+  gdrive,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))

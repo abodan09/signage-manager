@@ -221,6 +221,34 @@ export function createAppsRouter(db: JsonDB, apps: AppStore, tvClients: Map<stri
     })()
   })
 
+  /** POST /api/apps/connections/:provider/key — store a pasted credential.
+   *
+   *  Not every provider can be signed into. Google Drive is read with an API
+   *  key the operator makes in their own Google account, because the scope that
+   *  would let us sign in is one Google classifies as restricted — an annual
+   *  paid security assessment, or a hundred-user cap for the life of the
+   *  product. The key still belongs in connections.json rather than in the
+   *  instance config: it is a credential, and config gets copied around. */
+  router.post('/connections/:provider/key', (req, res) => {
+    const provider = req.params.provider
+    if (provider !== 'googledrive') {
+      res.status(404).json({ error: 'That service does not take a key.' }); return
+    }
+    const key = String((req.body as { key?: unknown })?.key ?? '').trim()
+    if (!/^[A-Za-z0-9_-]{20,120}$/.test(key)) {
+      res.status(400).json({ error: 'That does not look like a Google API key.' }); return
+    }
+    apps.setConnection({
+      provider,
+      accountName: `Key …${key.slice(-6)}`,
+      accessToken: key,
+      connectedAt: new Date().toISOString(),
+      meta: { kind: 'apiKey' },
+    })
+    broadcast({ type: 'playlist_update' })
+    res.json({ ok: true })
+  })
+
   // DELETE /api/apps/connections/:provider — sign out
   router.delete('/connections/:provider', async (req, res) => {
     if (!apps.clearConnection(req.params.provider)) {

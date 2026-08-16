@@ -173,6 +173,7 @@ function ConnectionField({ serverUrl, field, config }: {
   const [account, setAccount] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [keyText, setKeyText] = useState('')
 
   const load = () => {
     if (!serverUrl || !provider) return
@@ -218,27 +219,85 @@ function ConnectionField({ serverUrl, field, config }: {
     }
   }
 
+  async function saveKey() {
+    setBusy(true); setError('')
+    try {
+      const res = await fetch(`${serverUrl}/api/apps/connections/${provider}/key`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ key: keyText.trim() }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.error || 'Could not save that key')
+      setKeyText('')
+      load()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Could not save that key')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div style={{
       border: '1px solid var(--border)', borderRadius: 'var(--radius)',
       padding: 10, background: 'var(--bg-primary)',
-      display: 'flex', alignItems: 'center', gap: 10,
     }}>
-      <span style={{
-        width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-        background: account ? 'var(--success, #22c55e)' : 'var(--text-secondary)',
-      }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13 }}>{account ?? 'Not signed in'}</div>
-        {error && <div style={{ color: 'var(--danger)', fontSize: 11 }}>{error}</div>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{
+          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+          background: account ? 'var(--success, #22c55e)' : 'var(--text-secondary)',
+        }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13 }}>
+            {account ?? (KEY_PROVIDERS[provider] ? 'No key yet' : 'Not signed in')}
+          </div>
+          {error && <div style={{ color: 'var(--danger)', fontSize: 11 }}>{error}</div>}
+        </div>
+        {account
+          ? <button className="btn btn-ghost btn-sm" disabled={busy} onClick={signOut}>
+              {KEY_PROVIDERS[provider] ? 'Remove' : 'Sign out'}
+            </button>
+          : !KEY_PROVIDERS[provider] && (
+            <button className="btn btn-ghost btn-sm" disabled={busy} onClick={signIn}>
+              {busy ? 'Waiting for sign-in…' : 'Sign In'}
+            </button>
+          )}
       </div>
-      {account
-        ? <button className="btn btn-ghost btn-sm" disabled={busy} onClick={signOut}>Sign out</button>
-        : <button className="btn btn-ghost btn-sm" disabled={busy} onClick={signIn}>
-            {busy ? 'Waiting for sign-in…' : 'Sign In'}
-          </button>}
+
+      {/* Some services cannot be signed into at all — see the route comment.
+          Those take a key the operator makes themselves, so they get a paste
+          box and a short set of directions instead of a button. */}
+      {!account && KEY_PROVIDERS[provider] && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input className="form-input" style={{ flex: 1 }} type="password"
+              placeholder="Paste your key here" value={keyText}
+              onChange={e => setKeyText(e.target.value)} />
+            <button className="btn btn-ghost btn-sm" disabled={busy || !keyText.trim()} onClick={saveKey}>
+              Save key
+            </button>
+          </div>
+          <ol style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '8px 0 0 16px', lineHeight: 1.6 }}>
+            {KEY_PROVIDERS[provider].map((step, i) => <li key={i}>{step}</li>)}
+          </ol>
+        </div>
+      )}
     </div>
   )
+}
+
+/** Providers that take a pasted key rather than a sign-in, with the directions
+ *  for making one. Written out here because an operator who has never opened a
+ *  cloud console will not find it otherwise, and "get an API key" is not a
+ *  usable instruction. */
+const KEY_PROVIDERS: Record<string, string[]> = {
+  googledrive: [
+    'Open console.cloud.google.com and create a new project (any name).',
+    'APIs & Services → Library → search "Google Drive API" → Enable.',
+    'Credentials → Create credentials → API key.',
+    'Edit the key → API restrictions → Restrict key → Google Drive API.',
+    'Copy the key and paste it above. It stays on this computer.',
+  ],
 }
 
 /** Picks one of the manager's playlists. The stored value is a project id; the
