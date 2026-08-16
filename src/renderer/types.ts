@@ -248,6 +248,66 @@ export interface PackCategory {
   availableOffline: boolean
 }
 
+// ── Apps — mirrors src/main/server/apps/types.ts ─────────────────────────────
+
+export type AppFieldType =
+  | 'text' | 'textarea' | 'url' | 'number' | 'select' | 'color'
+  | 'checkbox' | 'slider' | 'connection' | 'note'
+
+export interface AppField {
+  key: string
+  label: string
+  type: AppFieldType
+  help?: string
+  placeholder?: string
+  required?: boolean
+  default?: unknown
+  options?: Array<{ value: string; label: string; hint?: string }>
+  min?: number
+  max?: number
+  step?: number
+  marks?: string[]
+  maxLength?: number
+  provider?: string
+  showIf?: { key: string; equals: Array<string | number | boolean> }
+  advanced?: boolean
+}
+
+export interface AppDefinitionInfo {
+  id: string
+  name: string
+  icon: string
+  description: string
+  category: 'social' | 'media' | 'information' | 'productivity' | 'utility'
+  provider?: string
+  defaultDuration: number
+  fields: AppField[]
+}
+
+export interface AppInstanceInfo {
+  id: string
+  appId: string
+  appName: string
+  appIcon: string
+  name: string
+  config: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+  needsConnection: boolean
+  lastFetchedAt?: string
+  lastError?: string
+  published?: boolean
+}
+
+export interface AppConnectionInfo {
+  provider: string
+  accountName?: string
+  accountId?: string
+  connectedAt: string
+  expiresAt?: number
+  expired: boolean
+}
+
 export interface UpdateInfo {
   available: boolean
   version?: string

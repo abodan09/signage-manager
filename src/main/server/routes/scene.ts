@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import type { JsonDB } from '../database'
 import type { PackStore } from '../packs'
+import type { AppStore } from '../apps/store'
 import { fontFaceCss } from '../fonts'
 import { renderSceneHtml } from '../scenes'
 
@@ -9,7 +10,13 @@ import { renderSceneHtml } from '../scenes'
  *  LAN must be able to load it, exactly like /tv/player and /uploads. Nothing
  *  here reads request bodies or mutates state, and the renderer escapes every
  *  string, so the open mount adds no write surface. */
-export function createSceneRouter(db: JsonDB, packs: PackStore, fontsDir: string) {
+export function createSceneRouter(
+  db: JsonDB,
+  packs: PackStore,
+  fontsDir: string,
+  apps?: AppStore,
+  getLanUrl?: () => string,
+) {
   const router = Router()
 
   // Computed once: the set of bundled faces cannot change while the app runs.
@@ -45,6 +52,36 @@ export function createSceneRouter(db: JsonDB, packs: PackStore, fontsDir: string
     const tpl = packs.getTemplate(req.params.category, req.params.key)
     if (!tpl) { res.status(404); notFound(res, 'Template not found'); return }
     send(res, renderSceneHtml({ ...tpl.design, name: tpl.name }, fontCss))
+  })
+
+  // GET /tv/app/:id — a configured app, rendered for a screen
+  router.get('/app/:id', (req, res) => {
+    if (!apps) { res.status(404); notFound(res, 'Apps are not available'); return }
+    const inst = db.getAppInstanceById(req.params.id)
+    if (!inst) { res.status(404); notFound(res, 'App not found'); return }
+    send(res, apps.render(inst, getLanUrl ? getLanUrl() : ''))
+  })
+
+  /** GET /tv/app/:id/data — the payload the app page polls.
+   *
+   *  Only what the app already draws on the screen is exposed, never the
+   *  credentials used to fetch it: the manager talks to the third party, the
+   *  screen talks only to the manager. Serving it separately is what lets a
+   *  wall pick up new posts without reloading the page. */
+  router.get('/app/:id/data', (req, res) => {
+    if (!apps) { res.status(404).json({ error: 'Apps are not available' }); return }
+    const inst = db.getAppInstanceById(req.params.id)
+    if (!inst) { res.status(404).json({ error: 'App not found' }); return }
+    const entry = apps.getCached(inst.id)
+    res.setHeader('Cache-Control', 'no-store')
+    res.json({
+      data: apps.serialize(inst, getLanUrl ? getLanUrl() : ''),
+      fetchedAt: entry ? new Date(entry.fetchedAt).toISOString() : null,
+      // The page uses this to decide whether to show a quiet "not updating"
+      // hint; it must never blank working content over it.
+      stale: entry ? entry.expiresAt < Date.now() : true,
+      error: entry?.lastError ?? null,
+    })
   })
 
   return router

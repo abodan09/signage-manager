@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
+import AppsPage from './pages/AppsPage'
 import Dashboard from './pages/Dashboard'
 import ContentPage from './pages/ContentPage'
 import DesignerPage from './pages/DesignerPage'
@@ -253,6 +254,7 @@ export default function App() {
             <Route path="/"          element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/content"   element={<ContentPage />} />
+            <Route path="/apps"      element={<AppsPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/designer/:id" element={<DesignerPage />} />
             <Route path="/layouts"   element={<LayoutsPage />} />

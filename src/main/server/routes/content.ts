@@ -70,14 +70,18 @@ export function createContentRouter(
     const body = req.body as Record<string, string>
 
     const type = body.type as ContentItem['type']
-    if (!['image', 'video', 'html', 'text', 'design'].includes(type)) {
+    if (!['image', 'video', 'html', 'text', 'design', 'app'].includes(type)) {
       res.status(400).json({ error: 'Invalid type' })
       return
     }
-    // A design item is a pointer; without a live target the player would show a
-    // black slot for the whole duration, so refuse it at the door.
+    // Design and app items are pointers; without a live target the player would
+    // show a black slot for the whole duration, so refuse them at the door.
     if (type === 'design' && !db.getDesignById(body.designId ?? '')) {
       res.status(400).json({ error: 'Design not found' })
+      return
+    }
+    if (type === 'app' && !db.getAppInstanceById(body.appInstanceId ?? '')) {
+      res.status(400).json({ error: 'App not found' })
       return
     }
 
@@ -110,6 +114,8 @@ export function createContentRouter(
       item.htmlUrl = body.htmlUrl
     } else if (type === 'design') {
       item.designId = body.designId
+    } else if (type === 'app') {
+      item.appInstanceId = body.appInstanceId
     } else if (type === 'text') {
       item.textContent = body.textContent ?? ''
       item.textBgColor = body.textBgColor ?? '#000000'

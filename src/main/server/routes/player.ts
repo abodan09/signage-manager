@@ -523,6 +523,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
       startProgress(dur);
       mainTimer = setTimeout(nextMain, dur);
 
+    } else if (item.type === 'app') {
+      // Same deal as a design: the manager renders the app and talks to any
+      // third-party service on the screen's behalf, so nothing here holds a
+      // credential and nothing here needs internet access of its own.
+      showLayer('html-layer');
+      qs('#frame').src = BASE + '/tv/app/' + encodeURIComponent(item.appInstanceId || '');
+      startProgress(dur);
+      mainTimer = setTimeout(nextMain, dur);
+
     } else {
       // Unknown type — never leave the rotation without a pending timer, or the
       // wall freezes on whatever was showing before.

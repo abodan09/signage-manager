@@ -1,4 +1,4 @@
-export type ContentType = 'image' | 'video' | 'html' | 'text' | 'design'
+export type ContentType = 'image' | 'video' | 'html' | 'text' | 'design' | 'app'
 export type ScheduleMode = 'loop' | 'scheduled' | 'manual'
 export type TextPosition = 'center' | 'top' | 'bottom' | 'ticker'
 
@@ -14,6 +14,8 @@ export interface ContentItem {
   htmlUrl?: string
   // design — the id of a Design rendered by GET /tv/scene/:id
   designId?: string
+  // app — the id of an AppInstance rendered by GET /tv/app/:id
+  appInstanceId?: string
   // text
   textContent?: string
   textBgColor?: string
@@ -359,5 +361,8 @@ export interface AppDB {
   templates: Template[]
   designs: Design[]
   installedPacks: InstalledPack[]
+  /** Configured app instances. The type lives in apps/types.ts, next to the
+   *  app framework that owns it. */
+  appInstances: import('./apps/types').AppInstance[]
   settings: AppSettings
 }

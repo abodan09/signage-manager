@@ -5,6 +5,7 @@ import path from 'path'
 import fs from 'fs'
 import { WebSocketServer, WebSocket } from 'ws'
 import { JsonDB } from './database'
+import { createAppsRouter } from './routes/apps'
 import { createContentRouter } from './routes/content'
 import { createDesignsRouter } from './routes/designs'
 import { createDevicesRouter } from './routes/devices'
@@ -17,6 +18,7 @@ import { createSceneRouter } from './routes/scene'
 import { createSettingsRouter } from './routes/settings'
 import { createTemplatesRouter } from './routes/templates'
 import { PackStore } from './packs'
+import { AppStore } from './apps/store'
 import { startDiscovery, getLocalIP } from './discovery'
 import { PairingStore, sha256 } from './pairing'
 import { track, setTvCountProvider } from '../telemetry'
@@ -54,6 +56,10 @@ const FEATURE_EVENTS: Array<[string, RegExp, string]> = [
   ['PUT',    /^\/api\/templates\/[^/]+\/?$/,                'template_updated'],
   ['POST',   /^\/api\/packs\/[^/]+\/install\/?$/,           'pack_installed'],
   ['DELETE', /^\/api\/packs\/[^/]+\/?$/,                    'pack_removed'],
+  ['POST',   /^\/api\/apps\/instances\/[^/]+\/publish\/?$/, 'app_published'],
+  ['POST',   /^\/api\/apps\/instances\/?$/,                 'app_created'],
+  ['PUT',    /^\/api\/apps\/instances\/[^/]+\/?$/,          'app_updated'],
+  ['DELETE', /^\/api\/apps\/instances\/[^/]+\/?$/,          'app_deleted'],
   ['POST',   /^\/api\/designs\/[^/]+\/publish\/?$/,         'design_published'],
   ['POST',   /^\/api\/designs\/?$/,                         'design_created'],
   ['PUT',    /^\/api\/designs\/[^/]+\/?$/,                  'design_updated'],
@@ -107,8 +113,14 @@ export async function startServer(
   const uploadsDir = path.join(userData, 'uploads')
   const fontsDir = path.join(assetsDir, 'fonts')
   const packs = new PackStore(userData, assetsDir, db)
+  const apps = new AppStore(db, userData, assetsDir)
   const pairing = new PairingStore()
   pairing.startSweeper()
+
+  // App pages are loaded by TVs, so every URL inside them must be the LAN
+  // address rather than localhost — resolved per call so moving between
+  // networks needs no restart.
+  const lanUrl = () => `http://${getLocalIP()}:${port}`
 
   const app = express()
   const server = http.createServer(app)
@@ -143,6 +155,11 @@ export async function startServer(
   // Display faces for designed scenes. TVs carry almost no fonts of their own,
   // so the manager serves them; immutable filenames make a long cache correct.
   app.use('/fonts', express.static(fontsDir, { maxAge: '30d', fallthrough: true }))
+  // Images apps have copied off third-party CDNs. Filenames are content
+  // hashes, so they never change meaning and can be cached hard — which is
+  // exactly what lets a screen keep drawing them with the WAN unplugged.
+  app.use('/app-media', express.static(apps.mediaPath, { maxAge: '7d', fallthrough: true }))
+  app.use('/api/apps', createAppsRouter(db, apps, tvClients, lanUrl))
   app.use('/api/content', createContentRouter(db, uploadsDir, wss, tvClients))
   app.use('/api/designs', createDesignsRouter(db, packs, uploadsDir, tvClients))
   app.use('/api/devices', createDevicesRouter(db, wss, tvClients))
@@ -153,7 +170,7 @@ export async function startServer(
   app.use('/api/settings', createSettingsRouter(db, tvClients))
   app.use('/api/templates', createTemplatesRouter(db, tvClients))
   app.use('/tv', createPlayerRouter(appVersion))
-  app.use('/tv', createSceneRouter(db, packs, fontsDir))
+  app.use('/tv', createSceneRouter(db, packs, fontsDir, apps, lanUrl))
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, connectedTVs: tvClients.size })
@@ -242,6 +259,9 @@ export async function startServer(
     server.listen(port, () => {
       console.log(`[server] listening on http://localhost:${port}`)
       startDiscovery(port, appVersion)
+      // Keeps every configured app's data warm, so a screen that comes online
+      // at 6am shows current content rather than waiting for its first fetch.
+      apps.startSweeper(lanUrl)
       resolve(port)
     })
     server.on('error', (err: NodeJS.ErrnoException) => {

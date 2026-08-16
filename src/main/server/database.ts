@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto'
 import type {
   AppDB, AppSettings, ContentItem, Design, Device, DeviceGroup, InstalledPack, Project, ResolvedTemplate, Template,
 } from './types'
+import type { AppInstance } from './apps/types'
 import { builtinTemplates, DEFAULT_TEMPLATE_ID, isBuiltinId, resolveTemplate } from './templates'
 
 export class JsonDB {
@@ -26,6 +27,7 @@ export class JsonDB {
         if (!raw.templates) raw.templates = []
         if (!raw.designs) raw.designs = []
         if (!raw.installedPacks) raw.installedPacks = []
+        if (!raw.appInstances) raw.appInstances = []
         if (!raw.settings) raw.settings = { serverId: randomUUID(), pairingMode: 'open' }
         if (!raw.settings.serverId) raw.settings.serverId = randomUUID()
         if (raw.settings.pairingMode !== 'required') raw.settings.pairingMode = 'open'
@@ -46,7 +48,8 @@ export class JsonDB {
       // corrupt file – start fresh
     }
     return {
-      content: [], devices: [], projects: [], deviceGroups: [], templates: [], designs: [], installedPacks: [],
+      content: [], devices: [], projects: [], deviceGroups: [], templates: [], designs: [],
+      installedPacks: [], appInstances: [],
       settings: { serverId: randomUUID(), pairingMode: 'open', defaultTemplateId: DEFAULT_TEMPLATE_ID },
     }
   }
@@ -390,6 +393,52 @@ export class JsonDB {
 
   getContentByDesignId(designId: string): ContentItem[] {
     return this.data.content.filter(c => c.designId === designId)
+  }
+
+  // ── App instances ──────────────────────────────────────────────────────────
+
+  getAllAppInstances(): AppInstance[] {
+    return [...this.data.appInstances].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+  }
+
+  getAppInstanceById(id: string): AppInstance | undefined {
+    return this.data.appInstances.find(a => a.id === id)
+  }
+
+  insertAppInstance(instance: AppInstance): AppInstance {
+    this.data.appInstances.push(instance)
+    this.save()
+    return instance
+  }
+
+  updateAppInstance(id: string, updates: Partial<AppInstance>): AppInstance | null {
+    const idx = this.data.appInstances.findIndex(a => a.id === id)
+    if (idx === -1) return null
+    this.data.appInstances[idx] = {
+      ...this.data.appInstances[idx],
+      ...updates,
+      id: this.data.appInstances[idx].id,
+      appId: this.data.appInstances[idx].appId,   // an instance never changes app
+      updatedAt: new Date().toISOString(),
+    }
+    this.save()
+    return this.data.appInstances[idx]
+  }
+
+  /** Removing an app takes its playlist entries with it — a content item
+   *  pointing at a deleted instance would play as a black slot forever. */
+  deleteAppInstance(id: string): { deleted: boolean; removedContentIds: string[] } {
+    const before = this.data.appInstances.length
+    this.data.appInstances = this.data.appInstances.filter(a => a.id !== id)
+    if (this.data.appInstances.length === before) return { deleted: false, removedContentIds: [] }
+    const removedContentIds = this.data.content.filter(c => c.appInstanceId === id).map(c => c.id)
+    this.data.content = this.data.content.filter(c => c.appInstanceId !== id)
+    this.save()
+    return { deleted: true, removedContentIds }
+  }
+
+  getContentByAppInstanceId(id: string): ContentItem[] {
+    return this.data.content.filter(c => c.appInstanceId === id)
   }
 
   // ── Template packs ─────────────────────────────────────────────────────────

@@ -219,14 +219,16 @@ function rgba(hexColor: string, pct: number): string {
   return `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${(pct / 100).toFixed(3)})`
 }
 
-function qrSvg(el: QrElement): string {
+/** A QR symbol as inline SVG. Shared with the apps subsystem — anything that
+ *  puts a scannable code on a screen goes through here. Returns '' when the
+ *  data is too long to encode, so a caller draws nothing rather than breaking. */
+export function buildQrSvg(data: string, fg = '#000000', bg: string | null = '#ffffff'): string {
   let qr
   try {
     qr = qrFactory(0, 'M')
-    qr.addData(el.data || ' ')
+    qr.addData(data || ' ')
     qr.make()
   } catch {
-    // data too long for the symbol — draw nothing rather than break the scene
     return ''
   }
   const n = qr.getModuleCount()
@@ -236,9 +238,13 @@ function qrSvg(el: QrElement): string {
       if (qr.isDark(r, c)) cells.push(`M${c} ${r}h1v1h-1z`)
     }
   }
-  const bgRect = el.bg ? `<rect width="${n}" height="${n}" fill="${el.bg}"/>` : ''
+  const bgRect = bg ? `<rect width="${n}" height="${n}" fill="${bg}"/>` : ''
   // shape-rendering keeps module edges crisp when the TV scales the stage.
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges">${bgRect}<path d="${cells.join('')}" fill="${el.fg}"/></svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges">${bgRect}<path d="${cells.join('')}" fill="${fg}"/></svg>`
+}
+
+function qrSvg(el: QrElement): string {
+  return buildQrSvg(el.data, el.fg, el.bg)
 }
 
 function shapeSvg(el: ShapeElement): string {
