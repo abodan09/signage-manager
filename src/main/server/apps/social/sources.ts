@@ -197,8 +197,12 @@ export async function fetchFacebookPage(pageId: string, token: string, limit: nu
   const base = `https://graph.facebook.com/${FB_VERSION}`
   const id = encodeURIComponent(pageId.trim())
 
+  // fan_count is the "likes" number the counter app shows; followers_count is
+  // the newer one Meta reports separately. Ask for both — Pages differ in
+  // which they populate, and a counter with no number is a blank screen.
   const page = await getJson(
-    `${base}/${id}?fields=name,username,picture.type(large)&access_token=${encodeURIComponent(token)}`,
+    `${base}/${id}?fields=name,username,picture.type(large),fan_count,followers_count` +
+    `&access_token=${encodeURIComponent(token)}`,
   ) as Record<string, unknown>
 
   const feed = await getJson(
@@ -235,7 +239,10 @@ export async function fetchFacebookPage(pageId: string, token: string, limit: nu
   }
 
   return {
-    profile: { username, displayName, avatarUrl: pic },
+    profile: {
+      username, displayName, avatarUrl: pic,
+      followers: Number(page.followers_count) || Number(page.fan_count) || undefined,
+    },
     posts,
   }
 }
