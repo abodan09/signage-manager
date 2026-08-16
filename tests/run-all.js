@@ -12,6 +12,7 @@ const SUITES = [
   ['designs & packs',    'test-designs.js'],
   ['apps & instagram',   'test-apps.js'],
   ['youtube app',        'test-youtube.js'],
+  ['weather app',        'test-weather.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]

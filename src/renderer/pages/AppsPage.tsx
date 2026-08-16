@@ -302,7 +302,7 @@ export default function AppsPage() {
               </div>
             </div>
 
-            <AppConfigForm fields={editing.def.fields} config={config} onChange={setConfig} />
+            <AppConfigForm fields={editing.def.fields} config={config} onChange={setConfig} serverUrl={serverUrl} />
 
             {formError && <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8 }}>{formError}</div>}
 

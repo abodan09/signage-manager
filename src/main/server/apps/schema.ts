@@ -72,6 +72,18 @@ function coerce(field: AppField, raw: unknown): { ok: true; value: unknown } | E
       // The connection itself lives outside config; the field is a UI affordance.
       return { ok: true, value: undefined }
 
+    case 'image': {
+      const s = String(raw ?? '').trim()
+      if (!s) return { ok: true, value: '' }
+      // Only files this manager holds. A page renders these into an <img>, and
+      // an off-server URL would break the moment the screen loses its WAN —
+      // which is the one thing a picture on a wall must not do.
+      if (!/^\/uploads\/[A-Za-z0-9._-]+$/.test(s)) {
+        return { ok: false, error: `${label} must be a picture uploaded to this app` }
+      }
+      return { ok: true, value: s }
+    }
+
     case 'text':
     case 'textarea':
     default: {

@@ -1,5 +1,6 @@
 import type { AppDefinition } from './types'
 import { instagram } from './instagram'
+import { weather } from './weather'
 import { youtube } from './youtube'
 
 // Every app the manager can create instances of. Adding one is a single import
@@ -8,6 +9,7 @@ import { youtube } from './youtube'
 export const APPS: AppDefinition[] = [
   instagram,
   youtube,
+  weather,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))

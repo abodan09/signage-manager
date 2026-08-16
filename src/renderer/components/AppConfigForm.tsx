@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AppField } from '../types'
 
 /** Renders any app's settings from its declared fields.
@@ -24,14 +24,95 @@ export function defaultsFor(fields: AppField[]): Config {
   return out
 }
 
-function Control({ field, value, onChange }: {
+/** Picture picker: upload a new one, or reuse anything already on this
+ *  machine. Apps store an /uploads path, never a remote URL, so a screen that
+ *  loses its internet keeps showing the picture. */
+function ImagePicker({ serverUrl, value, onChange }: {
+  serverUrl: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const [assets, setAssets] = useState<Array<{ path: string; name: string }>>([])
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!serverUrl || !open) return
+    fetch(`${serverUrl}/api/designs/assets`)
+      .then(r => r.json())
+      .then(d => setAssets(d.assets ?? []))
+      .catch(() => { /* an empty picker still lets them upload */ })
+  }, [serverUrl, open])
+
+  async function upload(file: File) {
+    setBusy(true); setError('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch(`${serverUrl}/api/designs/upload`, { method: 'POST', body: fd })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Upload failed')
+      onChange(data.path)
+      setOpen(false)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
+        onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = '' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {value
+          ? <img src={serverUrl + value} alt="" style={{ width: 64, height: 42, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)' }} />
+          : <div style={{ width: 64, height: 42, borderRadius: 6, border: '1px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: 'var(--text-secondary)' }}>🖼️</div>}
+        <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => fileRef.current?.click()}>
+          {busy ? 'Uploading…' : 'Upload'}
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => setOpen(o => !o)}>
+          {open ? 'Hide' : 'Choose'}
+        </button>
+        {value && <button className="btn btn-ghost btn-sm" onClick={() => onChange('')}>Clear</button>}
+      </div>
+      {error && <div style={{ color: 'var(--danger)', fontSize: 11, marginTop: 4 }}>{error}</div>}
+      {open && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(74px, 1fr))', gap: 6, marginTop: 8 }}>
+          {assets.map(a => (
+            <img key={a.path} src={serverUrl + a.path} alt={a.name} title={a.name}
+              onClick={() => { onChange(a.path); setOpen(false) }}
+              style={{
+                width: '100%', height: 50, objectFit: 'cover', borderRadius: 4, cursor: 'pointer', display: 'block',
+                border: value === a.path ? '2px solid var(--accent)' : '1px solid var(--border)',
+              }} />
+          ))}
+          {!assets.length && (
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>
+              No pictures on this computer yet — upload one.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Control({ field, value, onChange, serverUrl }: {
   field: AppField
   value: unknown
   onChange: (v: unknown) => void
+  serverUrl: string
 }) {
   switch (field.type) {
     case 'note':
       return null
+
+    case 'image':
+      return <ImagePicker serverUrl={serverUrl} value={String(value ?? '')} onChange={onChange} />
 
     case 'checkbox':
       return (
@@ -108,10 +189,11 @@ function Control({ field, value, onChange }: {
   }
 }
 
-function Row({ field, config, onChange }: {
+function Row({ field, config, onChange, serverUrl }: {
   field: AppField
   config: Config
   onChange: (key: string, v: unknown) => void
+  serverUrl: string
 }) {
   if (field.type === 'note') {
     return (
@@ -130,7 +212,7 @@ function Row({ field, config, onChange }: {
   if (field.type === 'checkbox') {
     return (
       <div className="form-group">
-        <Control field={field} value={config[field.key]} onChange={v => onChange(field.key, v)} />
+        <Control field={field} value={config[field.key]} onChange={v => onChange(field.key, v)} serverUrl={serverUrl} />
         {field.help && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{field.help}</div>}
       </div>
     )
@@ -141,16 +223,17 @@ function Row({ field, config, onChange }: {
       <label className="form-label">
         {field.label}{field.required && <span style={{ color: 'var(--danger)' }}> *</span>}
       </label>
-      <Control field={field} value={config[field.key]} onChange={v => onChange(field.key, v)} />
+      <Control field={field} value={config[field.key]} onChange={v => onChange(field.key, v)} serverUrl={serverUrl} />
       {field.help && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{field.help}</div>}
     </div>
   )
 }
 
-export function AppConfigForm({ fields, config, onChange }: {
+export function AppConfigForm({ fields, config, onChange, serverUrl }: {
   fields: AppField[]
   config: Config
   onChange: (next: Config) => void
+  serverUrl: string
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false)
 
@@ -163,7 +246,7 @@ export function AppConfigForm({ fields, config, onChange }: {
 
   return (
     <div>
-      {basic.map(f => <Row key={f.key} field={f} config={config} onChange={set} />)}
+      {basic.map(f => <Row key={f.key} field={f} config={config} onChange={set} serverUrl={serverUrl} />)}
 
       {advanced.length > 0 && (
         <>
@@ -180,7 +263,7 @@ export function AppConfigForm({ fields, config, onChange }: {
               background: 'var(--bg-primary)', border: '1px solid var(--border)',
               borderRadius: 'var(--radius)', padding: '16px 16px 4px',
             }}>
-              {advanced.map(f => <Row key={f.key} field={f} config={config} onChange={set} />)}
+              {advanced.map(f => <Row key={f.key} field={f} config={config} onChange={set} serverUrl={serverUrl} />)}
             </div>
           )}
         </>
