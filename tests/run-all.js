@@ -28,6 +28,7 @@ const SUITES = [
   ['google drive',       'test-gdrive.js'],
   ['onedrive',           'test-onedrive.js'],
   ['world clock',        'test-worldclock.js'],
+  ['motivational quotes','test-quotes.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]

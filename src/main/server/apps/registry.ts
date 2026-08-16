@@ -11,6 +11,7 @@ import { livetv } from './livetv'
 import { onedrive } from './onedrive'
 import { powerbi } from './powerbi'
 import { qrcode } from './qrcode'
+import { quotes } from './quotes'
 import { sharepoint } from './sharepoint'
 import { split } from './split'
 import { weather } from './weather'
@@ -39,6 +40,7 @@ export const APPS: AppDefinition[] = [
   gdrive,
   onedrive,
   worldclock,
+  quotes,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))
