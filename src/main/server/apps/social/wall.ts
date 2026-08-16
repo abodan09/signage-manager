@@ -13,7 +13,7 @@ import type { ResolvedTheme } from '../render'
 // pages never contain <video>, so the player's no-transform rule (which exists
 // to protect the TV's hardware video plane) does not apply.
 
-export function instagramCss(t: ResolvedTheme, scale: number): string {
+export function socialWallCss(t: ResolvedTheme, scale: number): string {
   const s = (px: number) => (px * scale).toFixed(1) + 'px'
   return `
 body{background:${t.bg};color:${t.fg}}
@@ -85,21 +85,28 @@ body{background:${t.bg};color:${t.fg}}
 `
 }
 
-/** The Instagram glyph, drawn rather than fetched — a screen with no WAN still
- *  shows the branding, and there is no third-party request to fail. */
+/** Brand glyphs, drawn rather than fetched — a screen with no WAN still shows
+ *  the branding, and there is no third-party request to fail. Which one a wall
+ *  wears is the app's choice; everything else here is shared. */
+export const FB_GLYPH =
+  '<svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor" aria-hidden="true">' +
+  '<path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.9h2.54V9.85' +
+  'c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.45 2.9h-2.33' +
+  'V22c4.78-.76 8.44-4.92 8.44-9.94z"/></svg>'
+
 export const IG_GLYPH =
   '<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" ' +
   'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
   '<rect x="2" y="2" width="20" height="20" rx="5.5"/>' +
   '<circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none"/></svg>'
 
-export const INSTAGRAM_JS = `
+export const SOCIAL_WALL_JS = `
 var root = document.getElementById('root');
 var posts = [], profile = {}, idx = 0, mode = CFG.mode, timer = null, raf = null;
 var lastKey = '';
 
 function logoEl(sizePx, css){
-  return '<div class="ig-logo" style="width:' + sizePx + 'px;height:' + sizePx + 'px;' + (css || '') + '">' + IG_SVG + '</div>';
+  return '<div class="ig-logo" style="width:' + sizePx + 'px;height:' + sizePx + 'px;' + (css || '') + '">' + BRAND_SVG + '</div>';
 }
 function msg(text){ root.innerHTML = '<div id="msg">' + esc(text) + '</div>'; }
 
@@ -192,7 +199,7 @@ function cardHtml(p, wide){
     '<div class="meta"><div class="cav"><div style="' + av + '"></div></div>' +
     '<div class="cname">' + esc(p.displayName || p.username) + '</div>' +
     '<div class="cmeta">@' + esc(p.username) + ' &bull; ' + esc(relTime(p.timestamp)) + '</div>' +
-    '<div class="clogo">' + IG_SVG + '</div>' +
+    '<div class="clogo">' + BRAND_SVG + '</div>' +
     '<div class="cdes">' + esc(p.caption) + '</div></div></div>';
 }
 

@@ -182,6 +182,64 @@ export async function refreshGraphToken(token: string): Promise<{ token: string;
   }
 }
 
+// ── Facebook Pages, via the Graph API ────────────────────────────────────────
+
+const FB_VERSION = 'v21.0'
+const FB_FIELDS = 'id,message,story,created_time,full_picture,permalink_url,attachments{media_type,media}'
+
+/** Reads a Page's own posts.
+ *
+ *  Operationally easier than Instagram in one respect: a Page token derived
+ *  from a long-lived user token does not expire, so there is no 60-day cliff
+ *  to nurse. Getting that token still needs the same OAuth flow Meta only
+ *  permits a confidential client to complete, which is why the broker exists. */
+export async function fetchFacebookPage(pageId: string, token: string, limit: number): Promise<FeedPayload> {
+  const base = `https://graph.facebook.com/${FB_VERSION}`
+  const id = encodeURIComponent(pageId.trim())
+
+  const page = await getJson(
+    `${base}/${id}?fields=name,username,picture.type(large)&access_token=${encodeURIComponent(token)}`,
+  ) as Record<string, unknown>
+
+  const feed = await getJson(
+    `${base}/${id}/posts?fields=${FB_FIELDS}&limit=${Math.min(100, Math.max(1, limit))}` +
+    `&access_token=${encodeURIComponent(token)}`,
+  ) as { data?: Array<Record<string, unknown>> }
+
+  const displayName = str(page.name) || 'Facebook'
+  const username = str(page.username) || displayName
+  const pic = (page.picture as { data?: { url?: string } } | undefined)?.data?.url
+
+  const posts: Post[] = []
+  for (const p of feed.data ?? []) {
+    // A post with neither a picture nor words is a like or a share with no
+    // body — nothing a wall can usefully draw.
+    const image = str(p.full_picture)
+    const caption = str(p.message) || str(p.story)
+    if (!image && !caption) continue
+
+    const media = (p.attachments as { data?: Array<{ media_type?: string }> } | undefined)?.data?.[0]
+    const kind = String(media?.media_type ?? '').toLowerCase()
+
+    posts.push({
+      id: str(p.id),
+      caption,
+      mediaType: kind === 'video' ? 'VIDEO' : kind === 'album' ? 'CAROUSEL_ALBUM' : 'IMAGE',
+      imageUrl: image,
+      permalink: str(p.permalink_url) || undefined,
+      timestamp: str(p.created_time) || new Date().toISOString(),
+      username,
+      displayName,
+      avatarUrl: pic,
+    })
+  }
+
+  return {
+    profile: { username, displayName, avatarUrl: pic },
+    posts,
+  }
+}
+
 /** True once a token is old enough to refresh (24h) and close enough to expiry
  *  to be worth refreshing. Renewing at 30 days leaves a month of slack. */
 export function shouldRefresh(conn: AppConnection): boolean {

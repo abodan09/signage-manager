@@ -1,26 +1,33 @@
 import type { AppContext, AppDefinition, AppRefreshResult } from '../types'
 import { appPage, escapeHtml, fontScale, jsonLiteral, resolveTheme, speedToDwellMs } from '../render'
 import { buildQrSvg } from '../../scenes'
-import { IG_GLYPH, SOCIAL_WALL_JS, socialWallCss } from '../social/wall'
+import { FB_GLYPH, SOCIAL_WALL_JS, socialWallCss } from '../social/wall'
 import {
-  applyFilter, DEFAULT_BROKER, fetchBroker, fetchFeedService, fetchGraph, type FeedPayload, type Post,
+  applyFilter, DEFAULT_BROKER, fetchBroker, fetchFacebookPage, fetchFeedService,
+  type FeedPayload, type Post,
 } from '../social/sources'
 
-// Instagram Wall.
+// Facebook Page wall.
 //
-// The four display modes, the theme/speed/font settings and the Advanced block
-// mirror the reference product. What differs is underneath: the manager fetches
-// the feed, mirrors every image to local disk, and serves the screen a page
-// that talks only to the manager. That is what makes the wall keep playing when
-// the WAN drops, and what keeps a Meta credential off a TV in a customer lobby.
+// The same four layouts as the Instagram wall, because they are the same
+// thing: a feed of posts with an author, a time, a caption and a picture. The
+// views, the theme handling and the speed curve all live in apps/social and
+// are shared — this file is the Facebook-shaped parts, which are the fields,
+// where the posts come from, and which glyph the corner wears.
+//
+// Auth lands in the same place as Instagram. Meta permits no loopback
+// redirect and no PKCE and requires the app secret for the token exchange, so
+// a desktop app on a customer LAN cannot complete the flow alone. One thing is
+// easier here: a Page token derived from a long-lived user token does not
+// expire, so once connected a Facebook wall needs no renewal.
 
 const MAX_POSTS = 60
 
-export const instagram: AppDefinition = {
-  id: 'instagram',
-  name: 'Instagram',
-  icon: '📸',
-  description: 'Show your Instagram feed as a single post, a scrolling wall, a kiosk or a tile grid.',
+export const facebook: AppDefinition = {
+  id: 'facebook',
+  name: 'Facebook',
+  icon: '📘',
+  description: 'Show your Facebook Page as a scrolling wall, a single post, a kiosk or a tile grid.',
   category: 'social',
   defaultDuration: 60,
 
@@ -28,37 +35,43 @@ export const instagram: AppDefinition = {
     {
       key: 'source', label: 'Where the posts come from', type: 'select', required: true, default: 'feed',
       options: [
-        { value: 'feed', label: 'Hosted feed link', hint: 'Paste a feed URL from a service such as Behold — no Instagram developer setup' },
-        { value: 'broker', label: 'Connected Instagram account', hint: 'Sign in once through signage.frozenbit.eu' },
-        { value: 'token', label: 'Your own access token', hint: 'For a Meta app you set up yourself' },
+        { value: 'feed', label: 'Hosted feed link', hint: 'Paste a feed URL from a wall service — no Facebook developer setup' },
+        { value: 'broker', label: 'Connected Facebook Page', hint: 'Sign in once through signage.frozenbit.eu' },
+        { value: 'token', label: 'Your own Page token', hint: 'For a Meta app you set up yourself' },
       ],
-      help: 'Instagram closed its simple feed API in December 2024. All three routes below need a Business or Creator account.',
+      help: 'Reading a Page needs a Meta app, which needs a public HTTPS callback — so a link or a connected account is the practical route.',
     },
     {
       key: 'feedUrl', label: 'Feed URL', type: 'url', required: true,
-      placeholder: 'https://feeds.behold.so/xxxxxxxx',
-      help: 'Create a feed at behold.so (or a similar service), connect your Instagram account there, and paste the JSON feed link.',
+      placeholder: 'https://feeds.example.com/xxxxxxxx',
+      help: 'Connect your Page at a wall service and paste the JSON feed link it gives you.',
       showIf: { key: 'source', equals: ['feed'] },
     },
     {
-      key: 'accessToken', label: 'Long-lived access token', type: 'text', required: true, maxLength: 400,
-      placeholder: 'IGQVJ…',
-      help: 'A 60-day Instagram Graph token. The manager renews it automatically before it lapses.',
+      key: 'pageId', label: 'Page ID', type: 'text', required: true, maxLength: 80,
+      placeholder: '1234567890',
+      help: 'On your Page: About → Page transparency, or the number in the Page URL.',
       showIf: { key: 'source', equals: ['token'] },
     },
     {
-      key: 'brokerNote', label: 'Connected account', type: 'note',
-      help: 'Connect an Instagram account under Settings → Connected accounts, then choose it here.',
+      key: 'accessToken', label: 'Page access token', type: 'text', required: true, maxLength: 400,
+      placeholder: 'EAAG…',
+      help: 'A Page token from a long-lived user token. These do not expire, so it is set once.',
+      showIf: { key: 'source', equals: ['token'] },
+    },
+    {
+      key: 'brokerNote', label: 'Connected Page', type: 'note',
+      help: 'Connect a Facebook Page under Settings → Connected accounts, then choose it here. Nothing is ever posted to Facebook — the connection is read-only.',
       showIf: { key: 'source', equals: ['broker'] },
     },
 
     {
       key: 'displayMode', label: 'Display Mode', type: 'select', required: true, default: 'wall',
       options: [
-        { value: 'single', label: 'Single Post View', hint: 'One post at a time, photo and caption side by side' },
+        { value: 'single', label: 'Single Post View', hint: 'One post at a time, picture and caption side by side' },
         { value: 'wall', label: 'Social Wall View', hint: 'A masonry grid that scrolls continuously' },
         { value: 'kiosk', label: 'Social Kiosk View', hint: 'One post at a time with a slow zoom' },
-        { value: 'bricks', label: 'Bricks View', hint: 'A page of photo tiles that swaps as a set' },
+        { value: 'bricks', label: 'Bricks View', hint: 'A page of picture tiles that swaps as a set' },
       ],
     },
     {
@@ -118,8 +131,11 @@ export const instagram: AppDefinition = {
       showIf: { key: 'filterPosts', equals: ['days', 'count'] },
     },
     {
+      key: 'requirePhoto', label: 'Only show posts with a picture', type: 'checkbox', default: false, advanced: true,
+      help: 'Page feeds carry text-only updates that look thin on a big screen.',
+    },
+    {
       key: 'hideCaptions', label: 'Hide captions', type: 'checkbox', default: false, advanced: true,
-      help: 'Show photos only. Useful when captions are long or full of hashtags.',
     },
     {
       key: 'showQr', label: 'Show QR Code', type: 'checkbox', default: false, advanced: true,
@@ -127,18 +143,19 @@ export const instagram: AppDefinition = {
     },
     {
       key: 'qrUrl', label: 'QR links to', type: 'url', advanced: true,
-      placeholder: 'https://instagram.com/yourhandle',
-      help: 'Leave blank to link to the account the posts come from.',
+      placeholder: 'https://facebook.com/yourpage',
+      help: 'Leave blank to link to the Page the posts come from.',
       showIf: { key: 'showQr', equals: [true] },
     },
   ],
 
   validate(config) {
     if (config.source === 'feed' && !String(config.feedUrl ?? '').trim()) {
-      return 'Paste the feed URL, or switch to a connected account.'
+      return 'Paste the feed URL, or switch to a connected Page.'
     }
-    if (config.source === 'token' && !String(config.accessToken ?? '').trim()) {
-      return 'Paste your access token, or switch to a hosted feed link.'
+    if (config.source === 'token') {
+      if (!String(config.pageId ?? '').trim()) return 'Enter the Page ID.'
+      if (!String(config.accessToken ?? '').trim()) return 'Paste the Page access token.'
     }
     return null
   },
@@ -151,31 +168,29 @@ export const instagram: AppDefinition = {
     if (source === 'feed') {
       payload = await fetchFeedService(String(c.feedUrl))
     } else if (source === 'token') {
-      payload = await fetchGraph(String(c.accessToken), MAX_POSTS)
+      payload = await fetchFacebookPage(String(c.pageId), String(c.accessToken), MAX_POSTS)
     } else {
       const conn = ctx.connection
-      if (!conn) throw new Error('No Instagram account is connected yet.')
-      payload = conn.meta?.brokerUrl || conn.accessToken.indexOf('inst_') === 0
-        ? await fetchBroker(String(conn.meta?.brokerUrl ?? DEFAULT_BROKER), conn.accessToken, MAX_POSTS)
-        : await fetchGraph(conn.accessToken, MAX_POSTS)
+      if (!conn) throw new Error('No Facebook Page is connected yet.')
+      const pageId = String(conn.meta?.pageId ?? conn.accountId ?? '')
+      payload = pageId
+        ? await fetchFacebookPage(pageId, conn.accessToken, MAX_POSTS)
+        : await fetchBroker(String(conn.meta?.brokerUrl ?? DEFAULT_BROKER), conn.accessToken, MAX_POSTS)
     }
 
-    const filtered = applyFilter(
-      payload.posts,
-      String(c.filterPosts ?? 'none'),
-      Number(c.filterValue ?? 30),
-    ).slice(0, MAX_POSTS)
+    let posts = applyFilter(payload.posts, String(c.filterPosts ?? 'none'), Number(c.filterValue ?? 30))
+    if (c.requirePhoto === true) posts = posts.filter(p => !!p.imageUrl)
+    posts = posts.slice(0, MAX_POSTS)
 
-    if (!filtered.length) throw new Error('That account has no posts to show yet.')
+    if (!posts.length) throw new Error('That Page has no posts to show yet.')
 
-    // Instagram hands out signed CDN URLs that expire within hours, and old TV
-    // WebViews often cannot negotiate TLS with a third-party CDN at all. Every
-    // image a screen will draw is copied here first.
+    // Facebook's CDN URLs are signed and short-lived, exactly like Instagram's,
+    // and old TV WebViews often cannot reach them at all. Copy first.
     const avatarLocal = payload.profile.avatarUrl ? await ctx.mirror(payload.profile.avatarUrl) : null
-    const posts: Post[] = []
-    for (const p of filtered) {
-      const local = await ctx.mirror(p.imageUrl)
-      posts.push({
+    const mirrored: Post[] = []
+    for (const p of posts) {
+      const local = p.imageUrl ? await ctx.mirror(p.imageUrl) : null
+      mirrored.push({
         ...p,
         imageUrl: local ?? p.imageUrl,
         avatarUrl: (p.avatarUrl ? await ctx.mirror(p.avatarUrl) : avatarLocal) ?? p.avatarUrl,
@@ -185,10 +200,8 @@ export const instagram: AppDefinition = {
     return {
       data: {
         profile: { ...payload.profile, avatarUrl: avatarLocal ?? payload.profile.avatarUrl },
-        posts,
+        posts: mirrored,
       },
-      // Ten minutes: brisk enough that a new post appears while people are
-      // still in the room, gentle enough to stay far inside every rate limit.
       ttlSeconds: 600,
     }
   },
@@ -197,10 +210,7 @@ export const instagram: AppDefinition = {
     const c = ctx.instance.config
     const theme = resolveTheme(c.theme, c.backgroundColor, c.textColor)
     const scale = fontScale(c.fontSize)
-    const mode = String(c.displayMode ?? 'wall')
 
-    // Slider 1..20 maps to the reference product's 0.1..2.0 speedValue, whose
-    // knots at 5/10/15 land exactly on the Slow/Medium/Fast constants.
     const preset = String(c.speed ?? 'medium')
     const sliderValue = Number(c.speedValue ?? 10)
     const dwell = preset === 'custom'
@@ -213,10 +223,10 @@ export const instagram: AppDefinition = {
     const data = (ctx.data ?? null) as { posts?: Post[]; profile?: { username?: string } } | null
     const handle = data?.profile?.username
     const qrTarget = String(c.qrUrl ?? '').trim()
-      || (handle ? `https://instagram.com/${handle}` : 'https://instagram.com')
+      || (handle ? `https://facebook.com/${handle}` : 'https://facebook.com')
 
     const cfg = {
-      mode,
+      mode: String(c.displayMode ?? 'wall'),
       bg: theme.bg,
       dwell,
       pxPerFrame,
@@ -224,25 +234,23 @@ export const instagram: AppDefinition = {
       hideCaptions: c.hideCaptions === true,
       dataUrl: `${ctx.baseUrl}/tv/app/${ctx.instance.id}/data`,
       loadingMessage: 'Loading posts…',
-      emptyMessage: 'No Instagram posts to show yet',
-      errorMessage: 'Cannot reach Instagram right now',
+      emptyMessage: 'No Facebook posts to show yet',
+      errorMessage: 'Cannot reach Facebook right now',
     }
 
-    // The payload is inlined as well as polled, so a screen renders instantly
-    // on load instead of showing "Loading…" until the first poll returns.
     const seed = data && data.posts?.length
       ? `onPayload(${jsonLiteral({ data: seedFor(ctx), fetchedAt: null, stale: false, error: null })});`
       : ''
 
     return appPage({
-      title: `Instagram — ${escapeHtml(ctx.instance.name)}`,
+      title: `Facebook — ${escapeHtml(ctx.instance.name)}`,
       bg: theme.bg,
       fontCss: ctx.fontCss,
       css: socialWallCss(theme, scale),
       body: '<div id="root"></div>',
       script:
         `var CFG = ${jsonLiteral(cfg)};\n` +
-        `var BRAND_SVG = ${jsonLiteral(IG_GLYPH)};\n` +
+        `var BRAND_SVG = ${jsonLiteral(FB_GLYPH)};\n` +
         `var QR_SVG = ${jsonLiteral(c.showQr === true ? buildQrSvg(qrTarget, '#111111', '#ffffff') : '')};\n` +
         SOCIAL_WALL_JS + '\n' + seed,
     })
@@ -251,10 +259,13 @@ export const instagram: AppDefinition = {
   serializeData(ctx: AppContext) {
     return seedFor(ctx)
   },
+
+  suggestName(ctx: AppContext) {
+    const d = (ctx.data ?? null) as { profile?: { displayName?: string } } | null
+    return d?.profile?.displayName ? `${d.profile.displayName} — Facebook` : null
+  },
 }
 
-/** Trims the cached payload to exactly what a view draws. Captions can be
- *  thousands of characters and the page only ever shows the first few lines. */
 function seedFor(ctx: AppContext) {
   const data = (ctx.data ?? null) as { posts?: Post[]; profile?: unknown } | null
   if (!data) return { profile: {}, posts: [] }
@@ -265,8 +276,6 @@ function seedFor(ctx: AppContext) {
     profile: data.profile,
     posts: (data.posts ?? []).map(p => ({
       id: p.id,
-      // Local mirror paths are relative to the manager; the page may be loaded
-      // from the LAN address, so they are absolutised here.
       image: abs(p.imageUrl),
       avatar: abs(p.avatarUrl),
       caption: hide ? '' : String(p.caption ?? '').slice(0, 600),
@@ -278,5 +287,3 @@ function seedFor(ctx: AppContext) {
     })),
   }
 }
-
-export { seedFor }

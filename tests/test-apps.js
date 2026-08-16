@@ -1,4 +1,4 @@
-/* The apps framework and the Instagram app: schema validation, instance CRUD,
+﻿/* The apps framework and the Instagram app: schema validation, instance CRUD,
    caching and stale-serving, the rendered page's TV-compat floor, media
    mirroring, and the playlist plumbing. */
 const fs = require('fs')
@@ -13,7 +13,7 @@ const { JsonDB } = require(`${DIST}/database.js`)
 const { AppStore } = require(`${DIST}/apps/store.js`)
 const { getApp, APPS } = require(`${DIST}/apps/registry.js`)
 const { sanitizeAppConfig, publicDefinition } = require(`${DIST}/apps/schema.js`)
-const { applyFilter } = require(`${DIST}/apps/instagram/sources.js`)
+const { applyFilter } = require(`${DIST}/apps/social/sources.js`)
 const { createAppsRouter } = require(`${DIST}/routes/apps.js`)
 const { createSceneRouter } = require(`${DIST}/routes/scene.js`)
 const { createContentRouter } = require(`${DIST}/routes/content.js`)
@@ -292,3 +292,4 @@ const server = app.listen(0, () => upstream.listen(0, async () => {
   server.close(); upstream.close()
   process.exit(fail ? 1 : 0)
 }))
+
