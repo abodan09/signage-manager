@@ -18,6 +18,12 @@ import { WEATHER_CSS, WEATHER_JS } from './views'
 const GEOCODE = 'https://geocoding-api.open-meteo.com/v1/search'
 const FORECAST = 'https://api.open-meteo.com/v1/forecast'
 
+/** Open-Meteo's licence: "You must include a link next to any location
+ *  Open-Meteo data are displayed." A screen has no clickable link, so the
+ *  credit text carries it. Change this alongside the endpoints above if the
+ *  provider ever changes — the two belong together. */
+export const WEATHER_ATTRIBUTION = 'Weather data by Open-Meteo.com'
+
 interface Day {
   date: string
   code: number
@@ -247,6 +253,9 @@ export const weather: AppDefinition = {
       dataUrl: `${ctx.baseUrl}/tv/app/${ctx.instance.id}/data`,
       waiting: 'Fetching the forecast…',
       failed: 'Weather is unavailable',
+      // Required by the data provider's licence wherever the forecast is
+      // shown. Not a setting: an operator must not be able to switch it off.
+      attribution: WEATHER_ATTRIBUTION,
     }
 
     return appPage({

@@ -218,6 +218,18 @@ const server = app.listen(0, async () => {
     check(`${style}: it draws immediately from a seed`, scripts.includes('var SEED = {'))
   }
 
+  // The data licence requires the credit wherever the forecast is shown, and
+  // no layout may be able to omit it.
+  for (const style of ['wall', 'split', 'flat']) {
+    await call2('PUT', `/api/apps/instances/${id}`, {
+      config: { location: 'Vienna, Austria', units: 'celsius', style, theme: 'auto' },
+    })
+    const p = await text2(`/tv/app/${id}`)
+    check(`${style}: the data provider is credited`, p.includes('Weather data by Open-Meteo.com'))
+  }
+  check('the credit is not a setting an operator can switch off',
+    !getApp('weather').fields.some(f => /attribut|credit/i.test(f.key)))
+
   const page = await text2(`/tv/app/${id}`)
   check('no third-party request is made for anything visual',
     !/https?:\/\/(?!127\.0\.0\.1)/.test(page.replace(/https?:\/\/www\.w3\.org[^"']*/g, '')))

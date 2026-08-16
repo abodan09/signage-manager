@@ -78,6 +78,11 @@ body{color:${t.fg}}
 .f-col .lo{font-size:2.8vh;opacity:.72}
 
 #msg{position:absolute;top:50%;left:0;right:0;text-align:center;font-size:3vh;opacity:.6;margin-top:-1em;padding:0 8vw}
+
+/* Open-Meteo's licence requires the credit to appear next to the data. A
+   screen has no clickable link, so the text alone carries it — kept small and
+   dim, but never optional. */
+.attrib{position:absolute;right:1.6vh;bottom:1vh;font-size:1.3vh;opacity:.45;z-index:40;letter-spacing:.02em}
 `
 
 export const WEATHER_JS = `
@@ -228,6 +233,12 @@ function draw(){
   if (CFG.style === 'split') drawSplit(last);
   else if (CFG.style === 'flat') drawFlat(last);
   else drawWall(last);
+  /* Appended after every layout rather than inside each, so a new layout
+     cannot ship without the credit. */
+  var credit = document.createElement('div');
+  credit.className = 'attrib';
+  credit.textContent = CFG.attribution;
+  root.appendChild(credit);
 }
 
 function onPayload(res){
