@@ -23,6 +23,16 @@ interface CacheEntry {
   failures?: number
 }
 
+/** Whether a stored connection can actually be used to fetch anything.
+ *  A session-based one carries no token by design; a half-set-up OAuth one
+ *  carries only the client id the operator pasted. */
+function isUsable(c?: AppConnection): boolean {
+  if (!c) return false
+  if (c.meta?.kind === 'session') return true
+  if (c.meta?.kind === 'pending') return false
+  return !!c.accessToken
+}
+
 const SWEEP_MS = 60_000
 const MIN_TTL_MS = 30_000
 /** After repeated failures, back off rather than hammering a dead endpoint. */
@@ -90,6 +100,19 @@ export class AppStore {
     this.saveConnections()
     // A new account means every instance using it is showing the wrong feed.
     this.invalidateProvider(conn.provider)
+  }
+
+  /** Writes new tokens for a provider WITHOUT invalidating anything.
+   *
+   *  setConnection() invalidates every instance using the provider, which is
+   *  right when the account changes and badly wrong for a token refresh: an
+   *  hourly refresh would throw away the cache hourly, and for an app that
+   *  mirrors a folder of video that means re-downloading it. */
+  saveTokens(provider: string, patch: Partial<AppConnection>) {
+    const existing = this.connections[provider]
+    if (!existing) return
+    this.connections[provider] = { ...existing, ...patch, provider }
+    this.saveConnections()
   }
 
   clearConnection(provider: string): boolean {
@@ -382,6 +405,10 @@ export class AppStore {
       mirror: (url: string) => this.mirrorImage(url),
       writeMedia: (name: string, data: Buffer) => this.writeMedia(name, data),
       mirrorFile: (url, opts) => this.mirrorFile(url, opts),
+      updateConnection: (patch) => {
+        const p = getApp(instance.appId)?.provider
+        if (p) this.saveTokens(p, patch)
+      },
     }
   }
 
@@ -453,7 +480,11 @@ export class AppStore {
       ...instance,
       appName: def?.name ?? instance.appId,
       appIcon: def?.icon ?? '🧩',
-      needsConnection: !!def?.provider && !this.connections[def.provider],
+      // A record alone is not a connection. OneDrive stores the operator's
+      // client id before they ever sign in, and SharePoint stores a session
+      // marker with an empty token — so "connected" means there is something
+      // usable in the record, not merely that the record exists.
+      needsConnection: !!def?.provider && !isUsable(this.connections[def.provider]),
       lastFetchedAt: entry ? new Date(entry.fetchedAt).toISOString() : undefined,
       lastError: entry?.lastError,
     }

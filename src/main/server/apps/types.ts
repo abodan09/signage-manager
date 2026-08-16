@@ -96,6 +96,9 @@ export interface AppContext {
     accept: RegExp
     headers?: Record<string, string>
   }): Promise<string | null>
+  /** Stores refreshed credentials for this app's provider. Deliberately does
+   *  not invalidate caches — a token refresh is not an account change. */
+  updateConnection(patch: Partial<AppConnection>): void
 }
 
 export interface AppRefreshResult {

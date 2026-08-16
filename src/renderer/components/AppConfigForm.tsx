@@ -174,6 +174,7 @@ function ConnectionField({ serverUrl, field, config }: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [keyText, setKeyText] = useState('')
+  const [pending, setPending] = useState(false)
 
   const load = () => {
     if (!serverUrl || !provider) return
@@ -182,7 +183,12 @@ function ConnectionField({ serverUrl, field, config }: {
       .catch(() => ({}))
       .then((d: { connections?: Array<{ provider: string; accountName?: string }> }) => {
         const c = (d.connections ?? []).find(x => x.provider === provider)
-        setAccount(c ? (c.accountName || 'Connected') : null)
+        // "Not signed in" is what the server calls a record that holds only the
+        // operator's client id — something is on file, but nothing can be
+        // fetched with it yet, so the control must still offer Sign In.
+        const name = c?.accountName ?? ''
+        setPending(name === 'Not signed in')
+        setAccount(c && name !== 'Not signed in' ? (name || 'Connected') : null)
       })
   }
   useEffect(load, [serverUrl, provider])
@@ -249,15 +255,16 @@ function ConnectionField({ serverUrl, field, config }: {
         }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13 }}>
-            {account ?? (KEY_PROVIDERS[provider] ? 'No key yet' : 'Not signed in')}
+            {account ?? (pending ? 'Ready to sign in'
+              : KEY_PROVIDERS[provider] ? KEY_PROVIDERS[provider].blank : 'Not signed in')}
           </div>
           {error && <div style={{ color: 'var(--danger)', fontSize: 11 }}>{error}</div>}
         </div>
         {account
           ? <button className="btn btn-ghost btn-sm" disabled={busy} onClick={signOut}>
-              {KEY_PROVIDERS[provider] ? 'Remove' : 'Sign out'}
+              {KEY_PROVIDERS[provider] && !NEEDS_SIGNIN[provider] ? 'Remove' : 'Sign out'}
             </button>
-          : !KEY_PROVIDERS[provider] && (
+          : (!KEY_PROVIDERS[provider] || pending) && (
             <button className="btn btn-ghost btn-sm" disabled={busy} onClick={signIn}>
               {busy ? 'Waiting for sign-in…' : 'Sign In'}
             </button>
@@ -267,18 +274,19 @@ function ConnectionField({ serverUrl, field, config }: {
       {/* Some services cannot be signed into at all — see the route comment.
           Those take a key the operator makes themselves, so they get a paste
           box and a short set of directions instead of a button. */}
-      {!account && KEY_PROVIDERS[provider] && (
+      {!account && !pending && KEY_PROVIDERS[provider] && (
         <div style={{ marginTop: 8 }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            <input className="form-input" style={{ flex: 1 }} type="password"
-              placeholder="Paste your key here" value={keyText}
+            <input className="form-input" style={{ flex: 1 }}
+              type={NEEDS_SIGNIN[provider] ? 'text' : 'password'}
+              placeholder={KEY_PROVIDERS[provider].hint} value={keyText}
               onChange={e => setKeyText(e.target.value)} />
             <button className="btn btn-ghost btn-sm" disabled={busy || !keyText.trim()} onClick={saveKey}>
-              Save key
+              Save
             </button>
           </div>
           <ol style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '8px 0 0 16px', lineHeight: 1.6 }}>
-            {KEY_PROVIDERS[provider].map((step, i) => <li key={i}>{step}</li>)}
+            {KEY_PROVIDERS[provider].steps.map((step, i) => <li key={i}>{step}</li>)}
           </ol>
         </div>
       )}
@@ -290,15 +298,34 @@ function ConnectionField({ serverUrl, field, config }: {
  *  for making one. Written out here because an operator who has never opened a
  *  cloud console will not find it otherwise, and "get an API key" is not a
  *  usable instruction. */
-const KEY_PROVIDERS: Record<string, string[]> = {
-  googledrive: [
-    'Open console.cloud.google.com and create a new project (any name).',
-    'APIs & Services → Library → search "Google Drive API" → Enable.',
-    'Credentials → Create credentials → API key.',
-    'Edit the key → API restrictions → Restrict key → Google Drive API.',
-    'Copy the key and paste it above. It stays on this computer.',
-  ],
+const KEY_PROVIDERS: Record<string, { blank: string; hint: string; steps: string[] }> = {
+  googledrive: {
+    blank: 'No key yet',
+    hint: 'Paste your API key',
+    steps: [
+      'Open console.cloud.google.com and create a new project (any name).',
+      'APIs & Services → Library → search "Google Drive API" → Enable.',
+      'Credentials → Create credentials → API key.',
+      'Edit the key → API restrictions → Restrict key → Google Drive API.',
+      'Copy the key and paste it above. It stays on this computer.',
+    ],
+  },
+  onedrive: {
+    blank: 'No application ID yet',
+    hint: 'Paste your application (client) ID',
+    steps: [
+      'Open portal.azure.com → Microsoft Entra ID → App registrations → New registration.',
+      'Supported account types: accounts in any organisation directory and personal Microsoft accounts.',
+      'Add a platform → Mobile and desktop applications → tick http://localhost.',
+      'Copy the Application (client) ID from the Overview page and paste it above.',
+      'Then press Sign In. Your screens never see the sign-in.',
+    ],
+  },
 }
+
+/** Providers that take a pasted id AND then a sign-in, rather than the id being
+ *  the whole credential. */
+const NEEDS_SIGNIN: Record<string, boolean> = { onedrive: true }
 
 /** Picks one of the manager's playlists. The stored value is a project id; the
  *  word shown to the operator is "playlist", which is what they call it

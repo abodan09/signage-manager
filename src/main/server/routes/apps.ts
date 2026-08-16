@@ -185,6 +185,7 @@ export function createAppsRouter(db: JsonDB, apps: AppStore, tvClients: Map<stri
    *  out in the browser long before the person finished. The renderer polls
    *  GET /connections to learn how it went. */
   router.post('/connections/:provider/signin', (req, res) => {
+    if (req.params.provider === 'onedrive') { signInOneDrive(req, res); return }
     if (req.params.provider !== 'microsoft') {
       res.status(404).json({ error: 'That service does not support signing in here.' }); return
     }
@@ -231,23 +232,79 @@ export function createAppsRouter(db: JsonDB, apps: AppStore, tvClients: Map<stri
    *  instance config: it is a credential, and config gets copied around. */
   router.post('/connections/:provider/key', (req, res) => {
     const provider = req.params.provider
-    if (provider !== 'googledrive') {
+    const key = String((req.body as { key?: unknown })?.key ?? '').trim()
+
+    if (provider === 'googledrive') {
+      if (!/^[A-Za-z0-9_-]{20,120}$/.test(key)) {
+        res.status(400).json({ error: 'That does not look like a Google API key.' }); return
+      }
+      apps.setConnection({
+        provider,
+        accountName: `Key …${key.slice(-6)}`,
+        accessToken: key,
+        connectedAt: new Date().toISOString(),
+        meta: { kind: 'apiKey' },
+      })
+    } else if (provider === 'onedrive') {
+      // A client id, not a secret — it identifies the registration and is meant
+      // to be public. It is stored as a 'pending' connection: something is on
+      // file, but the operator has not signed in yet, so nothing can be fetched.
+      if (!/^[0-9a-fA-F-]{36}$/.test(key)) {
+        res.status(400).json({
+          error: 'That does not look like an application (client) ID. It is a 36-character id like 11111111-2222-3333-4444-555555555555.',
+        }); return
+      }
+      apps.setConnection({
+        provider,
+        accountName: 'Not signed in',
+        accessToken: '',
+        connectedAt: new Date().toISOString(),
+        meta: { kind: 'pending', clientId: key },
+      })
+    } else {
       res.status(404).json({ error: 'That service does not take a key.' }); return
     }
-    const key = String((req.body as { key?: unknown })?.key ?? '').trim()
-    if (!/^[A-Za-z0-9_-]{20,120}$/.test(key)) {
-      res.status(400).json({ error: 'That does not look like a Google API key.' }); return
-    }
-    apps.setConnection({
-      provider,
-      accountName: `Key …${key.slice(-6)}`,
-      accessToken: key,
-      connectedAt: new Date().toISOString(),
-      meta: { kind: 'apiKey' },
-    })
+
     broadcast({ type: 'playlist_update' })
     res.json({ ok: true })
   })
+
+  /** OneDrive's sign-in: a real OAuth flow, in the operator's own browser.
+   *
+   *  Not an Electron window. Microsoft tolerates embedded browsers, but a
+   *  tenant with Conditional Access will refuse one, and the system browser
+   *  already holds the sign-in the operator is used to. Returns 202 and lets
+   *  the renderer poll, because a person with a phone in their hand is slow. */
+  function signInOneDrive(_req: import('express').Request, res: import('express').Response) {
+    const conn = apps.getConnection('onedrive')
+    const clientId = String(conn?.meta?.clientId ?? '')
+    if (!clientId) {
+      res.status(400).json({ error: 'Add your application (client) ID first.' }); return
+    }
+
+    res.status(202).json({ ok: true })
+
+    void (async () => {
+      try {
+        const { signIn } = require('../oauth/entra') as typeof import('../oauth/entra')
+        // Required lazily and after responding — the test harness has no Electron.
+        const { shell } = require('electron') as typeof import('electron')
+        const tokens = await signIn(clientId, url => { void shell.openExternal(url) })
+        apps.setConnection({
+          provider: 'onedrive',
+          accountName: 'Signed in',
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: tokens.expiresAt,
+          connectedAt: new Date().toISOString(),
+          meta: { kind: 'oauth', clientId },
+        })
+        broadcast({ type: 'playlist_update' })
+      } catch (e: unknown) {
+        console.warn('[apps] onedrive sign-in failed:', e instanceof Error ? e.message : e)
+      }
+    })()
+  }
 
   // DELETE /api/apps/connections/:provider — sign out
   router.delete('/connections/:provider', async (req, res) => {

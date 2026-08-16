@@ -8,6 +8,7 @@ import { gdrive } from './gdrive'
 import { gslides } from './gslides'
 import { instagram } from './instagram'
 import { livetv } from './livetv'
+import { onedrive } from './onedrive'
 import { powerbi } from './powerbi'
 import { qrcode } from './qrcode'
 import { sharepoint } from './sharepoint'
@@ -35,6 +36,7 @@ export const APPS: AppDefinition[] = [
   livetv,
   sharepoint,
   gdrive,
+  onedrive,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))

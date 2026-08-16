@@ -260,8 +260,11 @@ const server = app.listen(0, async () => {
 
   const bad = await call('POST', '/api/apps/connections/googledrive/key', { key: 'nope' })
   check('a rubbish key is refused', bad.status === 400)
-  const other = await call('POST', '/api/apps/connections/onedrive/key', { key: 'x'.repeat(40) })
-  check('an unknown provider is refused', other.status === 404)
+  const other = await call('POST', '/api/apps/connections/dropbox/key', { key: 'x'.repeat(40) })
+  check('a provider that takes no key is refused', other.status === 404)
+  // OneDrive takes a key too, but a different shape of one — a client id.
+  const wrongShape = await call('POST', '/api/apps/connections/onedrive/key', { key: 'x'.repeat(40) })
+  check('and each provider checks the shape of its own', wrongShape.status === 400)
   const good = await call('POST', '/api/apps/connections/googledrive/key', {
     key: 'AIzaSyD-ExampleKeyForTestingOnly1234567',
   })

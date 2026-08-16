@@ -26,6 +26,7 @@ const SUITES = [
   ['live tv with ads',   'test-livetv.js'],
   ['sharepoint',         'test-sharepoint.js'],
   ['google drive',       'test-gdrive.js'],
+  ['onedrive',           'test-onedrive.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]
