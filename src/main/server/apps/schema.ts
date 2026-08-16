@@ -72,6 +72,26 @@ function coerce(field: AppField, raw: unknown): { ok: true; value: unknown } | E
       // The connection itself lives outside config; the field is a UI affordance.
       return { ok: true, value: undefined }
 
+    case 'datetime': {
+      // The shape an <input type="datetime-local"> produces, with the seconds
+      // it sometimes appends trimmed off. Stored as wall-clock with no zone:
+      // a screen counting down to midnight means midnight where the screen is,
+      // and stamping the manager's zone onto it would be wrong for any fleet
+      // spanning two.
+      const s = String(raw ?? '').trim()
+      if (!s) return { ok: true, value: '' }
+      const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(s)
+      if (!m) return { ok: false, error: `${label} must be a date and a time` }
+      const [, y, mo, d, hh, mi] = m
+      const probe = new Date(Number(y), Number(mo) - 1, Number(d), Number(hh), Number(mi))
+      // Catches 31 February and friends: the Date constructor rolls them over
+      // rather than refusing, so the only way to know is to read it back.
+      if (probe.getMonth() !== Number(mo) - 1 || probe.getDate() !== Number(d)) {
+        return { ok: false, error: `${label} is not a real date` }
+      }
+      return { ok: true, value: `${y}-${mo}-${d}T${hh}:${mi}` }
+    }
+
     case 'project': {
       // A reference to one of this manager's playlists. Same shape rule as a
       // zone's refId — anything else has been hand-edited, and the id goes

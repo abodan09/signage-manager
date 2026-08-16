@@ -287,7 +287,7 @@ export interface PackCategory {
 export type AppFieldType =
   | 'text' | 'textarea' | 'url' | 'number' | 'select' | 'color'
   | 'checkbox' | 'slider' | 'connection' | 'note' | 'image' | 'zones'
-  | 'project'
+  | 'project' | 'datetime'
 
 export interface AppField {
   key: string

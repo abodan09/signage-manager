@@ -495,6 +495,12 @@ function Control({ field, value, onChange, serverUrl, config }: {
     case 'project':
       return <ProjectPicker serverUrl={serverUrl} value={value as string} onChange={onChange} />
 
+    case 'datetime':
+      return (
+        <input className="form-input" type="datetime-local"
+          value={String(value ?? '')} onChange={e => onChange(e.target.value)} />
+      )
+
     case 'connection':
       return <ConnectionField serverUrl={serverUrl} field={field} config={config} />
 

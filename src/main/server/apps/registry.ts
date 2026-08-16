@@ -13,6 +13,7 @@ import { powerbi } from './powerbi'
 import { qrcode } from './qrcode'
 import { quotes } from './quotes'
 import { sharepoint } from './sharepoint'
+import { countdown, countup } from './timer'
 import { split } from './split'
 import { weather } from './weather'
 import { worldclock } from './worldclock'
@@ -41,6 +42,8 @@ export const APPS: AppDefinition[] = [
   onedrive,
   worldclock,
   quotes,
+  countdown,
+  countup,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))
