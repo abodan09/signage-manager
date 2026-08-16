@@ -72,6 +72,51 @@ function coerce(field: AppField, raw: unknown): { ok: true; value: unknown } | E
       // The connection itself lives outside config; the field is a UI affordance.
       return { ok: true, value: undefined }
 
+    case 'zones': {
+      // A screen divided into regions. Percentages rather than pixels, so one
+      // layout fits a 1080p panel and a 4K totem without being re-drawn.
+      const list = Array.isArray(raw) ? raw : []
+      if (!list.length) return { ok: false, error: 'Add at least one zone.' }
+      if (list.length > 12) return { ok: false, error: 'A screen can hold at most 12 zones.' }
+
+      const out: Array<Record<string, unknown>> = []
+      for (let i = 0; i < list.length; i++) {
+        const z = (list[i] && typeof list[i] === 'object' ? list[i] : {}) as Record<string, unknown>
+        const at = (m: string) => `Zone ${i + 1}: ${m}`
+        const pct = (key: string) => {
+          const n = Number(z[key])
+          return Number.isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 10) / 10 : null
+        }
+        const top = pct('top'), left = pct('left'), width = pct('width'), height = pct('height')
+        if (top === null || left === null || width === null || height === null) {
+          return { ok: false, error: at('position and size must be percentages between 0 and 100') }
+        }
+        if (width <= 0 || height <= 0) return { ok: false, error: at('width and height must be greater than zero') }
+        // A zone hanging off the edge is invisible content the operator paid
+        // attention to; catching it here beats discovering it on a wall.
+        if (left + width > 100.5 || top + height > 100.5) {
+          return { ok: false, error: at('runs off the edge of the screen') }
+        }
+
+        const kind = String(z.kind ?? '')
+        if (!['app', 'design', 'project', 'empty'].includes(kind)) {
+          return { ok: false, error: at('choose what plays in it') }
+        }
+        const refId = String(z.refId ?? '')
+        if (kind !== 'empty' && !/^[A-Za-z0-9-]{1,60}$/.test(refId)) {
+          return { ok: false, error: at('choose what plays in it') }
+        }
+
+        out.push({
+          name: String(z.name ?? '').slice(0, 60),
+          top, left, width, height,
+          kind,
+          refId: kind === 'empty' ? '' : refId,
+        })
+      }
+      return { ok: true, value: out }
+    }
+
     case 'image': {
       const s = String(raw ?? '').trim()
       if (!s) return { ok: true, value: '' }

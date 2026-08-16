@@ -8,6 +8,7 @@ import { gslides } from './gslides'
 import { instagram } from './instagram'
 import { powerbi } from './powerbi'
 import { qrcode } from './qrcode'
+import { split } from './split'
 import { weather } from './weather'
 import { youtube } from './youtube'
 
@@ -27,6 +28,7 @@ export const APPS: AppDefinition[] = [
   fbcounter,
   qrcode,
   simpleclock,
+  split,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))

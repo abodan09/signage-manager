@@ -101,6 +101,170 @@ function ImagePicker({ serverUrl, value, onChange }: {
   )
 }
 
+interface Zone {
+  name: string
+  top: number; left: number; width: number; height: number
+  kind: 'app' | 'design' | 'project' | 'empty'
+  refId: string
+}
+
+const ZONE_PRESETS: Array<{ label: string; zones: Zone[] }> = [
+  {
+    label: 'Main + bottom strip',
+    zones: [
+      { name: 'Main', top: 0, left: 0, width: 100, height: 88, kind: 'empty', refId: '' },
+      { name: 'Bottom strip', top: 88, left: 0, width: 100, height: 12, kind: 'empty', refId: '' },
+    ],
+  },
+  {
+    label: 'Main + sidebar',
+    zones: [
+      { name: 'Main', top: 0, left: 0, width: 72, height: 100, kind: 'empty', refId: '' },
+      { name: 'Sidebar', top: 0, left: 72, width: 28, height: 100, kind: 'empty', refId: '' },
+    ],
+  },
+  {
+    label: 'Main, sidebar + strip',
+    zones: [
+      { name: 'Main', top: 0, left: 0, width: 72, height: 88, kind: 'empty', refId: '' },
+      { name: 'Sidebar', top: 0, left: 72, width: 28, height: 88, kind: 'empty', refId: '' },
+      { name: 'Bottom strip', top: 88, left: 0, width: 100, height: 12, kind: 'empty', refId: '' },
+    ],
+  },
+  {
+    label: 'Quarters',
+    zones: [
+      { name: 'Top left', top: 0, left: 0, width: 50, height: 50, kind: 'empty', refId: '' },
+      { name: 'Top right', top: 0, left: 50, width: 50, height: 50, kind: 'empty', refId: '' },
+      { name: 'Bottom left', top: 50, left: 0, width: 50, height: 50, kind: 'empty', refId: '' },
+      { name: 'Bottom right', top: 50, left: 50, width: 50, height: 50, kind: 'empty', refId: '' },
+    ],
+  },
+]
+
+const ZONE_TINTS = ['#2e7d9a', '#3aa99a', '#e8e6a8', '#a67cb8', '#d98b5f', '#6b8fb5', '#8fb56b', '#b56b8f']
+
+/** The zone editor: a row per region, and a live plan of the screen. The
+ *  percentages are the real mechanism, so they are what the operator edits —
+ *  the preview is there to make a mistake obvious, not to be dragged. */
+function ZonesEditor({ serverUrl, value, onChange }: {
+  serverUrl: string
+  value: Zone[]
+  onChange: (v: Zone[]) => void
+}) {
+  const zones = Array.isArray(value) ? value : []
+  const [choices, setChoices] = useState<{
+    app: Array<{ id: string; name: string }>
+    design: Array<{ id: string; name: string }>
+    project: Array<{ id: string; name: string }>
+  }>({ app: [], design: [], project: [] })
+
+  useEffect(() => {
+    if (!serverUrl) return
+    Promise.all([
+      fetch(`${serverUrl}/api/apps/instances`).then(r => r.json()).catch(() => ({})),
+      fetch(`${serverUrl}/api/designs`).then(r => r.json()).catch(() => ({})),
+      fetch(`${serverUrl}/api/projects`).then(r => r.json()).catch(() => ({})),
+    ]).then(([a, d, p]) => setChoices({
+      app: (a.instances ?? []).map((x: { id: string; name: string }) => ({ id: x.id, name: x.name })),
+      design: (d.designs ?? []).map((x: { id: string; name: string }) => ({ id: x.id, name: x.name })),
+      project: (p.projects ?? []).map((x: { id: string; name: string }) => ({ id: x.id, name: x.name })),
+    }))
+  }, [serverUrl])
+
+  const set = (i: number, patch: Partial<Zone>) =>
+    onChange(zones.map((z, n) => (n === i ? { ...z, ...patch } : z)))
+
+  const num = (v: string, fallback: number) => {
+    const n = Number(v)
+    return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : fallback
+  }
+
+  return (
+    <div>
+      {/* live plan */}
+      <div style={{
+        position: 'relative', width: '100%', paddingTop: '42%', marginBottom: 12,
+        background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+        overflow: 'hidden',
+      }}>
+        {zones.map((z, i) => (
+          <div key={i} title={z.name}
+            style={{
+              position: 'absolute',
+              left: `${z.left}%`, top: `${z.top}%`, width: `${z.width}%`, height: `${z.height}%`,
+              background: ZONE_TINTS[i % ZONE_TINTS.length],
+              border: '1px solid rgba(0,0,0,.35)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 10, color: '#0b1220', overflow: 'hidden', padding: 2, textAlign: 'center',
+            }}>
+            {z.name}
+          </div>
+        ))}
+      </div>
+
+      {zones.map((z, i) => (
+        <div key={i} style={{
+          border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+          padding: 10, marginBottom: 8, background: 'var(--bg-primary)',
+        }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+            <span style={{
+              width: 10, height: 10, borderRadius: 2, flexShrink: 0,
+              background: ZONE_TINTS[i % ZONE_TINTS.length],
+            }} />
+            <input className="form-input" style={{ flex: 1 }} value={z.name} placeholder="Zone name"
+              onChange={e => set(i, { name: e.target.value })} />
+            <button className="btn-icon" title="Remove zone"
+              onClick={() => onChange(zones.filter((_, n) => n !== i))}>🗑</button>
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+            {(['top', 'left', 'width', 'height'] as const).map(k => (
+              <div key={k} style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ ...label, marginBottom: 2 }}>{k} %</span>
+                <input className="form-input" type="number" min={0} max={100} step={0.1} value={z[k]}
+                  onChange={e => set(i, { [k]: num(e.target.value, z[k]) } as Partial<Zone>)} />
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: 6 }}>
+            <select className="form-select" style={{ flex: '0 0 34%' }} value={z.kind}
+              onChange={e => set(i, { kind: e.target.value as Zone['kind'], refId: '' })}>
+              <option value="empty">Nothing</option>
+              <option value="app">App</option>
+              <option value="design">Design</option>
+              <option value="project">Playlist</option>
+            </select>
+            <select className="form-select" style={{ flex: 1 }} value={z.refId}
+              disabled={z.kind === 'empty'}
+              onChange={e => set(i, { refId: e.target.value })}>
+              <option value="">
+                {z.kind === 'empty' ? '—' : 'Choose…'}
+              </option>
+              {(choices[z.kind as 'app' | 'design' | 'project'] ?? []).map(o => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      ))}
+
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <button className="btn btn-ghost btn-sm"
+          onClick={() => onChange([...zones, {
+            name: `Zone ${zones.length + 1}`, top: 0, left: 0, width: 50, height: 50, kind: 'empty', refId: '',
+          }])}>+ Add zone</button>
+        {ZONE_PRESETS.map(p => (
+          <button key={p.label} className="btn btn-ghost btn-sm"
+            onClick={() => onChange(p.zones.map(z => ({ ...z })))}>{p.label}</button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function Control({ field, value, onChange, serverUrl }: {
   field: AppField
   value: unknown
@@ -113,6 +277,9 @@ function Control({ field, value, onChange, serverUrl }: {
 
     case 'image':
       return <ImagePicker serverUrl={serverUrl} value={String(value ?? '')} onChange={onChange} />
+
+    case 'zones':
+      return <ZonesEditor serverUrl={serverUrl} value={value as Zone[]} onChange={onChange} />
 
     case 'checkbox':
       return (

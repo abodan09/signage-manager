@@ -89,5 +89,89 @@ export function createSceneRouter(
     })
   })
 
+  /** GET /tv/zone/project/:id — one project's items, cycling, sized to fill
+   *  whatever region it has been dropped into.
+   *
+   *  A cut-down player rather than the real one: a zone must not register as a
+   *  screen, must not open a socket, and must not accept pushes — six zones on
+   *  one panel would otherwise look like six TVs to the manager. */
+  router.get('/zone/project/:id', (req, res) => {
+    const project = db.getProjectById(req.params.id)
+    if (!project) { res.status(404); notFound(res, 'Playlist not found'); return }
+
+    const items = db.getContentByProjectId(project.id)
+      .filter(i => i.isActive)
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+      .map(i => ({
+        type: i.type,
+        // Absolute so the page works wherever the zone iframe was loaded from.
+        src: i.filePath ? (getLanUrl ? getLanUrl() : '') + i.filePath : '',
+        url: i.type === 'html' ? i.htmlUrl
+          : i.type === 'design' ? `${getLanUrl ? getLanUrl() : ''}/tv/scene/${i.designId}`
+          : i.type === 'app' ? `${getLanUrl ? getLanUrl() : ''}/tv/app/${i.appInstanceId}`
+          : '',
+        text: i.textContent ?? '',
+        seconds: i.durationSeconds || project.durationSeconds || 10,
+      }))
+
+    send(res, zonePlayerHtml(project.name, items), 'origin')
+  })
+
   return router
+}
+
+/** The zone player page. ES5, same TV floor as everything else. */
+function zonePlayerHtml(name: string, items: unknown[]): string {
+  const json = JSON.stringify(items).replace(/</g, '\\u003c')
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>${name.replace(/[<>&"]/g, '')}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Arial,Helvetica,sans-serif}
+#z{position:absolute;top:0;left:0;right:0;bottom:0}
+#z img,#z video{width:100%;height:100%;object-fit:contain;display:block}
+#z iframe{width:100%;height:100%;border:0;display:block}
+#z .txt{position:absolute;top:50%;left:0;right:0;text-align:center;color:#fff;
+  font-size:4vh;padding:0 4vw;margin-top:-1em}
+#empty{position:absolute;top:50%;left:0;right:0;text-align:center;color:#555;font-size:2.4vh}
+</style></head>
+<body><div id="z"></div>
+<script>
+(function(){
+  'use strict';
+  var items = ${json};
+  var z = document.getElementById('z');
+  var i = 0, timer = null;
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function show(){
+    if (!items.length) { z.innerHTML = '<div id="empty">Nothing in this playlist</div>'; return; }
+    var it = items[i % items.length];
+    i++;
+    var ms = (it.seconds || 10) * 1000;
+    if (it.type === 'image') {
+      z.innerHTML = '<img src="' + esc(it.src) + '" alt="">';
+    } else if (it.type === 'video') {
+      z.innerHTML = '<video src="' + esc(it.src) + '" autoplay muted playsinline></video>';
+    } else if (it.type === 'text') {
+      z.innerHTML = '<div class="txt">' + esc(it.text) + '</div>';
+    } else if (it.url) {
+      z.innerHTML = '<iframe src="' + esc(it.url) + '" frameborder="0"></iframe>';
+    } else {
+      /* Unknown or broken item: move on rather than hold the zone blank for
+         its whole duration. */
+      ms = 500;
+      z.innerHTML = '';
+    }
+    clearTimeout(timer);
+    timer = setTimeout(show, ms);
+  }
+
+  show();
+})();
+</script></body></html>`
 }
