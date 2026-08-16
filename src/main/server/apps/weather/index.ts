@@ -15,8 +15,18 @@ import { WEATHER_CSS, WEATHER_JS } from './views'
 // showing this morning's forecast when the internet drops rather than going
 // blank — which for weather is a perfectly respectable failure.
 
-const GEOCODE = 'https://geocoding-api.open-meteo.com/v1/search'
-const FORECAST = 'https://api.open-meteo.com/v1/forecast'
+// Open-Meteo's hosted free tier is licensed for non-commercial use only, so a
+// commercial install points these at its own instance instead — the server is
+// AGPLv3 and self-hostable, which removes the licensing question entirely
+// without changing a line of the code below.
+//
+//   SIGNAGE_WEATHER_URL=https://weather.example.com/v1/forecast
+//   SIGNAGE_GEOCODE_URL=https://weather.example.com/v1/search
+//
+// Both default to the public service, which is correct for development and for
+// anyone running this non-commercially.
+const GEOCODE = process.env.SIGNAGE_GEOCODE_URL || 'https://geocoding-api.open-meteo.com/v1/search'
+const FORECAST = process.env.SIGNAGE_WEATHER_URL || 'https://api.open-meteo.com/v1/forecast'
 
 /** Open-Meteo's licence: "You must include a link next to any location
  *  Open-Meteo data are displayed." A screen has no clickable link, so the

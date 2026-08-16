@@ -1,4 +1,5 @@
 import type { AppDefinition } from './types'
+import { canva } from './canva'
 import { instagram } from './instagram'
 import { weather } from './weather'
 import { youtube } from './youtube'
@@ -10,6 +11,7 @@ export const APPS: AppDefinition[] = [
   instagram,
   youtube,
   weather,
+  canva,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))
