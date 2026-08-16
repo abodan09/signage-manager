@@ -17,6 +17,7 @@ const SUITES = [
   ['canva app',          'test-canva.js'],
   ['facebook app',       'test-facebook.js'],
   ['power bi app',       'test-powerbi.js'],
+  ['google slides app',  'test-gslides.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]
@@ -58,5 +59,6 @@ if (broken.length) {
   process.exit(1)
 }
 console.log('all suites green')
+
 
 
