@@ -1,11 +1,13 @@
 import type { AppDefinition } from './types'
 import { instagram } from './instagram'
+import { youtube } from './youtube'
 
 // Every app the manager can create instances of. Adding one is a single import
 // plus an entry here — the config form, validation, storage, caching, playlist
 // plumbing and player page are all generic and come for free.
 export const APPS: AppDefinition[] = [
   instagram,
+  youtube,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))

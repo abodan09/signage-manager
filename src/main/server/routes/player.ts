@@ -244,6 +244,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   var mainIndex    = 0;
   var overlayIndex = 0;
   var tickerIndex  = 0;
+  var currentMainItem = null;
 
   var mainTimer    = null;
   var overlayTimer = null;
@@ -472,6 +473,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
   function playMain(item) {
     clearTimeout(mainTimer);
     clearProgress();
+    currentMainItem = item;
     var dur = (item.durationSeconds || 10) * 1000;
 
     // Detach the previous video's handlers so a late error/ended event can't
@@ -903,6 +905,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     if (template) { try { applyTemplate(template); } catch (e) {} }
     startPlayback();
   }
+
+  // An app page can report that its content has finished — a video that ran to
+  // the end — so the rotation moves on instead of holding a still frame until
+  // the slot expires. Only pages this manager served may ask: the origin check
+  // rejects anything an "html" content item might load from the web.
+  window.addEventListener('message', function(evt){
+    if (evt.origin !== location.origin) return;
+    var d = evt.data;
+    if (!d || d.type !== 'signage:ended' || !d.instanceId) return;
+    if (!currentMainItem || currentMainItem.appInstanceId !== d.instanceId) return;
+    clearTimeout(mainTimer);
+    nextMain();
+  });
 
   // re-check schedule every minute
   setInterval(function(){

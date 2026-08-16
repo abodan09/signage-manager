@@ -59,11 +59,20 @@ export function createAppsRouter(db: JsonDB, apps: AppStore, tvClients: Map<stri
     if (!clean.ok) { res.status(400).json({ error: clean.error }); return }
 
     const now = new Date().toISOString()
-    const created = db.insertAppInstance({
+    let created = db.insertAppInstance({
       id: uuid(), appId: def.id, name: trimmed, config: clean.config, createdAt: now, updatedAt: now,
     })
     // Fetch straight away so Preview shows real content rather than a spinner.
     await apps.refresh(created, getLanUrl(), true)
+
+    // Some apps learn a better name than the operator could type — a video's
+    // own title. Only adopted when they left the app's default name alone,
+    // so a deliberate name is never overwritten.
+    if (created.name === def.name) {
+      const suggested = apps.suggestName(created, getLanUrl())
+      if (suggested) created = db.updateAppInstance(created.id, { name: suggested }) ?? created
+    }
+
     res.status(201).json({ instance: apps.publicInstance(created) })
   })
 

@@ -114,6 +114,10 @@ export interface AppDefinition {
    *  verbatim; apps override it to trim payloads and to absolutise the local
    *  media paths, which differ between the manager and the LAN address. */
   serializeData?(ctx: AppContext): unknown
+  /** A better name than the app's own, learned from the first fetch — a video's
+   *  title, a document's heading. Only adopted when the operator has not
+   *  renamed the instance themselves. */
+  suggestName?(ctx: AppContext): string | null
 }
 
 /** A linked third-party account. Tokens are secrets: they live in their own

@@ -11,6 +11,7 @@ const SUITES = [
   ['templates',          'test-templates.js'],
   ['designs & packs',    'test-designs.js'],
   ['apps & instagram',   'test-apps.js'],
+  ['youtube app',        'test-youtube.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]

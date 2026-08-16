@@ -22,9 +22,14 @@ export function createSceneRouter(
   // Computed once: the set of bundled faces cannot change while the app runs.
   const fontCss = fontFaceCss(fontsDir)
 
-  function send(res: import('express').Response, html: string) {
+  /** `referrer`: 'none' for our own designs, which have no reason to tell
+   *  anyone they exist. App pages need 'origin' — an embedded YouTube player
+   *  validates the embedding site and fails with a configuration error when no
+   *  referrer arrives. strict-origin-when-cross-origin sends only the origin,
+   *  never the path, so the instance id still stays private. */
+  function send(res: import('express').Response, html: string, referrer: 'none' | 'origin' = 'none') {
     res.setHeader('Content-Type', 'text/html')
-    res.setHeader('Referrer-Policy', 'no-referrer')
+    res.setHeader('Referrer-Policy', referrer === 'origin' ? 'strict-origin-when-cross-origin' : 'no-referrer')
     // Scenes change whenever the operator saves; a TV must never show a stale
     // one from the WebView's HTTP cache after a playlist_update.
     res.setHeader('Cache-Control', 'no-store')
@@ -59,7 +64,7 @@ export function createSceneRouter(
     if (!apps) { res.status(404); notFound(res, 'Apps are not available'); return }
     const inst = db.getAppInstanceById(req.params.id)
     if (!inst) { res.status(404); notFound(res, 'App not found'); return }
-    send(res, apps.render(inst, getLanUrl ? getLanUrl() : ''))
+    send(res, apps.render(inst, getLanUrl ? getLanUrl() : ''), 'origin')
   })
 
   /** GET /tv/app/:id/data — the payload the app page polls.

@@ -313,6 +313,18 @@ export class AppStore {
     }
   }
 
+  /** A name the app learned from its first fetch, or null. */
+  suggestName(instance: AppInstance, baseUrl: string): string | null {
+    const def = getApp(instance.appId)
+    if (!def?.suggestName) return null
+    try {
+      const name = def.suggestName(this.context(instance, baseUrl))
+      return name ? name.trim().slice(0, 80) || null : null
+    } catch {
+      return null
+    }
+  }
+
   /** What GET /tv/app/:id/data returns. */
   serialize(instance: AppInstance, baseUrl: string): unknown {
     const def = getApp(instance.appId)
