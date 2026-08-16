@@ -3,6 +3,7 @@ import type { JsonDB } from '../database'
 import type { PackStore } from '../packs'
 import type { AppStore } from '../apps/store'
 import { fontFaceCss } from '../fonts'
+import { projectPlayItems } from '../projectItems'
 import { renderSceneHtml } from '../scenes'
 
 /** Serves designs as standalone pages for the player's iframe. Mounted under
@@ -99,22 +100,31 @@ export function createSceneRouter(
     const project = db.getProjectById(req.params.id)
     if (!project) { res.status(404); notFound(res, 'Playlist not found'); return }
 
-    const items = db.getContentByProjectId(project.id)
-      .filter(i => i.isActive)
-      .sort((a, b) => a.orderIndex - b.orderIndex)
-      .map(i => ({
-        type: i.type,
-        // Absolute so the page works wherever the zone iframe was loaded from.
-        src: i.filePath ? (getLanUrl ? getLanUrl() : '') + i.filePath : '',
-        url: i.type === 'html' ? i.htmlUrl
-          : i.type === 'design' ? `${getLanUrl ? getLanUrl() : ''}/tv/scene/${i.designId}`
-          : i.type === 'app' ? `${getLanUrl ? getLanUrl() : ''}/tv/app/${i.appInstanceId}`
-          : '',
-        text: i.textContent ?? '',
-        seconds: i.durationSeconds || project.durationSeconds || 10,
-      }))
+    const items = projectPlayItems(db, project)
 
     send(res, zonePlayerHtml(project.name, items), 'origin')
+  })
+
+  /** GET /tv/zone/project/:id/items — the same playlist as JSON.
+   *
+   *  The Live TV advert overlay needs the items rather than a player, because
+   *  it controls its own timing and shows one item per appearance. Polling this
+   *  also means editing the advert playlist reaches the screens without anyone
+   *  republishing anything.
+   *
+   *  Mounted under /tv, not /api: a TV is not the operator and never gets past
+   *  the /api gate. */
+  router.get('/zone/project/:id/items', (req, res) => {
+    const project = db.getProjectById(req.params.id)
+    if (!project) { res.status(404).json({ error: 'Playlist not found' }); return }
+    res.setHeader('Cache-Control', 'no-store')
+    res.json({
+      // The zone player deliberately ignores this — changing it would alter
+      // existing behaviour — but an advert slot should stop when its playlist
+      // is deactivated, so the flag is returned and the consumer decides.
+      projectActive: project.isActive,
+      items: projectPlayItems(db, project),
+    })
   })
 
   return router

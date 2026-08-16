@@ -6,6 +6,7 @@ import { facebook } from './facebook'
 import { gcal } from './gcal'
 import { gslides } from './gslides'
 import { instagram } from './instagram'
+import { livetv } from './livetv'
 import { powerbi } from './powerbi'
 import { qrcode } from './qrcode'
 import { split } from './split'
@@ -29,6 +30,7 @@ export const APPS: AppDefinition[] = [
   qrcode,
   simpleclock,
   split,
+  livetv,
 ]
 
 const BY_ID = new Map(APPS.map(a => [a.id, a]))

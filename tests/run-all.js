@@ -23,6 +23,7 @@ const SUITES = [
   ['qr code app',        'test-qrcode.js'],
   ['simple clock',       'test-clock.js'],
   ['split screen',       'test-split.js'],
+  ['live tv with ads',   'test-livetv.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]

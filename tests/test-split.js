@@ -149,7 +149,11 @@ const server = app.listen(0, async () => {
   const zone = await text('/tv/zone/project/proj-1')
   check('the zone player serves the playlist', zone.includes('Poster') || zone.includes('/uploads/a.jpg'))
   check('inactive items are left out', !zone.includes('/uploads/b.jpg'))
-  check('media paths are absolute so the iframe can load them', zone.includes('http://127.0.0.1'))
+  // Relative, not absolute: the zone page is served by this manager, so a
+  // relative path resolves against the address the screen actually reached us
+  // on rather than the manager's guess at its own LAN address.
+  check('media paths are relative to the manager', zone.includes('"/uploads/a.jpg"'))
+  check('and carry no guessed host', !zone.includes('http://127.0.0.1/uploads'))
   // Six zones on one panel must not look like six televisions to the manager.
   check('a zone never registers as a screen', !/devices\/register/.test(zone))
   check('and never opens a socket', !/WebSocket/.test(zone))

@@ -158,6 +158,34 @@ const CAPTION: CSSProperties = {
   marginBottom: 2, textTransform: 'capitalize',
 }
 
+/** Picks one of the manager's playlists. The stored value is a project id; the
+ *  word shown to the operator is "playlist", which is what they call it
+ *  everywhere else in the product. Loaded eagerly rather than on open, or a
+ *  saved instance reopens reading "Choose…" over a perfectly good selection. */
+function ProjectPicker({ serverUrl, value, onChange }: {
+  serverUrl: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([])
+
+  useEffect(() => {
+    if (!serverUrl) return
+    fetch(`${serverUrl}/api/projects`)
+      .then(r => r.json())
+      .catch(() => ({}))
+      .then((p: { projects?: Array<{ id: string; name: string }> }) =>
+        setProjects((p.projects ?? []).map(x => ({ id: x.id, name: x.name }))))
+  }, [serverUrl])
+
+  return (
+    <select className="form-select" value={value ?? ''} onChange={e => onChange(e.target.value)}>
+      <option value="">{projects.length ? 'Choose a playlist…' : 'No playlists yet'}</option>
+      {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+    </select>
+  )
+}
+
 function ZonesEditor({ serverUrl, value, onChange }: {
   serverUrl: string
   value: Zone[]
@@ -291,6 +319,9 @@ function Control({ field, value, onChange, serverUrl }: {
 
     case 'zones':
       return <ZonesEditor serverUrl={serverUrl} value={value as Zone[]} onChange={onChange} />
+
+    case 'project':
+      return <ProjectPicker serverUrl={serverUrl} value={value as string} onChange={onChange} />
 
     case 'checkbox':
       return (

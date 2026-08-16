@@ -72,6 +72,19 @@ function coerce(field: AppField, raw: unknown): { ok: true; value: unknown } | E
       // The connection itself lives outside config; the field is a UI affordance.
       return { ok: true, value: undefined }
 
+    case 'project': {
+      // A reference to one of this manager's playlists. Same shape rule as a
+      // zone's refId — anything else has been hand-edited, and the id goes
+      // into a URL. Emptiness is left to `required` so the message reads as
+      // "choose one" rather than "malformed".
+      const s = String(raw ?? '').trim()
+      if (!s) return { ok: true, value: '' }
+      if (!/^[A-Za-z0-9-]{1,60}$/.test(s)) {
+        return { ok: false, error: `${label} must be a playlist from this manager` }
+      }
+      return { ok: true, value: s }
+    }
+
     case 'zones': {
       // A screen divided into regions. Percentages rather than pixels, so one
       // layout fits a 1080p panel and a 4K totem without being re-drawn.
