@@ -24,6 +24,26 @@ export interface Quote {
  *  A textarea rather than a row editor because quotes arrive by the dozen,
  *  pasted out of a document — and a list of twenty two-field rows is a worse
  *  way to handle that than a box you can paste into. */
+/** The quotation marks a word processor produces, as opening/closing pairs. */
+const QUOTE_PAIRS: Array<[string, string]> = [
+  ['"', '"'],
+  ['“', '”'],
+  ['‘', '’'],
+  ["'", "'"],
+]
+
+function stripWrappingQuotes(text: string): string {
+  let out = text.trim()
+  for (let guard = 0; guard < 4; guard++) {
+    const first = out.charAt(0)
+    const last = out.charAt(out.length - 1)
+    const pair = QUOTE_PAIRS.find(([o, c]) => o === first && c === last)
+    if (!pair || out.length < 2) break
+    out = out.slice(1, -1).trim()
+  }
+  return out
+}
+
 export function parseQuotes(input: unknown): Quote[] {
   const out: Quote[] = []
   for (const line of String(input ?? '').split(/\r?\n/)) {
@@ -32,10 +52,11 @@ export function parseQuotes(input: unknown): Quote[] {
     const bar = trimmed.indexOf('|')
     const text = (bar >= 0 ? trimmed.slice(0, bar) : trimmed).trim()
     const author = bar >= 0 ? trimmed.slice(bar + 1).trim() : ''
-    // Curly quotation marks around the whole line are what a word processor
-    // leaves behind; they would be drawn twice, once by the operator and once
-    // by the card's own mark.
-    const clean = text.replace(/^["“”'']+|["“”'']+$/g, '').trim()
+    // Quotation marks wrapping the whole line are what a word processor leaves
+    // behind, and the card draws its own mark above the words, so they would
+    // appear twice. Only a matched pair is stripped: a lone leading apostrophe
+    // is an elision — 'Tis, '70s — and eating it silently corrupts the text.
+    const clean = stripWrappingQuotes(text)
     if (clean) out.push({ text: clean, author })
   }
   return out
@@ -76,8 +97,11 @@ export const quotes: AppDefinition = {
       help: 'Optional. Without one, the colours below are used.',
     },
     {
-      key: 'scrim', label: 'Darken the picture', type: 'slider', default: 55, min: 0, max: 90,
-      marks: ['Clear', 'Dark'],
+      key: 'scrim', label: 'Fade the picture', type: 'slider', default: 55, min: 0, max: 90,
+      marks: ['Clear', 'Faded'],
+      // Darkening only helps light words. A light theme puts dark words on the
+      // picture, so it fades towards white instead — the slider means "make the
+      // words readable", not "make it darker".
       help: 'Only affects a background picture. Words over a photograph need this more than you would think.',
     },
     {
@@ -146,7 +170,7 @@ export const quotes: AppDefinition = {
     }
 
     return appPage({
-      title: `Quotes — ${escapeHtml(ctx.instance.name)}`,
+      title: `Quotes — ${ctx.instance.name}`,
       bg: theme.bg,
       fontCss: ctx.fontCss,
       css: `
@@ -154,7 +178,7 @@ body{background:${theme.bg};color:${theme.fg}}
 #root{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;background:${theme.bg}}
 ${image ? `#bg{position:absolute;top:0;left:0;right:0;bottom:0;
   background-image:url("${escapeHtml(image)}");background-size:cover;background-position:center}
-#scrim{position:absolute;top:0;left:0;right:0;bottom:0;background:#000;opacity:${scrim / 100}}` : ''}
+#scrim{position:absolute;top:0;left:0;right:0;bottom:0;background:${theme.dark ? '#000000' : '#ffffff'};opacity:${scrim / 100}}` : ''}
 #card{position:absolute;top:8%;left:8%;right:8%;bottom:8%;
   display:flex;align-items:center;justify-content:center;text-align:center}
 /* An inner box, because a flex container's scrollHeight never falls below its
@@ -165,7 +189,8 @@ ${image ? `#bg{position:absolute;top:0;left:0;right:0;bottom:0;
 #card.out{opacity:0}
 #mark{font-family:Georgia,"Times New Roman",serif;line-height:.8;opacity:.5;margin-bottom:.15em}
 #mark.off{display:none}
-#text{font-family:${SCENE_FONTS[fontId].css};line-height:1.35;max-width:100%}
+#text{font-family:${SCENE_FONTS[fontId].css};line-height:1.35;max-width:100%;
+  word-wrap:break-word;overflow-wrap:break-word}
 #rule{height:1px;background:currentColor;opacity:.45;margin:1.1em 0 .9em}
 #rule.off{display:none}
 #author{font-family:${SCENE_FONTS[fontId].css};font-weight:700;opacity:.9}
@@ -203,11 +228,28 @@ var order = [];
 var idx = 0;
 
 for (var i = 0; i < QUOTES.length; i++) order.push(i);
+
+/* Seeded on the day rather than on Math.random, so a reload does not reshuffle
+   into a different order and repeat what was just shown. */
 if (CFG.random) {
+  var seed = Math.floor(Date.now() / 86400000) + QUOTES.length;
   for (var j = order.length - 1; j > 0; j--) {
-    var k = Math.floor(Math.random() * (j + 1));
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    var k = seed % (j + 1);
     var t = order[j]; order[j] = order[k]; order[k] = t;
   }
+}
+
+/* Where in the list to start, derived from the clock rather than from zero.
+   The player rebuilds this page every time the item comes round in the
+   playlist, so starting at zero meant a sixty-second slot at twelve seconds a
+   quote showed quotes one to five, for ever, however long the list — while the
+   settings text invited pasting a hundred of them. Taking the position from
+   the wall clock also means every screen showing this instance shows the same
+   quote at the same moment. */
+if (order.length) {
+  var slot = Math.floor(Date.now() / (CFG.seconds * 1000));
+  idx = ((slot % order.length) + order.length) % order.length;
 }
 
 /* Sized by measuring rather than by guessing from the character count. A
@@ -224,20 +266,27 @@ function fit(){
      them — most of a line's worth once there is a rule and a name under the
      words — and the quote then sits proud of its box with the attribution
      jammed against the bottom edge. */
-  var size = boxH * 0.2;
+  /* Clamped, not skipped. With the three assignments inside a loop guarded on
+     size being above the floor, the body never ran at all once the starting
+     size was already at that floor — a quotes page dropped into a short Split
+     Screen strip got no font size whatsoever and fell back to the browser's
+     16px, larger than the box it was supposed to be shrinking to fit. The
+     floor bounds the size; it must not decide whether a size is applied. */
+  var size = Math.max(10, boxH * 0.2);
   var guard = 0;
-  while (guard++ < 90 && size > 10) {
+  for (;;) {
     textEl.style.fontSize = size + 'px';
     authorEl.style.fontSize = (size * 0.34) + 'px';
     ruleEl.style.width = Math.min(boxW * 0.34, size * 6) + 'px';
     /* Fitted to a comfortable fill rather than to the last available pixel.
        Filling the box exactly is technically correct and looks wrong — a long
        quote then reaches both edges with the attribution pressed against the
-       bottom, where a short one floats in the middle. Leaving a margin makes
-       quotes of different lengths sit consistently. Measured on the inner box:
-       the card is a centring flex container and always reports its own height. */
-    if (inner.offsetHeight <= boxH * 0.86 && textEl.scrollWidth <= boxW) break;
-    size = size * 0.94;
+       bottom, where a short one floats in the middle. Measured on the inner
+       box: the card is a centring flex container and always reports its own
+       height. */
+    var fits = inner.offsetHeight <= boxH * 0.86 && textEl.scrollWidth <= boxW;
+    if (fits || size <= 10 || guard++ >= 90) break;
+    size = Math.max(10, size * 0.94);
   }
 }
 

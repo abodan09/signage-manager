@@ -124,6 +124,17 @@ const server = app.listen(0, async () => {
   // The height must come from the inner box: the card is a centring flex
   // container and always reports its own height, so a loop driven by the card
   // never sees the text fit and shrinks it away to nothing.
+  // The floor must bound the size, not decide whether a size is applied: with
+  // the assignments inside a guarded while, a page in a short Split Screen zone
+  // got no size at all and fell back to the browser's 16px — larger than the
+  // box it was shrinking to fit.
+  check('a size is always applied, even in a box too short to shrink into',
+    /var size = Math.max\(10, boxH \* 0.2\)/.test(scripts) && /for \(;;\)/.test(scripts))
+  check('and the floor only stops the shrinking', /size <= 10 \|\| guard/.test(scripts))
+  // One unbreakable token would otherwise drag the whole quote to the floor
+  // and still overflow, because max-width caps the box it is measured against.
+  check('a long unbroken word wraps rather than shrinking everything',
+    /overflow-wrap:break-word/.test(page))
   check('and the height is measured on the inner box, not the card',
     /inner\.offsetHeight/.test(scripts) && !/card\.scrollHeight/.test(scripts))
   check('and refitted when the screen changes shape', /addEventListener\('resize'/.test(scripts))
@@ -166,6 +177,17 @@ const server = app.listen(0, async () => {
   // this manager rather than the one this PC believes it has.
   check('and referenced relatively', !/url\("https?:/.test(bgPage))
   check('the scrim is applied', bgPage.includes('opacity:0.6'))
+  // Darkening only ever helps light words. A light theme puts dark words on
+  // the picture, so the same slider has to fade towards white instead.
+  check('a dark theme fades the picture towards black',
+    /#scrim\{[^}]*background:#000000/.test(bgPage))
+  const lightBg = await call('POST', '/api/apps/instances', {
+    appId: 'quotes', name: 'Light photo',
+    config: { quotes: 'A quote', backgroundImage: '/uploads/pic.jpg', scrim: 60, theme: 'light' },
+  })
+  const lightPage = await text(`/tv/app/${lightBg.body.instance.id}`)
+  check('and a light theme fades it towards white',
+    /#scrim\{[^}]*background:#ffffff/.test(lightPage))
   const noBg = await text(`/tv/app/${single.body.instance.id}`)
   check('no picture means no scrim layer at all', !noBg.includes('id="scrim"'))
 
@@ -177,6 +199,14 @@ const server = app.listen(0, async () => {
   })
   const nastyPage = await text(`/tv/app/${nasty.body.instance.id}`)
   check('a hostile quote cannot inject markup', !/<img src=x onerror/.test(nastyPage))
+  // appPage escapes the title itself, so escaping it here too emitted doubled
+  // entities for any punctuation an operator naturally types.
+  const amp = await call('POST', '/api/apps/instances', {
+    appId: 'quotes', name: 'Tea & Coffee', config: { quotes: 'A quote' },
+  })
+  const ampPage = await text(`/tv/app/${amp.body.instance.id}`)
+  check('the page title is escaped once, not twice',
+    /<title>[^<]*Tea &amp; Coffee<\/title>/.test(ampPage) && !/&amp;amp;/.test(ampPage))
   check('and cannot close the script block',
     !/<\/script><script>alert/.test(nastyPage))
   check('no inline event handlers are emitted',
