@@ -101,6 +101,9 @@ export interface AppSettings {
   /** Set once the operator has chosen (or declined) template categories, so the
    *  first-run picker never reappears on an install that deliberately has none. */
   templatesOnboardedAt?: string
+  /** Set once the prepared emergency/flash messages have been seeded, so ones
+   *  the operator deletes stay deleted across restarts. */
+  seededOverrides?: boolean
 }
 
 // ── Templates ────────────────────────────────────────────────────────────────

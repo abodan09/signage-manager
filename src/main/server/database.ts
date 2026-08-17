@@ -7,6 +7,7 @@ import type {
 } from './types'
 import type { AppInstance } from './apps/types'
 import { builtinTemplates, DEFAULT_TEMPLATE_ID, isBuiltinId, resolveTemplate } from './templates'
+import { defaultOverrides } from './overrideDefaults'
 
 export class JsonDB {
   private filePath: string
@@ -15,6 +16,15 @@ export class JsonDB {
   constructor(dataDir: string) {
     this.filePath = path.join(dataDir, 'db.json')
     this.data = this.load()
+    // Seed the prepared messages exactly once, and write it down. Guarded by a
+    // flag rather than by "is the list empty", so ones the operator deletes stay
+    // deleted. This sits here rather than in load() because load() runs before
+    // this.data exists and so cannot persist what it decides.
+    if (!this.data.settings.seededOverrides) {
+      this.data.overrides.push(...defaultOverrides())
+      this.data.settings.seededOverrides = true
+      this.save()
+    }
   }
 
   private load(): AppDB {

@@ -114,6 +114,7 @@ export default function EmergencyPage() {
   }, [serverUrl, load])
 
   const running = useMemo(() => list.filter(o => o.running), [list])
+  const offlineCount = useMemo(() => devices.filter(d => d.status !== 'online').length, [devices])
 
   async function send(url: string, method: string, body?: unknown) {
     setBusy(true); setError('')
@@ -187,6 +188,44 @@ export default function EmergencyPage() {
           <button className="btn btn-primary" onClick={() => setEditing(BLANK('emergency'))}>
             + Emergency message
           </button>
+        </div>
+      </div>
+
+      {/* Four numbers that answer the questions asked in an incident: is
+          anything up, what have we got ready, how far does the widest one
+          reach, and which screens will not hear it until they reconnect. */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-label">Live now</div>
+          <div className="stat-value" style={{ color: running.length ? 'var(--danger)' : undefined }}>
+            {running.length}
+          </div>
+          <div className="stat-sub">
+            {running.length === 0
+              ? 'Nothing is taking over a screen'
+              : `on ${running.reduce((n, o) => n + o.deviceCount, 0)} screen${running.reduce((n, o) => n + o.deviceCount, 0) === 1 ? '' : 's'}`}
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Prepared</div>
+          <div className="stat-value">{list.length}</div>
+          <div className="stat-sub">
+            {list.filter(o => o.kind === 'emergency').length} emergency · {list.filter(o => o.kind === 'flash').length} flash
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Widest reach</div>
+          <div className="stat-value">{list.reduce((n, o) => Math.max(n, o.deviceCount), 0)}</div>
+          <div className="stat-sub">screens hit by the broadest message</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Unreachable</div>
+          <div className="stat-value" style={{ color: offlineCount ? 'var(--warning)' : undefined }}>
+            {offlineCount}
+          </div>
+          <div className="stat-sub">
+            {offlineCount === 0 ? 'every screen is reachable' : 'offline — they pick it up on reconnect'}
+          </div>
         </div>
       </div>
 
