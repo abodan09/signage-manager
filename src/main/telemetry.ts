@@ -71,6 +71,11 @@ function osLabel(): string {
   return process.platform
 }
 
+/** The anonymous install id, so a report can be tied to its telemetry. */
+export function getInstallId(): string {
+  return state?.installId ?? ""
+}
+
 export function track(name: string, props?: Record<string, unknown>) {
   if (!state || !state.enabled || isDev) return
   state.queue.push({ name, ts: new Date().toISOString(), sessionId, props })

@@ -61,3 +61,28 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_day     ON events(day);
 CREATE INDEX IF NOT EXISTS idx_events_name    ON events(name);
 CREATE INDEX IF NOT EXISTS idx_events_install ON events(install_id);
+
+-- One row per in-app issue report. Stored here first and always, so a report
+-- survives GitHub being down, rate-limited, or the issue later being deleted.
+-- issue_url is filled in when the report is successfully filed; github_error
+-- records why it wasn't, so nothing fails silently.
+CREATE TABLE IF NOT EXISTS reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts TEXT NOT NULL,              -- ISO timestamp (UTC)
+  day TEXT NOT NULL,             -- YYYY-MM-DD (UTC), for grouping
+  install_id TEXT,               -- same anonymous id telemetry uses, when present
+  category TEXT NOT NULL,        -- bug | feature | question | other
+  title TEXT NOT NULL,
+  description TEXT,
+  steps TEXT,
+  contact TEXT,                  -- optional, so a reply is possible
+  app_version TEXT,
+  os TEXT,
+  country TEXT,                  -- ISO2 from Cloudflare
+  ip_hash TEXT,                  -- H(ip + salt), for abuse tracing only
+  issue_number INTEGER,          -- GitHub issue, when filing succeeded
+  issue_url TEXT,
+  github_error TEXT              -- why filing failed, when it did
+);
+CREATE INDEX IF NOT EXISTS idx_reports_day     ON reports(day);
+CREATE INDEX IF NOT EXISTS idx_reports_install ON reports(install_id);

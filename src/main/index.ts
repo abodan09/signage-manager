@@ -4,6 +4,7 @@ import { startServer } from './server'
 import { getLocalIP } from './server/discovery'
 import { setupUpdaterIpc, checkForUpdates } from './updater'
 import { initTelemetry, track } from './telemetry'
+import { initReporting } from './report'
 
 const isDev = process.env.NODE_ENV === 'development'
 let mainWindow: BrowserWindow | null = null
@@ -91,6 +92,7 @@ async function main() {
   // different network updates the UI without an app restart.
   ipcMain.handle('get-lan-url', () => `http://${getLocalIP()}:${serverPort}`)
   ipcMain.handle('open-external', (_event, url: string) => shell.openExternal(url))
+  initReporting()
 
   setupUpdaterIpc(() => mainWindow)
 

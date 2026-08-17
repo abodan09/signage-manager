@@ -1,11 +1,16 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { UpdateInfo } from './updater'
+import type { ReportInput, ReportResult } from './report'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // ── existing ────────────────────────────────────────────────────────────────
   getServerUrl: (): Promise<string>      => ipcRenderer.invoke('get-server-url'),
   getLanUrl:    (): Promise<string>      => ipcRenderer.invoke('get-lan-url'),
   openExternal: (url: string): Promise<void> => ipcRenderer.invoke('open-external', url),
+
+  submitReport: (input: ReportInput): Promise<ReportResult> => ipcRenderer.invoke('report:submit', input),
+
+  openReportOnGithub: (input: ReportInput): Promise<void> => ipcRenderer.invoke('report:open-github', input),
 
   // ── app info ────────────────────────────────────────────────────────────────
   getVersion: (): Promise<string> => ipcRenderer.invoke('get-version'),

@@ -6,8 +6,11 @@
 //   GET  /admin            dashboard (data endpoints need the admin token)
 //   GET  /api/stats        aggregated stats JSON        (Bearer ADMIN_TOKEN)
 //   GET  /api/stats/github GitHub per-asset download counts (Bearer ADMIN_TOKEN)
+//   POST /report           in-app issue report: stored in D1, then filed on GitHub
+//   GET  /api/reports      stored reports, newest first  (Bearer ADMIN_TOKEN)
 //
-// Secrets: ADMIN_TOKEN (dashboard auth), IP_SALT (IP hashing — raw IPs never stored)
+// Secrets: ADMIN_TOKEN (dashboard auth), IP_SALT (IP hashing — raw IPs never stored),
+//          GITHUB_TOKEN (issues:write on GITHUB_REPO), REPORT_KEY (shared with the app)
 
 import ADMIN_HTML from './admin.html'
 
@@ -37,8 +40,14 @@ export default {
           headers: { 'content-type': 'text/html;charset=utf-8', 'cache-control': 'no-store' },
         })
       }
+      if (path === '/report') {
+        if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+        if (request.method === 'POST') return handleReport(request, env)
+        return json({ error: 'method not allowed' }, 405, CORS)
+      }
       if (path === '/api/stats') return withAuth(request, env, () => handleStats(env, url))
       if (path === '/api/stats/github') return withAuth(request, env, () => handleGithubStats(env))
+      if (path === '/api/reports') return withAuth(request, env, () => handleListReports(env, url))
       if (path === '/api/health') return json({ ok: true })
       if (path === '/') return Response.redirect(env.LANDING_URL, 302)
       return json({ error: 'not found' }, 404)
@@ -391,4 +400,138 @@ function json(data, status = 200, extra = {}) {
     status,
     headers: { 'content-type': 'application/json;charset=utf-8', 'cache-control': 'no-store', ...extra },
   })
+}
+
+/* ── issue reports ─────────────────────────────────────────────────────────── */
+
+// The app submits here instead of opening GitHub in a browser. Every report is
+// written to D1 first and always, then filed as a GitHub issue. Storing first is
+// the point: if GitHub is down, rate-limits us, or the issue is later deleted,
+// the report is still in the admin dashboard rather than lost.
+//
+// This is a public write endpoint that creates public issues, so it is guarded
+// on four axes: a shared key the app carries, hard size caps, a per-install
+// daily cap, and a per-IP daily cap for anyone who forges install ids.
+
+const REPORT_CATEGORIES = ['bug', 'feature', 'question', 'other']
+const REPORT_LABEL = { bug: 'bug', feature: 'enhancement', question: 'question', other: '' }
+const REPORT_MAX = { title: 160, description: 5000, steps: 3000, contact: 120 }
+const REPORT_CAP_INSTALL = 10   // per install id per day
+const REPORT_CAP_IP = 20        // per hashed ip per day
+
+const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '')
+
+async function handleReport(request, env) {
+  // A key the app carries. It is embedded in a desktop binary so it is not a
+  // secret in any strong sense — it only means a passer-by who finds the URL
+  // cannot post to it, which together with the caps below is the realistic bar.
+  if (env.REPORT_KEY) {
+    const given = request.headers.get('x-report-key') || ''
+    if (!(await digestsEqual(given, env.REPORT_KEY))) {
+      return json({ error: 'unauthorized' }, 401, CORS)
+    }
+  }
+
+  let d
+  try { d = await request.json() } catch { return json({ error: 'bad json' }, 400, CORS) }
+
+  const category = REPORT_CATEGORIES.includes(d.category) ? d.category : 'other'
+  const title = clip(d.title, REPORT_MAX.title)
+  if (!title) return json({ error: 'a title is required' }, 400, CORS)
+
+  const description = clip(d.description, REPORT_MAX.description)
+  const steps       = clip(d.steps, REPORT_MAX.steps)
+  const contact     = clip(d.contact, REPORT_MAX.contact)
+  const installId   = clip(d.installId, 64)
+  const appVersion  = clip(d.appVersion, 32)
+  const os          = clip(d.os, 64)
+
+  const ip     = request.headers.get('cf-connecting-ip') || ''
+  const ipHash = await sha16(`${ip}|${env.IP_SALT || ''}`)
+  const now    = new Date()
+  const ts     = now.toISOString()
+  const day    = ts.slice(0, 10)
+  const cf     = request.cf || {}
+
+  // Daily caps. Counted from what is stored, so they hold across worker
+  // isolates rather than living in per-isolate memory.
+  const overCap = async (column, value, cap) => {
+    if (!value) return false
+    const row = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM reports WHERE day = ? AND ${column} = ?`
+    ).bind(day, value).first()
+    return (row?.n ?? 0) >= cap
+  }
+  if (await overCap('install_id', installId, REPORT_CAP_INSTALL) ||
+      await overCap('ip_hash', ipHash, REPORT_CAP_IP)) {
+    return json({ error: 'too many reports today', retryAfter: 'tomorrow' }, 429, CORS)
+  }
+
+  const ins = await env.DB.prepare(
+    `INSERT INTO reports (ts, day, install_id, category, title, description, steps,
+       contact, app_version, os, country, ip_hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(ts, day, installId || null, category, title, description || null, steps || null,
+         contact || null, appVersion || null, os || null, cf.country || null, ipHash).run()
+
+  const rowId = ins.meta?.last_row_id ?? null
+
+  // Filed after storing, and a failure here is reported as a partial success:
+  // the operator's report is safe either way, and saying otherwise would invite
+  // them to send it again.
+  let issue = null
+  let ghError = null
+  try {
+    issue = await fileGithubIssue(env, { category, title, description, steps, contact, appVersion, os, installId, ts })
+  } catch (err) {
+    ghError = String((err && err.message) || err).slice(0, 500)
+  }
+
+  if (rowId) {
+    await env.DB.prepare(
+      `UPDATE reports SET issue_number = ?, issue_url = ?, github_error = ? WHERE id = ?`
+    ).bind(issue?.number ?? null, issue?.html_url ?? null, ghError, rowId).run()
+  }
+
+  return json({ ok: true, stored: true, issueUrl: issue?.html_url ?? null, filed: !!issue }, 200, CORS)
+}
+
+async function fileGithubIssue(env, r) {
+  if (!env.GITHUB_TOKEN) throw new Error('no GITHUB_TOKEN configured')
+  const parts = []
+  if (r.description) parts.push(r.description)
+  if (r.steps) parts.push(`## Steps to reproduce\n${r.steps}`)
+  const env_ = [
+    `- App version: ${r.appVersion || 'unknown'}`,
+    `- Platform: ${r.os || 'unknown'}`,
+    r.installId ? `- Install: \`${r.installId}\`` : null,
+    `- Reported: ${r.ts}`,
+    r.contact ? `- Contact: ${r.contact}` : null,
+  ].filter(Boolean).join('\n')
+  parts.push(`## Environment\n${env_}`)
+  parts.push('_Filed from inside Signage Manager._')
+
+  const labels = REPORT_LABEL[r.category] ? [REPORT_LABEL[r.category]] : []
+  const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/issues`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      accept: 'application/vnd.github+json',
+      'content-type': 'application/json',
+      'user-agent': 'signage-report-relay',
+    },
+    body: JSON.stringify({ title: r.title, body: parts.join('\n\n'), labels }),
+  })
+  if (!res.ok) throw new Error(`github ${res.status}: ${(await res.text()).slice(0, 200)}`)
+  return res.json()
+}
+
+async function handleListReports(env, url) {
+  const limit = Math.min(Number(url.searchParams.get('limit')) || 100, 500)
+  const { results } = await env.DB.prepare(
+    `SELECT id, ts, category, title, description, steps, contact, app_version, os,
+            country, issue_number, issue_url, github_error
+       FROM reports ORDER BY id DESC LIMIT ?`
+  ).bind(limit).all()
+  return json({ reports: results ?? [] })
 }

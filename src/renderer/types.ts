@@ -352,12 +352,33 @@ export interface UpdateInfo {
   releaseNotes?: string
 }
 
+export interface IssueReport {
+  category: string
+  title: string
+  description?: string
+  steps?: string
+  contact?: string
+}
+
+export interface IssueReportResult {
+  ok: boolean
+  stored?: boolean
+  filed?: boolean
+  issueUrl?: string | null
+  unreachable?: boolean
+  error?: string
+}
+
 declare global {
   interface Window {
     electronAPI: {
       getServerUrl:     () => Promise<string>
       getLanUrl:        () => Promise<string>
       openExternal:     (url: string) => Promise<void>
+
+      submitReport:     (input: IssueReport) => Promise<IssueReportResult>
+
+      openReportOnGithub: (input: IssueReport) => Promise<void>
       getVersion:       () => Promise<string>
       trackEvent:       (name: string, props?: Record<string, unknown>) => void
       getTelemetryStatus: () => Promise<{ enabled: boolean; installId: string }>
