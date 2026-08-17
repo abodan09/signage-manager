@@ -406,15 +406,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 
   // ── progress bar ───────────────────────────────────────────────────────────
 
+  // performance.now() is not universal on TV WebViews — VIDAA's developer guide
+  // lists High-Resolution Timestamp as unsupported. The progress bar only needs
+  // elapsed milliseconds, so fall back to the wall clock instead of throwing:
+  // a throw in here used to take the next-item timer down with it.
+  function now() {
+    return (window.performance && window.performance.now)
+      ? window.performance.now()
+      : Date.now();
+  }
+
   function startProgress(durationMs) {
     var bar = qs('#progress');
     bar.style.transition = 'none';
     bar.style.width = '0%';
     progressDuration = durationMs;
-    progressStart    = performance.now();
+    progressStart    = now();
     cancelAnimationFrame(progressRAF);
     function step() {
-      var elapsed = performance.now() - progressStart;
+      var elapsed = now() - progressStart;
       var pct = Math.min(100, (elapsed / durationMs) * 100);
       bar.style.width = pct + '%';
       if (pct < 100) progressRAF = requestAnimationFrame(step);
@@ -623,8 +633,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
       // playlist of all-broken items can't spin in a tight loop.
       img.onerror = function(){ clearTimeout(mainTimer); mainTimer = setTimeout(nextMain, 3000); };
       img.src = BASE + item.filePath;
-      startProgress(dur);
+      // Timer first, cosmetics second: the rotation must survive anything the
+      // progress bar might throw on an unfamiliar WebView.
       mainTimer = setTimeout(nextMain, dur);
+      startProgress(dur);
 
     } else if (item.type === 'video') {
       showLayer('video-layer');
@@ -637,22 +649,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
       vid.onended = advance;
       vid.src = BASE + item.filePath;
       vid.play().catch(function(){});
-      startProgress(dur);
       mainTimer = setTimeout(advance, dur);
+      startProgress(dur);
 
     } else if (item.type === 'html') {
       showLayer('html-layer');
       qs('#frame').src = item.htmlUrl || '';
-      startProgress(dur);
       mainTimer = setTimeout(nextMain, dur);
+      startProgress(dur);
 
     } else if (item.type === 'design') {
       // A design is rendered by the manager itself, so the frame is same-origin
       // and needs no token: /tv is open to the LAN exactly like this page.
       showLayer('html-layer');
       qs('#frame').src = BASE + '/tv/scene/' + encodeURIComponent(item.designId || '');
-      startProgress(dur);
       mainTimer = setTimeout(nextMain, dur);
+      startProgress(dur);
 
     } else if (item.type === 'app') {
       // Same deal as a design: the manager renders the app and talks to any
@@ -660,8 +672,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
       // credential and nothing here needs internet access of its own.
       showLayer('html-layer');
       qs('#frame').src = BASE + '/tv/app/' + encodeURIComponent(item.appInstanceId || '');
-      startProgress(dur);
       mainTimer = setTimeout(nextMain, dur);
+      startProgress(dur);
 
     } else {
       // Unknown type — never leave the rotation without a pending timer, or the

@@ -80,6 +80,23 @@ const check = (n, c, extra) => {
   check('preview mode short-circuits registration', scripts.includes('PREVIEW'))
   check('playlist callback is guarded from the retry loop', scripts.includes('Playback error'))
 
+  console.log('\n=== the rotation cannot be stranded by the progress bar ===')
+  // startProgress() used to run BEFORE the next-item timer was scheduled, so
+  // anything it threw stopped the wall on whatever was showing. Two halves to
+  // that fix, and both are pinned here. performance.now() is the specific throw
+  // we know about: VIDAA's developer guide lists High-Resolution Timestamp as
+  // unsupported, and it is absent on some TV WebViews.
+  // Comments survive into the served script, and the fallback's own comment
+  // names performance.now() — strip commentary before hunting for real calls.
+  const codeOnly = scripts.replace(/^[ \t]*\/\/.*$/gm, '')
+  const withoutNowHelper = codeOnly.replace(/function now\(\)\s*\{[\s\S]*?\}/, '')
+  check('performance.now() has a Date.now() fallback',
+    /function now\(\)\s*\{[\s\S]*?Date\.now\(\)/.test(scripts))
+  check('no unguarded performance.now() in the player',
+    !/performance\.now/.test(withoutNowHelper))
+  check('the next-item timer is scheduled before the progress bar',
+    !/startProgress\([^)]*\);\s*[\r\n]+\s*mainTimer\s*=/.test(scripts))
+
   console.log(`\n${pass} passed, ${fail} failed`)
   process.exit(fail ? 1 : 0)
 })().catch(e => { console.error(e); process.exit(1) })
