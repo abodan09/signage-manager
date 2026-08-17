@@ -1,0 +1,1458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signage Meridian — design concept</title>
+<meta name="description" content="Design concept for the Signage Manager desktop console: mission-control structure in a corporate navy-and-sapphire skin. Mockup, not the shipping UI.">
+<meta name="robots" content="noindex">
+<style>
+/* ============================================================
+   SIGNAGE MERIDIAN
+   Mission-control structure, corporate light skin.
+   Light canvas, deep navy rail, refined sapphire accent.
+   Token system first; every declaration derives from it.
+   ============================================================ */
+:root{
+  /* color */
+  --canvas:#F7F8FA;
+  --surface:#FFFFFF;
+  --surface-tint:#F4F6FA;
+  --sidebar:#161D35;
+  --sidebar-raise:#1D2542;
+  --sb-text:#E2E5F0;
+  --sb-muted:#8C92AC;
+  --ink:#1A1F36;
+  --muted:#5B6178;
+  --hairline:#E6E8F0;
+  --hairline-strong:#D5DAE8;
+  --accent:#3E63DD;
+  --accent-hover:#5373E7;
+  --accent-tint:#EDF1FD;
+  --accent-line:#C9D4F6;
+  --ok:#22A06B;
+  --ok-text:#15803D;
+  --ok-tint:#E7F6EF;
+  --ok-line:#CBE9DA;
+  --warn:#D97706;
+  --warn-text:#B45309;
+  --warn-tint:#FBF1E0;
+  --warn-line:#EDD9AF;
+  --danger:#DC2626;
+  --danger-text:#B91C1C;
+  --danger-tint:#FCEAEA;
+  --danger-line:#F3CFCF;
+  --neutral-dot:#98A0B8;
+  /* type */
+  --font-ui:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+  --font-display:"Segoe UI Variable Display","Segoe UI Semibold","Segoe UI",system-ui,sans-serif;
+  --font-mono:Consolas,"Cascadia Mono","SF Mono",ui-monospace,monospace;
+  --font-serif:Georgia,"Times New Roman",serif; /* wordmark only */
+  /* geometry */
+  --r:8px;
+  --r-s:6px;
+  --r-pill:9999px;
+  --shadow:0 1px 2px rgba(26,31,54,.05),0 4px 12px rgba(26,31,54,.08);
+  --shadow-lift:0 8px 24px rgba(26,31,54,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  margin:0;
+  background:#F7F8FA;
+  color:var(--ink);
+  font:400 14px/1.5 var(--font-ui);
+  font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit}
+::selection{background:var(--accent-line);color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.rail :focus-visible{outline-color:#9DB2F5}
+
+/* ---- stage / app frame ---- */
+.stage{width:100%;overflow-x:auto}
+.app{
+  min-width:1080px;height:100vh;min-height:640px;display:flex;
+  background:
+    radial-gradient(rgba(22,29,53,0.03) 1px,transparent 1px) 0 0/26px 26px,
+    var(--canvas);
+}
+
+/* ---- type roles ---- */
+.eyebrow{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted);
+}
+.eyebrow .sl{color:var(--accent)}
+h1{font:600 24px/1.2 var(--font-display);letter-spacing:-0.5px;color:var(--ink)}
+h2{font:600 18px/1.3 var(--font-display);letter-spacing:-0.25px;color:var(--ink)}
+.list-card h2,.pl-card h2,.player-card h2,.set-body h2{font-size:15px;letter-spacing:-0.15px}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.big-num{font-family:var(--font-mono);font-size:28px;font-weight:700;line-height:1.1;color:var(--ink)}
+
+/* ---- surface panel token ---- */
+.card{
+  background:var(--surface);
+  border:1px solid var(--hairline);
+  border-radius:var(--r);
+  box-shadow:var(--shadow);
+}
+.card-pad{padding:24px}
+.hairline{border-top:1px solid var(--hairline)}
+
+/* ============================================================
+   SIDEBAR RAIL
+   ============================================================ */
+.rail{
+  width:228px;flex:0 0 228px;display:flex;flex-direction:column;
+  background:var(--sidebar);color:var(--sb-text);
+}
+.brand{
+  display:flex;align-items:center;gap:12px;padding:22px 20px 18px;
+  border-bottom:1px solid rgba(226,229,240,.09);
+}
+.brand-mark{
+  width:34px;height:34px;border-radius:8px;flex:0 0 34px;
+  display:grid;place-items:center;
+  background:var(--accent);box-shadow:inset 0 -6px 12px rgba(22,29,53,.35);
+}
+.brand-mark svg{stroke:#FFFFFF}
+.brand-name{font-family:var(--font-serif);font-style:italic;font-size:19px;letter-spacing:.2px;color:#FFFFFF;line-height:1.1}
+.brand-sub{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--sb-muted);text-transform:uppercase;margin-top:3px}
+.nav{display:flex;flex-direction:column;gap:2px;padding:12px 10px;flex:1}
+.nav-label{padding:6px 12px 8px;font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--sb-muted);text-transform:uppercase}
+.nav-btn{
+  display:flex;align-items:center;gap:12px;width:100%;
+  background:none;border:none;border-radius:var(--r-pill);
+  color:var(--sb-text);font:600 13px var(--font-ui);letter-spacing:.1px;
+  padding:10px 12px;cursor:pointer;position:relative;text-align:left;
+}
+.nav-btn svg{stroke:var(--sb-muted);flex:0 0 18px}
+.nav-btn:hover{background:rgba(226,229,240,.08);color:#FFFFFF}
+.nav-btn:hover svg{stroke:#FFFFFF}
+.nav-btn.active{background:var(--accent);color:#FFFFFF;box-shadow:0 2px 8px rgba(20,28,60,.45)}
+.nav-btn.active svg{stroke:#FFFFFF}
+.rail-foot{padding:16px 20px;border-top:1px solid rgba(226,229,240,.09)}
+.srv-line{display:flex;align-items:center;gap:8px;font:600 12.5px var(--font-ui);color:#FFFFFF}
+.srv-url{font-family:var(--font-mono);font-size:11px;color:var(--sb-muted);margin-top:5px;letter-spacing:.2px}
+
+/* status dots */
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;display:inline-block}
+.dot.on{background:var(--ok)}
+.dot.off{background:var(--danger)}
+.dot.idle{background:var(--neutral-dot)}
+
+/* ============================================================
+   MAIN / VIEWS
+   ============================================================ */
+.main{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden}
+.view{display:none;padding:28px 32px 56px;max-width:1360px;margin:0 auto}
+.view.active{display:block}
+.view-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px}
+.view-head h1{margin-top:6px}
+.head-actions{display:flex;align-items:center;gap:10px}
+
+/* ---- buttons ---- */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font:600 13px var(--font-ui);border-radius:var(--r-s);cursor:pointer;
+  padding:9px 14px;border:1px solid var(--hairline);
+  background:var(--surface);color:var(--ink);white-space:nowrap;
+}
+.btn svg{stroke:currentColor}
+.btn:hover{background:var(--surface-tint);border-color:var(--hairline-strong)}
+.btn.primary{
+  background:var(--accent);border-color:var(--accent);color:#FFFFFF;
+  box-shadow:0 1px 2px rgba(26,31,54,.18);
+}
+.btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn.ghost{background:transparent}
+.btn.ghost:hover{background:var(--surface-tint)}
+.btn.sm{padding:6px 10px;font-size:12px}
+.btn.danger-ghost{background:transparent;color:var(--muted)}
+.btn.danger-ghost:hover{color:var(--danger-text);border-color:var(--danger-line);background:var(--danger-tint)}
+
+/* ---- pills ---- */
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.5px;
+  padding:3px 9px;border-radius:var(--r-pill);
+  border:1px solid var(--hairline);background:var(--surface-tint);color:var(--muted);
+  white-space:nowrap;
+}
+.pill.on{color:var(--ok-text);border-color:var(--ok-line);background:var(--ok-tint)}
+.pill.offline{color:var(--danger-text);border-color:var(--danger-line);background:var(--danger-tint)}
+.pill.inactive{color:var(--muted);border-color:var(--hairline);background:var(--surface-tint)}
+.pill.acc{color:var(--accent);border-color:var(--accent-line);background:var(--accent-tint)}
+.pill.warn{color:var(--warn-text);border-color:var(--warn-line);background:var(--warn-tint)}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+.dash-top{display:grid;grid-template-columns:minmax(280px,330px) minmax(200px,236px) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.gauge-card{display:flex;flex-direction:column;align-items:center;text-align:center}
+.gauge-wrap{position:relative;width:190px;height:190px;margin:14px 0 6px}
+.gauge-wrap svg{width:190px;height:190px;transform:rotate(-90deg)}
+.gauge-track{fill:none;stroke:var(--hairline);stroke-width:10}
+.gauge-arc{fill:none;stroke:var(--accent);stroke-width:10;stroke-linecap:round}
+.gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.gauge-num{font-family:var(--font-mono);font-size:34px;font-weight:700;color:var(--ink)}
+.gauge-num b{color:var(--accent);font-weight:700}
+.gauge-lab{font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+.gauge-foot{display:flex;flex-direction:column;gap:6px;width:100%;margin-top:10px}
+.gauge-alert{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);justify-content:center}
+.gauge-alert b{color:var(--ink);font-weight:600}
+
+.kpi-stack{display:flex;flex-direction:column;gap:16px}
+.kpi{flex:1;padding:18px 20px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.kpi .big-num{font-size:26px}
+.kpi .sub{font-size:12px;color:var(--muted)}
+.kpi .sub em{font-style:normal;color:var(--ink);font-weight:600}
+
+.col-gap{display:flex;flex-direction:column;gap:16px}
+.player-card{display:flex;flex-direction:column;gap:14px}
+.url-box{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:var(--surface-tint);border:1px solid var(--hairline);border-radius:var(--r-s);
+  padding:11px 14px;
+}
+.url-box code{font-family:var(--font-mono);font-size:13px;color:var(--accent);min-width:0;overflow-wrap:anywhere}
+.hint{font-size:12px;color:var(--muted)}
+
+.spark-card{padding:20px 24px 16px}
+.spark-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.spark-svg{width:100%;height:64px;display:block}
+.spark-line{fill:none;stroke:var(--accent);stroke-width:1.5}
+.spark-fill{fill:url(#sparkgrad);stroke:none}
+.spark-axis{font-family:var(--font-mono);font-size:9px;fill:var(--muted)}
+
+.dash-bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.list-card{padding:20px 0 8px}
+.list-card>.eyebrow,.list-card>h2{padding:0 24px}
+.list-card h2{margin-top:4px;margin-bottom:8px}
+.rowline{
+  display:flex;align-items:center;gap:12px;padding:10px 24px;
+  border-top:1px solid var(--hairline);font-size:13px;
+}
+.rowline .grow{flex:1;min-width:0}
+.rowline .name{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.rowline .meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rowline .when{font-family:var(--font-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.type-ico{width:26px;height:26px;flex:0 0 26px;border-radius:6px;display:grid;place-items:center;
+  background:var(--surface-tint);border:1px solid var(--hairline)}
+.type-ico svg{stroke:var(--muted)}
+.act-ico{width:26px;height:26px;flex:0 0 26px;border-radius:50%;display:grid;place-items:center;
+  background:var(--accent-tint);border:1px solid var(--accent-line)}
+.act-ico svg{stroke:var(--accent)}
+.act-ico.warn-i{background:var(--warn-tint);border-color:var(--warn-line)}
+.act-ico.warn-i svg{stroke:var(--warn-text)}
+.act-ico.off-i{background:var(--danger-tint);border-color:var(--danger-line)}
+.act-ico.off-i svg{stroke:var(--danger-text)}
+
+/* device overview mini rows */
+.dev-mini{display:flex;align-items:center;gap:10px;padding:8px 24px;border-top:1px solid var(--hairline);font-size:13px}
+.dev-mini .nm{flex:1;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-mini .np{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.dev-mini .up{font-family:var(--font-mono);font-size:11px;color:var(--muted);width:52px;text-align:right}
+
+/* ============================================================
+   CONTENT LIBRARY
+   ============================================================ */
+.search-wrap{position:relative}
+.search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);stroke:var(--muted);pointer-events:none}
+.search{
+  width:240px;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-s);
+  color:var(--ink);font:13px var(--font-ui);padding:9px 12px 9px 34px;
+}
+.search::placeholder{color:var(--muted)}
+.search:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+
+.playlists{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.pl-card{padding:20px 24px;display:flex;flex-direction:column;gap:12px}
+.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pl-title{display:flex;align-items:center;gap:10px}
+.pl-chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  font-family:var(--font-mono);font-size:11px;color:var(--muted);
+  background:var(--surface-tint);border:1px solid var(--hairline);border-radius:6px;padding:3px 8px;
+  white-space:nowrap;
+}
+.pl-meta{font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:.5px}
+
+.lib-table{padding:6px 0 8px}
+.lib-row{
+  display:grid;grid-template-columns:minmax(160px,1.4fr) 110px 70px minmax(140px,1fr) 96px 40px;
+  gap:12px;align-items:center;padding:11px 24px;border-top:1px solid var(--hairline);
+}
+.lib-row.hdr{border-top:none;padding-top:14px;padding-bottom:8px}
+.lib-row.hdr span{font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.lib-row:not(.hdr):hover{background:#FAFBFD}
+.lib-name{display:flex;align-items:center;gap:12px;min-width:0}
+.lib-name b{font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-type{font-size:12px;color:var(--muted)}
+.lib-dur{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.lib-sched{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-kebab{background:none;border:none;color:var(--muted);cursor:pointer;border-radius:6px;padding:4px;display:grid;place-items:center}
+.row-kebab:hover{color:var(--ink);background:var(--surface-tint)}
+
+/* ============================================================
+   TEMPLATES
+   ============================================================ */
+.tpl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px}
+.tpl-card{padding:16px 16px 18px;display:flex;flex-direction:column;gap:12px;position:relative;cursor:pointer}
+.tpl-card:hover{border-color:var(--hairline-strong);box-shadow:var(--shadow-lift)}
+.tpl-card:hover .tpl-mini{border-color:var(--accent-line)}
+.tpl-mini{
+  aspect-ratio:16/9;background:#10152B;border:1px solid var(--hairline);border-radius:6px;
+  position:relative;overflow:hidden;
+}
+.tpl-mini .fill{position:absolute;inset:8%;background:rgba(226,229,240,.12);border:1px solid rgba(226,229,240,.22);border-radius:3px}
+.tpl-mini .fill.full{inset:0;border-radius:0;border:none}
+.tpl-mini .band{position:absolute;left:0;right:0;bottom:0;height:16%;background:var(--accent)}
+.tpl-mini .band.third{height:30%;background:rgba(226,229,240,.28);border-top:1px solid rgba(226,229,240,.45)}
+.tpl-mini .frame{position:absolute;inset:7%;border:2px solid var(--accent);border-radius:3px}
+.tpl-mini .logo-dot{position:absolute;top:10%;left:10%;width:12px;height:6px;background:var(--accent);border-radius:2px}
+.tpl-mini .tline{position:absolute;left:20%;right:20%;height:5px;border-radius:2px;background:rgba(226,229,240,.7)}
+.tpl-mini .tline.l2{background:rgba(226,229,240,.3)}
+.tpl-mini .tline.l3{background:var(--accent-hover);left:35%;right:35%}
+.tpl-mini .pillar{position:absolute;top:0;bottom:0;width:26%;background:rgba(226,229,240,.05)}
+.tpl-mini .pillar.pl{left:0;border-right:1px solid rgba(226,229,240,.16)}
+.tpl-mini .pillar.pr{right:0;border-left:1px solid rgba(226,229,240,.16)}
+.tpl-mini .pcard{position:absolute;top:8%;bottom:8%;left:30%;right:30%;background:rgba(62,99,221,.42);border:1px solid var(--accent-hover);border-radius:3px}
+.tpl-name{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tpl-name b{font:600 14px var(--font-ui);color:var(--ink)}
+.tpl-desc{font-size:12px;color:var(--muted);line-height:1.45}
+.badge-def{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:var(--accent);
+  border:1px solid var(--accent-line);background:var(--accent-tint);border-radius:5px;padding:2px 7px;
+}
+.sect-gap{margin-top:30px}
+
+/* ============================================================
+   DEVICES — monitoring wall
+   ============================================================ */
+.grp-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.grp-chip{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:var(--r-s);
+  background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow);
+}
+.grp-chip .g-name{font:600 12.5px var(--font-ui);color:var(--ink)}
+.grp-chip .g-count{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.grp-chip .g-count b{color:var(--ok-text);font-weight:700}
+.grp-chip.warn-g .g-count b{color:var(--warn-text)}
+
+/* pairing request */
+.hail{
+  display:flex;align-items:center;gap:20px;padding:18px 24px;margin-bottom:20px;
+  border:1px solid var(--accent-line);background:#F8FAFE;
+  border-radius:var(--r);box-shadow:var(--shadow);position:relative;overflow:hidden;
+}
+.hail-ico{width:40px;height:40px;flex:0 0 40px;border-radius:50%;display:grid;place-items:center;
+  background:var(--accent-tint);border:1px solid var(--accent-line)}
+.hail-ico svg{stroke:var(--accent)}
+.hail-code{font-family:var(--font-mono);font-size:22px;font-weight:700;letter-spacing:3px;color:var(--accent)}
+.hail-meta{font-size:12.5px;color:var(--muted);margin-top:3px}
+.hail-meta b{color:var(--ink);font-weight:600}
+.hail-count{margin-left:auto;text-align:right}
+.hail-count .cd{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--warn-text)}
+.hail-count .cd-lab{font-family:var(--font-mono);font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px}
+.hail-actions{display:flex;gap:8px}
+
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+.device{
+  position:relative;padding:0;overflow:visible;cursor:pointer;
+}
+.device:hover{border-color:var(--hairline-strong);box-shadow:var(--shadow-lift)}
+.device.selected{border-color:var(--accent);box-shadow:var(--shadow-lift)}
+/* corner brackets — targeting motif, selected card only */
+.bk{position:absolute;width:12px;height:12px;opacity:0;pointer-events:none}
+.bk::before{content:"";position:absolute;inset:0;border:1px solid var(--accent)}
+.bk-tl{top:-5px;left:-5px}.bk-tl::before{border-right:none;border-bottom:none}
+.bk-tr{top:-5px;right:-5px}.bk-tr::before{border-left:none;border-bottom:none}
+.bk-bl{bottom:-5px;left:-5px}.bk-bl::before{border-right:none;border-top:none}
+.bk-br{bottom:-5px;right:-5px}.bk-br::before{border-left:none;border-top:none}
+.device.selected .bk{opacity:1}
+
+.thumb{
+  position:relative;aspect-ratio:16/9;border-radius:7px 7px 0 0;overflow:hidden;
+  background:#0F1428;border-bottom:1px solid var(--hairline);
+}
+.now-tag{
+  position:absolute;left:10px;bottom:10px;z-index:3;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:#FFFFFF;background:rgba(15,20,40,.86);border:1px solid rgba(255,255,255,.18);
+  border-radius:5px;padding:3px 8px;
+}
+.thumb.dead .scene{filter:grayscale(1) brightness(.45) contrast(.9)}
+.nosig{
+  position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  background:repeating-linear-gradient(0deg,rgba(10,13,26,.18) 0 2px,rgba(10,13,26,.38) 2px 4px);
+}
+.nosig .ns-box{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:2px;color:#FFFFFF;
+  border:1px solid var(--danger);border-radius:4px;padding:4px 11px;background:rgba(10,13,26,.88);
+}
+.nosig .ns-sub{font-family:var(--font-mono);font-size:10px;color:#DDE1EC;letter-spacing:.5px;background:rgba(10,13,26,.85);padding:3px 9px;border-radius:3px}
+
+/* --- miniature signage scenes (deliberately dark: this is TV content art) --- */
+.scene{position:absolute;inset:0}
+/* Welcome Loop */
+.sc-welcome{background:radial-gradient(120% 130% at 18% 0%,#2A3866 0%,#161D35 62%)}
+.sc-welcome .w1{position:absolute;top:38%;left:0;right:0;text-align:center;
+  font:600 15px var(--font-display);letter-spacing:3px;color:#FFFFFF}
+.sc-welcome .w2{position:absolute;top:60%;left:0;right:0;text-align:center;
+  font-family:var(--font-mono);font-size:7px;letter-spacing:2px;color:#C7D0EC;text-transform:uppercase}
+.sc-welcome .orb{position:absolute;top:-30%;right:-12%;width:70%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle,rgba(83,115,231,.45),transparent 65%)}
+/* Announcements ticker */
+.sc-announce{background:#171F3D}
+.sc-announce .hl{position:absolute;left:8%;height:7px;border-radius:3px;background:rgba(255,255,255,.72)}
+.sc-announce .hl.h1{top:18%;width:56%}
+.sc-announce .hl.h2{top:34%;width:40%;background:rgba(255,255,255,.34)}
+.sc-announce .hl.h3{top:46%;width:48%;background:rgba(255,255,255,.22)}
+.sc-announce .tk{position:absolute;left:0;right:0;bottom:0;height:18%;background:var(--accent);display:flex;align-items:center;overflow:hidden}
+.sc-announce .tk i{font:600 7px var(--font-mono);font-style:normal;letter-spacing:1px;color:#FFFFFF;white-space:nowrap;padding-left:8px;text-transform:uppercase}
+/* Summer Promo */
+.sc-promo{background:linear-gradient(130deg,#F7B733 0%,#EA580C 100%)}
+.sc-promo .sun{position:absolute;top:12%;right:10%;width:34%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.55) 30%,rgba(255,255,255,.18) 60%,transparent 70%)}
+.sc-promo .p1{position:absolute;left:9%;top:30%;font:700 13px var(--font-display);letter-spacing:-.3px;color:#FFFFFF;text-transform:uppercase}
+.sc-promo .p2{position:absolute;left:9%;top:52%;font-family:var(--font-mono);font-size:7px;letter-spacing:1.5px;color:rgba(255,255,255,.94);text-transform:uppercase}
+.sc-promo .tag{position:absolute;left:9%;bottom:14%;font:600 8px var(--font-mono);color:#FFFFFF;background:rgba(20,10,0,.42);border-radius:3px;padding:2px 6px;letter-spacing:1px}
+/* Menu Board */
+.sc-menu{background:#20262E}
+.sc-menu .mt{position:absolute;top:9%;left:8%;font:700 9px var(--font-display);letter-spacing:2px;color:#F2C14E;text-transform:uppercase}
+.sc-menu .ml{position:absolute;left:8%;right:8%;display:flex;align-items:center;gap:4px}
+.sc-menu .ml i{flex:1;height:3px;border-radius:2px;background:rgba(232,235,240,.34);font-size:0}
+.sc-menu .ml em{font-family:var(--font-mono);font-size:7px;font-style:normal;color:#F2C14E}
+.sc-menu .ml.m1{top:32%}.sc-menu .ml.m2{top:46%}.sc-menu .ml.m3{top:60%}.sc-menu .ml.m4{top:74%}
+/* Company News — light editorial page */
+.sc-news{background:#FFFFFF}
+.sc-news .nh{position:absolute;top:12%;left:8%;right:36%;height:9px;border-radius:2px;background:#1A1F36}
+.sc-news .nb{position:absolute;left:8%;height:4px;border-radius:2px;background:#D7DBE6}
+.sc-news .nb.b1{top:34%;right:30%}.sc-news .nb.b2{top:44%;right:40%}.sc-news .nb.b3{top:54%;right:34%}
+.sc-news .nimg{position:absolute;top:12%;right:8%;width:22%;aspect-ratio:1;border-radius:3px;
+  background:linear-gradient(140deg,#3E63DD,#293D8F)}
+.sc-news .nfoot{position:absolute;bottom:10%;left:8%;font-family:var(--font-mono);font-size:7px;letter-spacing:1.5px;color:#5B6178;text-transform:uppercase}
+/* Safety Notice */
+.sc-safety{background:#FFFFFF}
+.sc-safety .stripe{position:absolute;top:0;left:0;right:0;height:12%;
+  background:repeating-linear-gradient(-45deg,#F2B720 0 10px,#1A1F36 10px 20px)}
+.sc-safety .scard{position:absolute;left:12%;right:12%;top:26%;bottom:18%;
+  background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.5);border-radius:4px}
+.sc-safety .sx{position:absolute;top:34%;left:0;right:0;text-align:center;font:700 12px var(--font-display);color:#1A1F36;letter-spacing:1px}
+.sc-safety .sl1{position:absolute;top:56%;left:24%;right:24%;height:4px;border-radius:2px;background:rgba(26,31,54,.4)}
+.sc-safety .sl2{position:absolute;top:66%;left:30%;right:30%;height:4px;border-radius:2px;background:rgba(26,31,54,.22)}
+/* Portrait poster inside landscape frame */
+.sc-portrait{background:#0B0E1A}
+.sc-portrait .pframe{position:absolute;top:6%;bottom:6%;left:36%;right:36%;
+  background:linear-gradient(180deg,#3E63DD 0%,#161D35 90%);border:1px solid rgba(255,255,255,.16);border-radius:3px;overflow:hidden}
+.sc-portrait .pp1{position:absolute;top:18%;left:15%;right:15%;height:6px;border-radius:2px;background:rgba(255,255,255,.8)}
+.sc-portrait .pp2{position:absolute;top:34%;left:22%;right:22%;height:4px;border-radius:2px;background:rgba(255,255,255,.4)}
+.sc-portrait .pglow{position:absolute;bottom:-20%;left:-20%;width:90%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(83,115,231,.4),transparent 65%)}
+
+/* device body */
+.dev-body{padding:16px 18px 16px}
+.dev-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.dev-name{font:600 14.5px var(--font-ui);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev-sub{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.dev-facts{display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;margin-bottom:14px}
+.fact{display:flex;flex-direction:column;gap:1px;min-width:0}
+.fact .f-lab{font-family:var(--font-mono);font-size:9.5px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.fact .f-val{font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fact .f-val.mono{font-family:var(--font-mono);font-size:12px}
+.dev-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--hairline);padding-top:12px}
+.up-read{font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:.5px}
+.up-read b{color:var(--ink);font-weight:700}
+.up-read.warn-t b{color:var(--warn-text)}
+
+/* status live dot with pulsing ring */
+.live{position:relative;display:inline-flex}
+.live .dot{position:relative;z-index:1}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+.set-col{max-width:760px;display:flex;flex-direction:column;gap:16px}
+.set-card{padding:22px 24px;display:flex;align-items:flex-start;gap:18px}
+.set-ico{width:38px;height:38px;flex:0 0 38px;border-radius:8px;display:grid;place-items:center;
+  background:var(--surface-tint);border:1px solid var(--hairline)}
+.set-ico svg{stroke:var(--muted)}
+.set-body{flex:1;min-width:0}
+.set-body h2{margin-bottom:3px}
+.set-body p{font-size:12.5px;color:var(--muted);line-height:1.5}
+.set-body .mono-line{font-family:var(--font-mono);font-size:12px;color:var(--accent);margin-top:8px}
+.set-side{flex:0 0 auto;display:flex;align-items:center;gap:10px}
+
+.seg{display:inline-flex;background:var(--surface-tint);border:1px solid var(--hairline);border-radius:var(--r-s);padding:3px;gap:2px}
+.seg button{
+  border:none;background:none;color:var(--muted);font:600 12px var(--font-ui);
+  padding:7px 14px;border-radius:4px;cursor:pointer;
+}
+.seg button:hover{color:var(--ink)}
+.seg button.active{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--hairline),0 1px 2px rgba(26,31,54,.12)}
+
+.switch{position:relative;display:inline-flex;align-items:center;cursor:pointer}
+.switch input{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0}
+.sw-track{width:40px;height:22px;border-radius:var(--r-pill);background:var(--surface-tint);border:1px solid var(--hairline-strong);position:relative}
+.sw-knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#FFFFFF;border:1px solid var(--hairline-strong);box-shadow:0 1px 2px rgba(26,31,54,.15)}
+.switch input:checked~.sw-track{background:var(--accent);border-color:var(--accent)}
+.switch input:checked~.sw-track .sw-knob{transform:translateX(18px);border-color:var(--accent)}
+.switch input:focus-visible~.sw-track{outline:2px solid var(--accent);outline-offset:2px}
+.sw-state{font-family:var(--font-mono);font-size:11px;color:var(--muted);width:26px}
+
+.ok-line{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ok-text);margin-top:8px}
+.ok-line svg{stroke:var(--ok-text)}
+
+/* ============================================================
+   MOTION (guarded)
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference){
+  .view.active{animation:rise .28s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .dot.on.pulse{animation:pulseG 2.2s ease-out infinite}
+  @keyframes pulseG{
+    0%{box-shadow:0 0 0 0 rgba(34,160,107,.5)}
+    70%{box-shadow:0 0 0 5px rgba(34,160,107,0)}
+    100%{box-shadow:0 0 0 0 rgba(34,160,107,0)}
+  }
+  .live::after{
+    content:"";position:absolute;inset:-4px;border-radius:50%;
+    border:1px solid rgba(34,160,107,.55);animation:ring 2.2s ease-out infinite;
+  }
+  @keyframes ring{0%{transform:scale(.5);opacity:1}80%,100%{transform:scale(1.5);opacity:0}}
+  .gauge-arc{transition:stroke-dashoffset .8s ease}
+  .device,.btn,.nav-btn,.tpl-card,.sw-knob{transition:background .15s ease,color .15s ease,border-color .15s ease,box-shadow .2s ease,transform .15s ease}
+  .device:hover,.tpl-card:hover{transform:translateY(-1px)}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="app">
+
+  <!-- ================= RAIL ================= -->
+  <aside class="rail">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 7 12 10 5 14 19 17 12 22 12"/></svg>
+      </span>
+      <span>
+        <div class="brand-name">Signage</div>
+        <div class="brand-sub">Meridian Console</div>
+      </span>
+    </div>
+
+    <nav class="nav" aria-label="Main">
+      <div class="nav-label">Console</div>
+      <button class="nav-btn active" data-view="dashboard" aria-current="page">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-btn" data-view="library">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>
+        Content Library
+      </button>
+      <button class="nav-btn" data-view="templates">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9.5" x2="21" y2="9.5"/><line x1="9.5" y1="9.5" x2="9.5" y2="20"/></svg>
+        Templates
+      </button>
+      <button class="nav-btn" data-view="devices">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Devices
+      </button>
+      <button class="nav-btn" data-view="settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2.4"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2.4"/></svg>
+        Settings
+      </button>
+    </nav>
+
+    <div class="rail-foot">
+      <div class="srv-line"><span class="dot on pulse" aria-hidden="true"></span> Server Online</div>
+      <div class="srv-url mono">http://192.168.1.24:8080</div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+  <!-- ============ DASHBOARD ============ -->
+  <section class="view active" data-view="dashboard" aria-label="Dashboard">
+    <div class="view-head">
+      <div>
+        <div class="eyebrow">Mission control <span class="sl">//</span> 6 of 8 reporting</div>
+        <h1>Dashboard</h1>
+      </div>
+      <div class="head-actions">
+        <span class="pill on"><span class="dot on" aria-hidden="true"></span> 6 online</span>
+        <span class="pill offline"><span class="dot off" aria-hidden="true"></span> 2 offline</span>
+      </div>
+    </div>
+
+    <div class="dash-top">
+      <!-- fleet gauge -->
+      <div class="card card-pad gauge-card">
+        <div class="eyebrow" style="align-self:flex-start">Fleet <span class="sl">//</span> 6 of 8 online</div>
+        <div class="gauge-wrap">
+          <svg viewBox="0 0 190 190" aria-hidden="true">
+            <circle class="gauge-track" cx="95" cy="95" r="78"/>
+            <circle class="gauge-arc" cx="95" cy="95" r="78" stroke-dasharray="367.6 490.1" stroke-dashoffset="0"/>
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-num"><b>6</b>/8</div>
+            <div class="gauge-lab">Screens online</div>
+          </div>
+        </div>
+        <div class="gauge-foot">
+          <div class="gauge-alert">
+            <span class="dot off" aria-hidden="true"></span>
+            <span><b>Conference Room B</b> offline · 3h</span>
+          </div>
+          <div class="gauge-alert">
+            <span class="dot off" aria-hidden="true"></span>
+            <span><b>Entrance Poster</b> offline · 2d</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI stack -->
+      <div class="kpi-stack">
+        <div class="card kpi">
+          <div class="eyebrow">Content <span class="sl">//</span> library</div>
+          <div class="big-num">12</div>
+          <div class="sub"><em>9 active</em> · 3 inactive</div>
+        </div>
+        <div class="card kpi">
+          <div class="eyebrow">Schedule <span class="sl">//</span> modes</div>
+          <div class="big-num">7<span style="color:var(--muted)">L</span>·3<span style="color:var(--muted)">S</span>·2<span style="color:var(--muted)">M</span></div>
+          <div class="sub">7 Loop · 3 Scheduled · 2 Manual</div>
+        </div>
+        <div class="card kpi">
+          <div class="eyebrow">Storage <span class="sl">//</span> media</div>
+          <div class="big-num">1.9<span style="font-size:16px;color:var(--muted)"> GB</span></div>
+          <div class="sub">across <em>14 files</em></div>
+        </div>
+      </div>
+
+      <!-- player URL + 24h sparkline -->
+      <div class="col-gap">
+        <div class="card card-pad player-card">
+          <div>
+            <div class="eyebrow">TV player <span class="sl">//</span> point any screen here</div>
+            <h2 style="margin-top:6px">Player endpoint</h2>
+          </div>
+          <div class="url-box">
+            <code>http://192.168.1.24:8080/tv/player</code>
+            <button class="btn primary sm" id="open-preview">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="9 7 17 7 17 15"/></svg>
+              Open Preview
+            </button>
+          </div>
+          <div class="hint" id="preview-hint">Opens the live player in your browser — exactly what your TVs render.</div>
+        </div>
+
+        <div class="card spark-card">
+          <div class="spark-head">
+            <div class="eyebrow">Fleet online <span class="sl">//</span> 24h</div>
+            <div class="mono" style="font-size:11px;color:var(--muted)">avg 6.9 · now <span style="color:var(--accent)">6</span></div>
+          </div>
+          <svg class="spark-svg" viewBox="0 0 300 64" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="sparkgrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3E63DD" stop-opacity="0.14"/>
+                <stop offset="1" stop-color="#3E63DD" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <polygon class="spark-fill" points="0,22 91,22 91,40 104,40 104,22 273,22 273,40 300,40 300,64 0,64"/>
+            <polyline class="spark-line" points="0,22 91,22 91,40 104,40 104,22 273,22 273,40 300,40"/>
+            <circle cx="300" cy="40" r="2.5" fill="#3E63DD"/>
+          </svg>
+          <svg width="100%" height="12" viewBox="0 0 300 12" preserveAspectRatio="none" aria-hidden="true">
+            <text class="spark-axis" x="0" y="10">-24H</text>
+            <text class="spark-axis" x="143" y="10">-12H</text>
+            <text class="spark-axis" x="281" y="10">NOW</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-bottom">
+      <!-- recent content -->
+      <div class="card list-card">
+        <div class="eyebrow">Library <span class="sl">//</span> recent</div>
+        <h2>Recent content</h2>
+        <div class="rowline">
+          <span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><polygon points="10 9 15 12 10 15"/></svg></span>
+          <span class="grow"><span class="name">Product Reel</span><div class="meta">Video · 90s · Loop</div></span>
+          <span class="pill on">Active</span>
+        </div>
+        <div class="rowline">
+          <span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-5-5-8 8"/></svg></span>
+          <span class="grow"><span class="name">Menu Board — Lunch</span><div class="meta">Image · 30s · Daily 11:00–14:00</div></span>
+          <span class="pill on">Active</span>
+        </div>
+        <div class="rowline">
+          <span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-5-5-8 8"/></svg></span>
+          <span class="grow"><span class="name">Careers Banner</span><div class="meta">Image · 20s · Loop</div></span>
+          <span class="pill inactive">Off</span>
+        </div>
+        <div class="rowline">
+          <span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 7 3 12 8 17"/><polyline points="16 7 21 12 16 17"/></svg></span>
+          <span class="grow"><span class="name">Company News</span><div class="meta">HTML · 25s · Loop</div></span>
+          <span class="pill on">Active</span>
+        </div>
+        <div class="rowline">
+          <span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="17" y2="17"/></svg></span>
+          <span class="grow"><span class="name">Safety Notice</span><div class="meta">Text · 20s · Manual</div></span>
+          <span class="pill on">Active</span>
+        </div>
+      </div>
+
+      <!-- device overview -->
+      <div class="card list-card">
+        <div class="eyebrow">Devices <span class="sl">//</span> status</div>
+        <h2>Fleet overview</h2>
+        <div class="dev-mini"><span class="dot on" aria-hidden="true"></span><span class="nm">Lobby TV</span><span class="np">Welcome Loop</span><span class="up">99.8%</span></div>
+        <div class="dev-mini"><span class="dot on" aria-hidden="true"></span><span class="nm">Reception Screen</span><span class="np">Announcements</span><span class="up">99.2%</span></div>
+        <div class="dev-mini"><span class="dot on" aria-hidden="true"></span><span class="nm">Showroom Wall</span><span class="np">Summer Promo</span><span class="up">98.7%</span></div>
+        <div class="dev-mini"><span class="dot on" aria-hidden="true"></span><span class="nm">Cafeteria Display</span><span class="np">Menu Board — Lunch</span><span class="up">99.5%</span></div>
+        <div class="dev-mini"><span class="dot on" aria-hidden="true"></span><span class="nm">Conference Room A</span><span class="np">Company News</span><span class="up">97.9%</span></div>
+        <div class="dev-mini"><span class="dot off" aria-hidden="true"></span><span class="nm" style="color:var(--muted)">Conference Room B</span><span class="np">Offline · 3h</span><span class="up">94.1%</span></div>
+        <div class="dev-mini"><span class="dot on" aria-hidden="true"></span><span class="nm">Warehouse Floor</span><span class="np">Safety Notice</span><span class="up">99.9%</span></div>
+        <div class="dev-mini"><span class="dot off" aria-hidden="true"></span><span class="nm" style="color:var(--muted)">Entrance Poster</span><span class="np">Offline · 2d</span><span class="up">76.3%</span></div>
+      </div>
+
+      <!-- activity feed -->
+      <div class="card list-card">
+        <div class="eyebrow">Telemetry <span class="sl">//</span> recent activity</div>
+        <h2>Activity</h2>
+        <div class="rowline">
+          <span class="act-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg></span>
+          <span class="grow"><span class="name">Pushed Menu Board — Lunch</span><div class="meta">to Cafeteria Display</div></span>
+          <span class="when">12m ago</span>
+        </div>
+        <div class="rowline">
+          <span class="act-ico off-i" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><line x1="6.5" y1="6.5" x2="17.5" y2="17.5"/></svg></span>
+          <span class="grow"><span class="name">Conference Room B went offline</span><div class="meta">last heartbeat 192.168.1.62</div></span>
+          <span class="when">3h ago</span>
+        </div>
+        <div class="rowline">
+          <span class="act-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          <span class="grow"><span class="name">Added Product Reel</span><div class="meta">to Morning Rotation</div></span>
+          <span class="when">5h ago</span>
+        </div>
+        <div class="rowline">
+          <span class="act-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/></svg></span>
+          <span class="grow"><span class="name">Paired new screen</span><div class="meta">Warehouse Floor · webOS</div></span>
+          <span class="when">yesterday</span>
+        </div>
+        <div class="rowline">
+          <span class="act-ico warn-i" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 3 14.7 8.6 20.8 9.4 16.4 13.7 17.5 19.8 12 16.9 6.5 19.8 7.6 13.7 3.2 9.4 9.3 8.6"/></svg></span>
+          <span class="grow"><span class="name">House Default set as default</span><div class="meta">template applies to new screens</div></span>
+          <span class="when">2d ago</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONTENT LIBRARY ============ -->
+  <section class="view" data-view="library" aria-label="Content Library">
+    <div class="view-head">
+      <div>
+        <div class="eyebrow">Library <span class="sl">//</span> 12 items · 9 active</div>
+        <h1>Content Library</h1>
+      </div>
+      <div class="head-actions">
+        <span class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+          <input class="search" type="search" placeholder="Search content…" aria-label="Search content">
+        </span>
+        <button class="btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Content
+        </button>
+      </div>
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:10px">Projects <span class="sl">//</span> 2 playlists</div>
+    <div class="playlists">
+      <div class="card pl-card">
+        <div class="pl-head">
+          <div class="pl-title">
+            <span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 2 21 6 17 10"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><polyline points="7 22 3 18 7 14"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg></span>
+            <h2>Morning Rotation</h2>
+          </div>
+          <span class="pill on">Active</span>
+        </div>
+        <div class="pl-meta">5 items · Loop · runs until replaced</div>
+        <div class="pl-chips">
+          <span class="chip">Welcome Loop</span><span class="chip">Announcements</span><span class="chip">Weather Widget</span><span class="chip">Company News</span><span class="chip">Product Reel</span>
+        </div>
+      </div>
+      <div class="card pl-card">
+        <div class="pl-head">
+          <div class="pl-title">
+            <span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><polyline points="12 7 12 12 15.5 14"/></svg></span>
+            <h2>Lunch Takeover</h2>
+          </div>
+          <span class="pill on">Active</span>
+        </div>
+        <div class="pl-meta">3 items · Scheduled 11:00–14:00 · takes over subscribed screens</div>
+        <div class="pl-chips">
+          <span class="chip">Menu Board — Lunch</span><span class="chip">Visitor Wi-Fi</span><span class="chip">Summer Promo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:10px">All content <span class="sl">//</span> 7 Loop · 3 Scheduled · 2 Manual</div>
+    <div class="card lib-table">
+      <div class="lib-row hdr" aria-hidden="true">
+        <span>Name</span><span>Type</span><span>Duration</span><span>Schedule</span><span>State</span><span></span>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><polygon points="10 9 15 12 10 15"/></svg></span><b>Welcome Loop</b></span>
+        <span class="lib-type">Video</span><span class="lib-dur">45s</span><span class="lib-sched">Loop</span>
+        <span><span class="pill on">Active</span></span>
+        <button class="row-kebab" aria-label="Welcome Loop options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-5-5-8 8"/></svg></span><b>Summer Promo</b></span>
+        <span class="lib-type">Image</span><span class="lib-dur">20s</span><span class="lib-sched">Scheduled · Mon–Fri 09:00–18:00</span>
+        <span><span class="pill on">Active</span></span>
+        <button class="row-kebab" aria-label="Summer Promo options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-5-5-8 8"/></svg></span><b>Menu Board — Lunch</b></span>
+        <span class="lib-type">Image</span><span class="lib-dur">30s</span><span class="lib-sched">Scheduled · daily 11:00–14:00</span>
+        <span><span class="pill on">Active</span></span>
+        <button class="row-kebab" aria-label="Menu Board options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="15" y2="6"/><line x1="3" y1="10" x2="10" y2="10"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></span><b>Announcements</b></span>
+        <span class="lib-type">Text ticker</span><span class="lib-dur">15s</span><span class="lib-sched">Loop</span>
+        <span><span class="pill on">Active</span></span>
+        <button class="row-kebab" aria-label="Announcements options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 7 3 12 8 17"/><polyline points="16 7 21 12 16 17"/></svg></span><b>Weather Widget</b></span>
+        <span class="lib-type">HTML</span><span class="lib-dur">15s</span><span class="lib-sched">Loop</span>
+        <span><span class="pill on">Active</span></span>
+        <button class="row-kebab" aria-label="Weather Widget options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 7 3 12 8 17"/><polyline points="16 7 21 12 16 17"/></svg></span><b>Company News</b></span>
+        <span class="lib-type">HTML</span><span class="lib-dur">25s</span><span class="lib-sched">Loop</span>
+        <span><span class="pill on">Active</span></span>
+        <button class="row-kebab" aria-label="Company News options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="17" y2="17"/></svg></span><b>Safety Notice</b></span>
+        <span class="lib-type">Text</span><span class="lib-dur">20s</span><span class="lib-sched">Manual · push to screens</span>
+        <span><span class="pill on">Active</span></span>
+        <button class="row-kebab" aria-label="Safety Notice options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><polygon points="10 9 15 12 10 15"/></svg></span><b>Product Reel</b></span>
+        <span class="lib-type">Video</span><span class="lib-dur">90s</span><span class="lib-sched">Loop</span>
+        <span><span class="pill on">Active</span></span>
+        <button class="row-kebab" aria-label="Product Reel options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="17" y2="17"/></svg></span><b>Visitor Wi-Fi</b></span>
+        <span class="lib-type">Text</span><span class="lib-dur">12s</span><span class="lib-sched">Loop</span>
+        <span><span class="pill on">Active</span></span>
+        <button class="row-kebab" aria-label="Visitor Wi-Fi options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-5-5-8 8"/></svg></span><b>Holiday Hours</b></span>
+        <span class="lib-type">Image</span><span class="lib-dur">20s</span><span class="lib-sched">Scheduled · Dec 22 – Jan 2</span>
+        <span><span class="pill inactive">Off</span></span>
+        <button class="row-kebab" aria-label="Holiday Hours options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="17" x2="17" y2="17"/></svg></span><b>Fire Drill Notice</b></span>
+        <span class="lib-type">Text</span><span class="lib-dur">15s</span><span class="lib-sched">Manual · push to screens</span>
+        <span><span class="pill inactive">Off</span></span>
+        <button class="row-kebab" aria-label="Fire Drill Notice options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+      <div class="lib-row">
+        <span class="lib-name"><span class="type-ico" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-5-5-8 8"/></svg></span><b>Careers Banner</b></span>
+        <span class="lib-type">Image</span><span class="lib-dur">20s</span><span class="lib-sched">Loop</span>
+        <span><span class="pill inactive">Off</span></span>
+        <button class="row-kebab" aria-label="Careers Banner options"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TEMPLATES ============ -->
+  <section class="view" data-view="templates" aria-label="Templates">
+    <div class="view-head">
+      <div>
+        <div class="eyebrow">Layouts <span class="sl">//</span> 6 presets · 2 yours</div>
+        <h1>Templates</h1>
+      </div>
+      <div class="head-actions">
+        <button class="btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New template
+        </button>
+      </div>
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:10px">Built-in presets</div>
+    <div class="tpl-grid">
+      <div class="card tpl-card">
+        <div class="tpl-mini" aria-hidden="true"><span class="fill full" style="background:rgba(62,99,221,.42)"></span></div>
+        <div class="tpl-name"><b>Fullscreen</b></div>
+        <div class="tpl-desc">One zone, edge to edge. Your media fills the entire panel.</div>
+      </div>
+      <div class="card tpl-card">
+        <div class="tpl-mini" aria-hidden="true"><span class="fill full" style="background:rgba(62,99,221,.28)"></span><span class="band"></span></div>
+        <div class="tpl-name"><b>Fullscreen + Ticker</b></div>
+        <div class="tpl-desc">Full-bleed media with a scrolling message band pinned to the bottom edge.</div>
+      </div>
+      <div class="card tpl-card">
+        <div class="tpl-mini" aria-hidden="true"><span class="band third"></span></div>
+        <div class="tpl-name"><b>Lower Third</b></div>
+        <div class="tpl-desc">Keeps the screen clear and overlays a band across the bottom third.</div>
+      </div>
+      <div class="card tpl-card">
+        <div class="tpl-mini" aria-hidden="true"><span class="frame"></span><span class="logo-dot"></span></div>
+        <div class="tpl-name"><b>Branded Frame</b></div>
+        <div class="tpl-desc">Wraps every piece of content in your logo and brand frame.</div>
+      </div>
+      <div class="card tpl-card">
+        <div class="tpl-mini" aria-hidden="true"><span class="tline" style="top:36%"></span><span class="tline l2" style="top:52%"></span><span class="tline l3" style="top:66%"></span></div>
+        <div class="tpl-name"><b>Welcome Lobby</b></div>
+        <div class="tpl-desc">Big greeting headline with a rotating second line for visitors.</div>
+      </div>
+      <div class="card tpl-card">
+        <div class="tpl-mini" aria-hidden="true"><span class="pillar pl"></span><span class="pillar pr"></span><span class="pcard"></span></div>
+        <div class="tpl-name"><b>Portrait Poster</b></div>
+        <div class="tpl-desc">9:16 layout for rotated screens — posters, menus, door signs.</div>
+      </div>
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:10px">Your templates</div>
+    <div class="tpl-grid">
+      <div class="card tpl-card">
+        <div class="tpl-mini" aria-hidden="true"><span class="fill full" style="background:rgba(62,99,221,.28)"></span><span class="band"></span></div>
+        <div class="tpl-name"><b>House Default</b> <span class="badge-def">DEFAULT</span></div>
+        <div class="tpl-desc">Based on Fullscreen + Ticker. New screens start with this layout.</div>
+      </div>
+      <div class="card tpl-card">
+        <div class="tpl-mini" aria-hidden="true"><span class="frame" style="border-color:#F2C14E"></span><span class="logo-dot" style="background:#F2C14E"></span></div>
+        <div class="tpl-name"><b>Cafe Menu</b></div>
+        <div class="tpl-desc">Based on Branded Frame. Used by Cafeteria Display for the lunch board.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DEVICES ============ -->
+  <section class="view" data-view="devices" aria-label="Devices">
+    <div class="view-head">
+      <div>
+        <div class="eyebrow">Fleet <span class="sl">//</span> 6 of 8 online · 4 groups</div>
+        <h1>Devices</h1>
+      </div>
+      <div class="head-actions">
+        <button class="btn primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add screen
+        </button>
+      </div>
+    </div>
+
+    <div class="grp-row">
+      <div class="grp-chip"><span class="g-name">Ground Floor</span><span class="g-count"><b>3</b>/3 online</span></div>
+      <div class="grp-chip warn-g"><span class="g-name">Meeting Rooms</span><span class="g-count"><b>1</b>/2 online</span></div>
+      <div class="grp-chip"><span class="g-name">Amenities</span><span class="g-count"><b>1</b>/1 online</span></div>
+      <div class="grp-chip warn-g"><span class="g-name">Ungrouped</span><span class="g-count"><b>1</b>/2 online</span></div>
+    </div>
+
+    <!-- incoming pairing request -->
+    <div class="hail" id="hail" role="status">
+      <span class="hail-ico" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4"/><path d="M7.8 16.2a6 6 0 0 1 0-8.4"/><path d="M19 5a10 10 0 0 1 0 14"/><path d="M5 19A10 10 0 0 1 5 5"/></svg>
+      </span>
+      <div>
+        <div class="eyebrow" style="margin-bottom:2px">Incoming pairing request</div>
+        <div class="hail-code">WXK-742</div>
+        <div class="hail-meta">from <b>192.168.1.87</b> · Android TV · requested 40s ago</div>
+      </div>
+      <div class="hail-count">
+        <div class="cd" id="hail-cd">4:00</div>
+        <div class="cd-lab">expires in</div>
+      </div>
+      <div class="hail-actions">
+        <button class="btn primary" id="hail-approve">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 6"/></svg>
+          Approve &amp; name
+        </button>
+        <button class="btn danger-ghost" id="hail-dismiss">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+          Dismiss
+        </button>
+      </div>
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:10px">Monitoring wall <span class="sl">//</span> click a screen to target it</div>
+    <div class="dev-grid">
+
+      <!-- 1 Lobby TV -->
+      <article class="card device selected" tabindex="0" role="button" aria-pressed="true" aria-label="Lobby TV, online">
+        <i class="bk bk-tl"></i><i class="bk bk-tr"></i><i class="bk bk-bl"></i><i class="bk bk-br"></i>
+        <div class="thumb">
+          <div class="scene sc-welcome"><span class="orb"></span><div class="w1">WELCOME</div><div class="w2">Glad you're here · Lobby</div></div>
+          <span class="now-tag">Now: Welcome Loop</span>
+        </div>
+        <div class="dev-body">
+          <div class="dev-top">
+            <span class="dev-name">Lobby TV</span>
+            <span class="pill on"><span class="live"><span class="dot on"></span></span> Online</span>
+          </div>
+          <div class="dev-sub">Group <span style="color:var(--accent)">//</span> Ground Floor</div>
+          <div class="dev-facts">
+            <div class="fact"><span class="f-lab">Platform</span><span class="f-val">Android TV</span></div>
+            <div class="fact"><span class="f-lab">Player</span><span class="f-val mono">v1.7.0</span></div>
+            <div class="fact"><span class="f-lab">IP address</span><span class="f-val mono">192.168.1.41</span></div>
+            <div class="fact"><span class="f-lab">Last seen</span><span class="f-val">just now</span></div>
+          </div>
+          <div class="dev-foot">
+            <span class="up-read">UPTIME <b>99.8%</b> · 30D</span>
+            <button class="btn sm ghost">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+              Push content
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 2 Reception Screen -->
+      <article class="card device" tabindex="0" role="button" aria-pressed="false" aria-label="Reception Screen, online">
+        <i class="bk bk-tl"></i><i class="bk bk-tr"></i><i class="bk bk-bl"></i><i class="bk bk-br"></i>
+        <div class="thumb">
+          <div class="scene sc-announce">
+            <span class="hl h1"></span><span class="hl h2"></span><span class="hl h3"></span>
+            <div class="tk"><i>TOWN HALL THU 15:00 · NEW BADGE READERS GO LIVE FRIDAY</i></div>
+          </div>
+          <span class="now-tag">Now: Announcements</span>
+        </div>
+        <div class="dev-body">
+          <div class="dev-top">
+            <span class="dev-name">Reception Screen</span>
+            <span class="pill on"><span class="live"><span class="dot on"></span></span> Online</span>
+          </div>
+          <div class="dev-sub">Group <span style="color:var(--accent)">//</span> Ground Floor</div>
+          <div class="dev-facts">
+            <div class="fact"><span class="f-lab">Platform</span><span class="f-val">Android TV</span></div>
+            <div class="fact"><span class="f-lab">Player</span><span class="f-val mono">v1.7.0</span></div>
+            <div class="fact"><span class="f-lab">IP address</span><span class="f-val mono">192.168.1.42</span></div>
+            <div class="fact"><span class="f-lab">Last seen</span><span class="f-val">just now</span></div>
+          </div>
+          <div class="dev-foot">
+            <span class="up-read">UPTIME <b>99.2%</b> · 30D</span>
+            <button class="btn sm ghost">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+              Push content
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 3 Showroom Wall -->
+      <article class="card device" tabindex="0" role="button" aria-pressed="false" aria-label="Showroom Wall, online">
+        <i class="bk bk-tl"></i><i class="bk bk-tr"></i><i class="bk bk-bl"></i><i class="bk bk-br"></i>
+        <div class="thumb">
+          <div class="scene sc-promo"><span class="sun"></span><div class="p1">SUMMER SALE</div><div class="p2">Up to 40% off select lines</div><span class="tag">ENDS AUG 31</span></div>
+          <span class="now-tag">Now: Summer Promo</span>
+        </div>
+        <div class="dev-body">
+          <div class="dev-top">
+            <span class="dev-name">Showroom Wall</span>
+            <span class="pill on"><span class="live"><span class="dot on"></span></span> Online</span>
+          </div>
+          <div class="dev-sub">Group <span style="color:var(--accent)">//</span> Ground Floor</div>
+          <div class="dev-facts">
+            <div class="fact"><span class="f-lab">Platform</span><span class="f-val">Samsung Tizen</span></div>
+            <div class="fact"><span class="f-lab">Player</span><span class="f-val mono">v1.6.2</span></div>
+            <div class="fact"><span class="f-lab">IP address</span><span class="f-val mono">192.168.1.48</span></div>
+            <div class="fact"><span class="f-lab">Last seen</span><span class="f-val">1m ago</span></div>
+          </div>
+          <div class="dev-foot">
+            <span class="up-read">UPTIME <b>98.7%</b> · 30D</span>
+            <button class="btn sm ghost">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+              Push content
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 4 Cafeteria Display -->
+      <article class="card device" tabindex="0" role="button" aria-pressed="false" aria-label="Cafeteria Display, online">
+        <i class="bk bk-tl"></i><i class="bk bk-tr"></i><i class="bk bk-bl"></i><i class="bk bk-br"></i>
+        <div class="thumb">
+          <div class="scene sc-menu">
+            <div class="mt">Today's Lunch</div>
+            <div class="ml m1"><i></i><em>6.50</em></div>
+            <div class="ml m2"><i></i><em>8.00</em></div>
+            <div class="ml m3"><i></i><em>7.25</em></div>
+            <div class="ml m4"><i></i><em>3.50</em></div>
+          </div>
+          <span class="now-tag">Now: Menu Board — Lunch</span>
+        </div>
+        <div class="dev-body">
+          <div class="dev-top">
+            <span class="dev-name">Cafeteria Display</span>
+            <span class="pill on"><span class="live"><span class="dot on"></span></span> Online</span>
+          </div>
+          <div class="dev-sub">Group <span style="color:var(--accent)">//</span> Amenities</div>
+          <div class="dev-facts">
+            <div class="fact"><span class="f-lab">Platform</span><span class="f-val">Fire TV</span></div>
+            <div class="fact"><span class="f-lab">Player</span><span class="f-val mono">v1.7.0</span></div>
+            <div class="fact"><span class="f-lab">IP address</span><span class="f-val mono">192.168.1.55</span></div>
+            <div class="fact"><span class="f-lab">Last seen</span><span class="f-val">just now</span></div>
+          </div>
+          <div class="dev-foot">
+            <span class="up-read">UPTIME <b>99.5%</b> · 30D</span>
+            <button class="btn sm ghost">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+              Push content
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 5 Conference Room A -->
+      <article class="card device" tabindex="0" role="button" aria-pressed="false" aria-label="Conference Room A, online">
+        <i class="bk bk-tl"></i><i class="bk bk-tr"></i><i class="bk bk-bl"></i><i class="bk bk-br"></i>
+        <div class="thumb">
+          <div class="scene sc-news">
+            <span class="nh"></span><span class="nimg"></span>
+            <span class="nb b1"></span><span class="nb b2"></span><span class="nb b3"></span>
+            <div class="nfoot">Company News · Q3</div>
+          </div>
+          <span class="now-tag">Now: Company News</span>
+        </div>
+        <div class="dev-body">
+          <div class="dev-top">
+            <span class="dev-name">Conference Room A</span>
+            <span class="pill on"><span class="live"><span class="dot on"></span></span> Online</span>
+          </div>
+          <div class="dev-sub">Group <span style="color:var(--accent)">//</span> Meeting Rooms</div>
+          <div class="dev-facts">
+            <div class="fact"><span class="f-lab">Platform</span><span class="f-val">Browser</span></div>
+            <div class="fact"><span class="f-lab">Player</span><span class="f-val mono">v1.7.0</span></div>
+            <div class="fact"><span class="f-lab">IP address</span><span class="f-val mono">192.168.1.61</span></div>
+            <div class="fact"><span class="f-lab">Last seen</span><span class="f-val">2m ago</span></div>
+          </div>
+          <div class="dev-foot">
+            <span class="up-read">UPTIME <b>97.9%</b> · 30D</span>
+            <button class="btn sm ghost">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+              Push content
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 6 Conference Room B (offline) -->
+      <article class="card device is-off" tabindex="0" role="button" aria-pressed="false" aria-label="Conference Room B, offline">
+        <i class="bk bk-tl"></i><i class="bk bk-tr"></i><i class="bk bk-bl"></i><i class="bk bk-br"></i>
+        <div class="thumb dead">
+          <div class="scene sc-news">
+            <span class="nh"></span><span class="nimg"></span>
+            <span class="nb b1"></span><span class="nb b2"></span><span class="nb b3"></span>
+            <div class="nfoot">Company News · Q3</div>
+          </div>
+          <div class="nosig"><span class="ns-box">NO SIGNAL</span><span class="ns-sub">LAST FRAME · 3H AGO</span></div>
+        </div>
+        <div class="dev-body">
+          <div class="dev-top">
+            <span class="dev-name" style="color:var(--muted)">Conference Room B</span>
+            <span class="pill offline"><span class="dot off"></span> Offline</span>
+          </div>
+          <div class="dev-sub">Group <span style="color:var(--accent)">//</span> Meeting Rooms</div>
+          <div class="dev-facts">
+            <div class="fact"><span class="f-lab">Platform</span><span class="f-val">Android TV</span></div>
+            <div class="fact"><span class="f-lab">Player</span><span class="f-val mono">v1.6.2</span></div>
+            <div class="fact"><span class="f-lab">IP address</span><span class="f-val mono">192.168.1.62</span></div>
+            <div class="fact"><span class="f-lab">Last seen</span><span class="f-val">3h ago</span></div>
+          </div>
+          <div class="dev-foot">
+            <span class="up-read">UPTIME <b>94.1%</b> · 30D</span>
+            <button class="btn sm ghost">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+              Queue push
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 7 Warehouse Floor -->
+      <article class="card device" tabindex="0" role="button" aria-pressed="false" aria-label="Warehouse Floor, online">
+        <i class="bk bk-tl"></i><i class="bk bk-tr"></i><i class="bk bk-bl"></i><i class="bk bk-br"></i>
+        <div class="thumb">
+          <div class="scene sc-safety">
+            <span class="stripe"></span><span class="scard"></span>
+            <div class="sx">SAFETY NOTICE</div>
+            <span class="sl1"></span><span class="sl2"></span>
+          </div>
+          <span class="now-tag">Now: Safety Notice</span>
+        </div>
+        <div class="dev-body">
+          <div class="dev-top">
+            <span class="dev-name">Warehouse Floor</span>
+            <span class="pill on"><span class="live"><span class="dot on"></span></span> Online</span>
+          </div>
+          <div class="dev-sub">Group <span style="color:var(--accent)">//</span> Ungrouped</div>
+          <div class="dev-facts">
+            <div class="fact"><span class="f-lab">Platform</span><span class="f-val">webOS</span></div>
+            <div class="fact"><span class="f-lab">Player</span><span class="f-val mono">v1.7.0</span></div>
+            <div class="fact"><span class="f-lab">IP address</span><span class="f-val mono">192.168.1.77</span></div>
+            <div class="fact"><span class="f-lab">Last seen</span><span class="f-val">just now</span></div>
+          </div>
+          <div class="dev-foot">
+            <span class="up-read">UPTIME <b>99.9%</b> · 30D</span>
+            <button class="btn sm ghost">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+              Push content
+            </button>
+          </div>
+        </div>
+      </article>
+
+      <!-- 8 Entrance Poster (offline, portrait) -->
+      <article class="card device is-off" tabindex="0" role="button" aria-pressed="false" aria-label="Entrance Poster, offline, portrait screen">
+        <i class="bk bk-tl"></i><i class="bk bk-tr"></i><i class="bk bk-bl"></i><i class="bk bk-br"></i>
+        <div class="thumb dead">
+          <div class="scene sc-portrait">
+            <div class="pframe"><span class="pp1"></span><span class="pp2"></span><span class="pglow"></span></div>
+          </div>
+          <div class="nosig"><span class="ns-box">NO SIGNAL</span><span class="ns-sub">LAST FRAME · 2D AGO</span></div>
+        </div>
+        <div class="dev-body">
+          <div class="dev-top">
+            <span class="dev-name" style="color:var(--muted)">Entrance Poster</span>
+            <span class="pill offline"><span class="dot off"></span> Offline</span>
+          </div>
+          <div class="dev-sub">Group <span style="color:var(--accent)">//</span> Ungrouped · Portrait</div>
+          <div class="dev-facts">
+            <div class="fact"><span class="f-lab">Platform</span><span class="f-val">Android TV</span></div>
+            <div class="fact"><span class="f-lab">Player</span><span class="f-val mono">v1.5.4</span></div>
+            <div class="fact"><span class="f-lab">IP address</span><span class="f-val mono">192.168.1.80</span></div>
+            <div class="fact"><span class="f-lab">Last seen</span><span class="f-val">2d ago</span></div>
+          </div>
+          <div class="dev-foot">
+            <span class="up-read warn-t">UPTIME <b>76.3%</b> · 30D</span>
+            <button class="btn sm ghost">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+              Queue push
+            </button>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="view" data-view="settings" aria-label="Settings">
+    <div class="view-head">
+      <div>
+        <div class="eyebrow">System <span class="sl">//</span> server · pairing · privacy</div>
+        <h1>Settings</h1>
+      </div>
+    </div>
+
+    <div class="set-col">
+      <div class="card set-card">
+        <span class="set-ico" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><circle cx="7" cy="7.5" r="1" fill="currentColor" stroke="none"/><circle cx="7" cy="16.5" r="1" fill="currentColor" stroke="none"/></svg></span>
+        <div class="set-body">
+          <h2>Local server</h2>
+          <p>Serves this console and the TV player to every screen on your network.</p>
+          <div class="mono-line">http://192.168.1.24:8080 · port 8080</div>
+        </div>
+        <div class="set-side"><span class="pill on"><span class="dot on pulse"></span> Running</span></div>
+      </div>
+
+      <div class="card set-card">
+        <span class="set-ico" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/></svg></span>
+        <div class="set-body">
+          <h2>Screen pairing</h2>
+          <p id="pair-copy">Open — new screens on your network join with a code, no approval needed.</p>
+        </div>
+        <div class="set-side">
+          <div class="seg" role="group" aria-label="Pairing mode">
+            <button class="active" data-mode="open" aria-pressed="true">Open</button>
+            <button data-mode="approve" aria-pressed="false">Require approval</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card set-card">
+        <span class="set-ico" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+        <div class="set-body">
+          <h2>TV player setup</h2>
+          <p>On the TV, open the player URL in any browser — the screen pairs itself and appears under Devices.</p>
+          <div class="mono-line">http://192.168.1.24:8080/tv/player</div>
+        </div>
+        <div class="set-side"><button class="btn sm">Copy URL</button></div>
+      </div>
+
+      <div class="card set-card">
+        <span class="set-ico" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/></svg></span>
+        <div class="set-body">
+          <h2>Anonymous usage stats</h2>
+          <p>Share crash reports and feature counts to improve Signage. Never screenshots, never your content.</p>
+        </div>
+        <div class="set-side">
+          <span class="sw-state" id="tele-state">Off</span>
+          <label class="switch">
+            <input type="checkbox" id="tele-toggle" aria-label="Share anonymous usage stats">
+            <span class="sw-track"><span class="sw-knob"></span></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card set-card">
+        <span class="set-ico" aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.5" r="0.8" fill="currentColor" stroke="none"/></svg></span>
+        <div class="set-body">
+          <h2>Signage <span class="mono" style="font-size:13px;color:var(--accent)">v1.7.0</span></h2>
+          <p>Desktop console for the TVs on your local network.</p>
+          <div class="ok-line">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 6"/></svg>
+            You're up to date — last checked today.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </main>
+</div>
+</div>
+
+<script>
+(function(){
+  // ---- view switching ----
+  var navBtns = document.querySelectorAll('.nav-btn');
+  var views = document.querySelectorAll('section.view');
+  function activate(name){
+    views.forEach(function(v){ v.classList.toggle('active', v.getAttribute('data-view') === name); });
+    navBtns.forEach(function(b){
+      var on = b.getAttribute('data-view') === name;
+      b.classList.toggle('active', on);
+      if(on){ b.setAttribute('aria-current','page'); } else { b.removeAttribute('aria-current'); }
+    });
+    document.querySelector('.main').scrollTop = 0;
+  }
+  navBtns.forEach(function(b){
+    b.addEventListener('click', function(){ activate(b.getAttribute('data-view')); });
+  });
+
+  // ---- device targeting (corner brackets) ----
+  var devices = document.querySelectorAll('.device');
+  function target(card){
+    devices.forEach(function(d){
+      var sel = d === card;
+      d.classList.toggle('selected', sel);
+      d.setAttribute('aria-pressed', sel ? 'true' : 'false');
+    });
+  }
+  devices.forEach(function(d){
+    d.addEventListener('click', function(e){
+      if(e.target.closest('button')) return; // let Push content act on its own
+      target(d);
+    });
+    d.addEventListener('keydown', function(e){
+      if((e.key === 'Enter' || e.key === ' ') && e.target === d){
+        e.preventDefault();
+        target(d);
+      }
+    });
+  });
+
+  // ---- pairing request: countdown + approve/dismiss ----
+  var hail = document.getElementById('hail');
+  var cd = document.getElementById('hail-cd');
+  var remaining = 240; // 4:00
+  var timer = setInterval(function(){
+    remaining--;
+    if(remaining <= 0){
+      clearInterval(timer);
+      if(hail){
+        hail.innerHTML = '<div class="hail-meta">Pairing code <b>WXK-742</b> expired. Ask the screen to request a new code.</div>';
+      }
+      return;
+    }
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
+    if(cd){ cd.textContent = m + ':' + (s < 10 ? '0' : '') + s; }
+  }, 1000);
+
+  var approve = document.getElementById('hail-approve');
+  var dismiss = document.getElementById('hail-dismiss');
+  if(approve){
+    approve.addEventListener('click', function(){
+      clearInterval(timer);
+      hail.innerHTML =
+        '<span class="hail-ico" aria-hidden="true" style="background:#E7F6EF;border-color:#CBE9DA">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12.5 9.5 18 20 6"/></svg></span>' +
+        '<div><div class="eyebrow" style="margin-bottom:2px">Pairing approved</div>' +
+        '<div class="hail-meta"><b>WXK-742</b> accepted — the screen appears here as <b>New screen (192.168.1.87)</b> once it checks in. Rename it from its card.</div></div>';
+      hail.style.borderColor = '#CBE9DA';
+      hail.style.background = '#F4FBF7';
+    });
+  }
+  if(dismiss){
+    dismiss.addEventListener('click', function(){
+      clearInterval(timer);
+      hail.innerHTML = '<div class="hail-meta">Request <b>WXK-742</b> dismissed. The screen keeps showing its pairing code until someone approves it.</div>';
+      hail.style.borderColor = 'var(--hairline)';
+      hail.style.background = 'var(--surface)';
+    });
+  }
+
+  // ---- pairing mode segmented control (Settings) ----
+  var segBtns = document.querySelectorAll('.seg button');
+  var pairCopy = document.getElementById('pair-copy');
+  segBtns.forEach(function(b){
+    b.addEventListener('click', function(){
+      segBtns.forEach(function(x){
+        var on = x === b;
+        x.classList.toggle('active', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      if(pairCopy){
+        pairCopy.textContent = b.getAttribute('data-mode') === 'open'
+          ? 'Open — new screens on your network join with a code, no approval needed.'
+          : 'Require approval — every new screen waits for you to approve its code under Devices.';
+      }
+    });
+  });
+
+  // ---- telemetry switch ----
+  var tele = document.getElementById('tele-toggle');
+  var teleState = document.getElementById('tele-state');
+  if(tele){
+    tele.addEventListener('change', function(){
+      teleState.textContent = tele.checked ? 'On' : 'Off';
+    });
+  }
+
+  // ---- open preview (mock affordance) ----
+  var prev = document.getElementById('open-preview');
+  var hint = document.getElementById('preview-hint');
+  if(prev){
+    prev.addEventListener('click', function(){
+      hint.textContent = 'Preview opened in your default browser — this is exactly what your TVs render.';
+      hint.style.color = 'var(--accent)';
+    });
+  }
+})();
+</script>
+</body>
+</html>
