@@ -186,7 +186,7 @@ export default function DesignerPage() {
     }
     const defaults: Record<string, object> = {
       text: { text: 'Text', font: 'inter', fontSize: 48, bold: false, italic: false, underline: false, align: 'left', valign: 'middle', color: '#ffffff', lineHeight: 1.15, letterSpacing: 0, bgColor: null, bgOpacity: 100, radius: 0 },
-      shape: { kind: 'rect', fill: 'var(--accent)', fillOpacity: 100, stroke: null, strokeWidth: 0, radius: 0 },
+      shape: { kind: 'rect', fill: '#3b82f6', fillOpacity: 100, stroke: null, strokeWidth: 0, radius: 0 },
       image: { src: null, fit: 'cover', radius: 0 },
       qr: { data: 'https://example.com', fg: '#000000', bg: '#ffffff' },
       widget: { kind: 'clock', config: {}, font: 'inter', fontSize: 96, bold: false, color: '#ffffff', align: 'center', bgColor: null, bgOpacity: 100, radius: 0 },
@@ -604,7 +604,7 @@ export default function DesignerPage() {
                 position: 'absolute',
                 left: selected.x * scale, top: selected.y * scale,
                 width: selected.w * scale, height: selected.h * scale,
-                border: `2px solid ${selected.locked ? 'var(--text-secondary)' : 'var(--accent)'}`,
+                border: `2px solid ${selected.locked ? '#94a3b8' : 'var(--accent)'}`,
                 pointerEvents: 'none',
                 transform: selected.rotation ? `rotate(${selected.rotation}deg)` : undefined,
               }}>

@@ -22,9 +22,6 @@ export default function DevicesPage() {
   const [content, setContent]   = useState<ContentItem[]>([])
   const [projects, setProjects] = useState<(Project & { items?: ContentItem[] })[]>([])
 
-  // Purely visual: the targeting brackets mark which screen you are looking at
-  // while working across a wall of them. Nothing downstream reads it.
-  const [selectedId, setSelectedId]       = useState<string | null>(null)
   const [pushTarget, setPushTarget]       = useState<PushTarget | null>(null)
   const [pushMode, setPushMode]           = useState<PushMode>('content')
   const [pushContentId, setPushContentId] = useState('')
@@ -281,12 +278,12 @@ export default function DevicesPage() {
       {discoveryInfo && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
-          background: 'var(--ok-tint)', border: '1px solid var(--ok-line)',
+          background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.25)',
           borderRadius: 10, padding: '10px 18px', marginBottom: 20, fontSize: 13,
         }}>
-          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: 'var(--success)', animation: 'pulse 2s infinite', flexShrink: 0 }} />
+          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite', flexShrink: 0 }} />
           <span>
-            Broadcasting on <strong style={{ color: 'var(--ok-text)' }}>{discoveryInfo.ip}:{discoveryInfo.port}</strong>
+            Broadcasting on <strong style={{ color: '#4ade80' }}>{discoveryInfo.ip}:{discoveryInfo.port}</strong>
             {' '}— companion TV apps on the same network will auto-detect this server.
           </span>
           <style>{`@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}`}</style>
@@ -295,7 +292,7 @@ export default function DevicesPage() {
 
       {/* ── Screens waiting to be added ────────────────────────────────────── */}
       {(pending.length > 0 || pairOpen) && (
-        <div className="card" style={{ marginBottom: 20, borderColor: 'var(--accent)' }}>
+        <div className="card" style={{ marginBottom: 20, borderColor: '#3b82f6' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <h2 style={{ margin: 0 }}>Add a screen</h2>
             {pending.length > 0 && (
@@ -482,82 +479,68 @@ export default function DevicesPage() {
           </button>
         </div>
       ) : (
-        <div className="m-wall">
+        <div className="device-list">
           {visibleDevices.map(d => {
             const memberships = (d.groupIds ?? []).map(id => groupsById.get(id)).filter(Boolean) as DeviceGroup[]
-            const isOn = d.status === 'online'
             return (
-              <div
-                key={d.id}
-                className={`m-tile${selectedId === d.id ? ' is-sel' : ''}`}
-                onClick={() => setSelectedId(id => (id === d.id ? null : d.id))}
-              >
-                <span className="m-bl" /><span className="m-br" />
-
-                <div className="m-tile-head">
-                  <span className={`dot ${isOn ? 'dot-green' : 'dot-gray'}`} />
-                  <span className="m-tile-nm">{d.name}</span>
-                  <span className={`badge ${isOn ? 'badge-green' : 'badge-gray'}`}>{d.status}</span>
-                </div>
-
-                <div className="m-chips" style={{ marginBottom: 12 }}>
-                  {d.pairingState === 'paired' && (
-                    <span className="badge badge-green" title="This screen was added with a pairing code">Paired</span>
-                  )}
-                  {d.pairingState === 'unpaired' && (
-                    <span className="badge badge-gray" title="This screen registered itself without a code">Unpaired</span>
-                  )}
-                  {d.pairingState === 'legacy' && (
-                    <span className="badge badge-gray" title="Connected before pairing existed — still trusted">Pre-pairing</span>
-                  )}
-                  {memberships.map(g => (
-                    <span
-                      key={g.id}
-                      title={`In group ${g.name}`}
-                      style={{
-                        fontSize: 11, fontWeight: 500, padding: '2px 9px', borderRadius: 20,
-                        color: g.color, background: `${g.color}1f`, border: `1px solid ${g.color}59`,
-                      }}
-                    >
-                      {g.name}
+              <div key={d.id} className="device-row">
+                <span className="device-icon">📺</span>
+                <div className="device-info">
+                  <div className="device-name" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span className={`dot ${d.status === 'online' ? 'dot-green' : 'dot-gray'}`} />
+                    {d.name}
+                    <span className={`badge ${d.status === 'online' ? 'badge-green' : 'badge-gray'}`} style={{ marginLeft: 4 }}>
+                      {d.status}
                     </span>
-                  ))}
-                </div>
-
-                <dl className="m-facts">
-                  <dt>ID</dt><dd title={d.id}>{d.id.slice(0, 12)}…</dd>
-                  {d.ipAddress && (<><dt>Address</dt><dd>{d.ipAddress}</dd></>)}
-                  {d.platform && (<><dt>Platform</dt><dd>{d.platform}{d.playerVersion ? ` · ${d.playerVersion}` : ''}</dd></>)}
-                  <dt>Last seen</dt><dd>{d.lastSeen ? relTime(d.lastSeen) : 'Never'}</dd>
-                </dl>
-
-                {templates.length > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12 }}>
-                    <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>Template</span>
-                    <select
-                      className="form-select"
-                      value={d.templateId ?? ''}
-                      onClick={e => e.stopPropagation()}
-                      onChange={e => assignTemplate('device', d.id, e.target.value)}
-                      style={{ fontSize: 12, padding: '3px 8px', width: 'auto', minWidth: 160 }}
-                    >
-                      <option value="">Inherit (group or default)</option>
-                      {templates.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}{t.builtin ? ' (built-in)' : ''}</option>
-                      ))}
-                    </select>
+                    {d.pairingState === 'paired' && (
+                      <span className="badge badge-green" title="This screen was added with a pairing code">🔒 Paired</span>
+                    )}
+                    {d.pairingState === 'unpaired' && (
+                      <span className="badge badge-gray" title="This screen registered itself without a code">Unpaired</span>
+                    )}
+                    {d.pairingState === 'legacy' && (
+                      <span className="badge badge-gray" title="Connected before pairing existed — still trusted">Pre-pairing</span>
+                    )}
+                    {memberships.map(g => (
+                      <span
+                        key={g.id}
+                        title={`In group ${g.name}`}
+                        style={{
+                          fontSize: 11, fontWeight: 500, padding: '2px 9px', borderRadius: 20,
+                          color: g.color, background: `${g.color}1f`, border: `1px solid ${g.color}59`,
+                        }}
+                      >
+                        {g.name}
+                      </span>
+                    ))}
                   </div>
-                )}
-
-                <div
-                  className="m-chips"
-                  style={{ marginTop: 14, paddingTop: 13, borderTop: '1px solid var(--hairline)' }}
-                  onClick={e => e.stopPropagation()}
-                >
+                  <div className="device-sub">
+                    ID: {d.id.slice(0, 12)}…
+                    {d.ipAddress ? ` · ${d.ipAddress}` : ''}
+                    {d.lastSeen ? ` · Last seen ${relTime(d.lastSeen)}` : ''}
+                  </div>
+                  {templates.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                      <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>Template</span>
+                      <select
+                        className="form-select"
+                        value={d.templateId ?? ''}
+                        onChange={e => assignTemplate('device', d.id, e.target.value)}
+                        style={{ fontSize: 12, padding: '3px 8px', width: 'auto', minWidth: 160 }}
+                      >
+                        <option value="">Inherit (group or default)</option>
+                        {templates.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}{t.builtin ? ' (built-in)' : ''}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                <div className="device-actions">
                   <button
                     className="btn btn-primary btn-sm"
-                    disabled={!isOn}
-                    title={!isOn ? 'TV must be online to push content' : 'Push content or project to this TV'}
+                    disabled={d.status !== 'online'}
+                    title={d.status !== 'online' ? 'TV must be online to push content' : 'Push content or project to this TV'}
                     onClick={() => openPush({ kind: 'device', device: d })}
                   >
                     Push Content
@@ -614,7 +597,7 @@ export default function DevicesPage() {
                     fontWeight: pushMode === m ? 600 : 400,
                     background: 'transparent', border: 'none', cursor: 'pointer',
                     color: pushMode === m ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    borderBottom: pushMode === m ? '2px solid var(--accent)' : '2px solid transparent',
+                    borderBottom: pushMode === m ? '2px solid #3b82f6' : '2px solid transparent',
                     marginBottom: -1,
                   }}
                 >
@@ -843,7 +826,7 @@ function FilterChip({
   attached?: boolean
   onClick: () => void
 }) {
-  const accent = color ?? 'var(--accent, var(--accent))'
+  const accent = color ?? 'var(--accent, #3b82f6)'
   return (
     <button
       onClick={onClick}
@@ -852,7 +835,7 @@ function FilterChip({
         display: 'inline-flex', alignItems: 'center', gap: 7,
         borderRadius: attached ? '8px 0 0 8px' : 8,
         border: `1px solid ${active ? accent : 'var(--border)'}`,
-        background: active ? `${color ? color + '1f' : 'var(--accent-tint)'}` : 'transparent',
+        background: active ? `${color ? color + '1f' : 'rgba(59,130,246,0.12)'}` : 'transparent',
         color: active ? 'var(--text-primary)' : muted ? 'var(--text-secondary)' : 'var(--text-primary)',
         fontWeight: active ? 600 : 400,
         cursor: 'pointer',

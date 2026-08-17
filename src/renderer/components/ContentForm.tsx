@@ -167,11 +167,11 @@ export default function ContentForm({ serverUrl, item, onSave, onClose }: Props)
         {type === 'text' && (
           <>
             <div style={{
-              background: 'var(--accent-tint)', border: '1px solid var(--accent-line)',
+              background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)',
               borderRadius: 8, padding: '10px 14px', marginBottom: 4, fontSize: 12,
               color: 'var(--text-secondary)',
             }}>
-              Text content always runs as an <strong style={{ color: 'var(--accent)' }}>overlay</strong> — it plays concurrently on top of images, videos, and web pages.
+              Text content always runs as an <strong style={{ color: '#60a5fa' }}>overlay</strong> — it plays concurrently on top of images, videos, and web pages.
             </div>
 
             <div className="form-group">
@@ -197,7 +197,7 @@ export default function ContentForm({ serverUrl, item, onSave, onClose }: Props)
               <input
                 type="range" min={0} max={100} value={overlayOpacity}
                 onChange={e => setOverlayOpacity(Number(e.target.value))}
-                style={{ width: '100%', accentColor: 'var(--accent)' }}
+                style={{ width: '100%', accentColor: '#3b82f6' }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                 <span>Invisible</span><span>Fully visible</span>

@@ -168,8 +168,8 @@ export default function SettingsPage() {
                 style={{
                   display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer',
                   padding: '12px 14px', borderRadius: 8, marginBottom: 8,
-                  border: `1px solid ${settings.pairingMode === mode ? 'var(--accent)' : 'var(--border)'}`,
-                  background: settings.pairingMode === mode ? 'var(--accent-tint)' : 'transparent',
+                  border: `1px solid ${settings.pairingMode === mode ? '#3b82f6' : 'var(--border)'}`,
+                  background: settings.pairingMode === mode ? 'rgba(59,130,246,0.08)' : 'transparent',
                 }}
               >
                 <input
@@ -177,7 +177,7 @@ export default function SettingsPage() {
                   name="pairing-mode"
                   checked={settings.pairingMode === mode}
                   onChange={() => setPairingMode(mode)}
-                  style={{ marginTop: 3, accentColor: 'var(--accent)', cursor: 'pointer' }}
+                  style={{ marginTop: 3, accentColor: '#3b82f6', cursor: 'pointer' }}
                 />
                 <span>
                   <div style={{ fontWeight: 500, fontSize: 14 }}>
@@ -218,7 +218,7 @@ export default function SettingsPage() {
             checked={telemetry?.enabled ?? true}
             onChange={toggleTelemetry}
             disabled={!telemetry}
-            style={{ marginTop: 3, width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }}
+            style={{ marginTop: 3, width: 16, height: 16, accentColor: '#3b82f6', cursor: 'pointer' }}
           />
           <label htmlFor="telemetry-toggle" style={{ cursor: 'pointer' }}>
             <div style={{ fontWeight: 500, fontSize: 14 }}>Share anonymous usage statistics</div>

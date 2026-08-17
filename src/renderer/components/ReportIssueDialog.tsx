@@ -49,7 +49,7 @@ export default function ReportIssueDialog({ version, onClose }: Props) {
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        background: 'var(--bg-primary, var(--bg-primary))',
+        background: 'var(--bg-primary, #0f172a)',
         border: '1px solid var(--border)',
         borderRadius: 14,
         padding: '28px 32px',
@@ -75,7 +75,7 @@ export default function ReportIssueDialog({ version, onClose }: Props) {
             </div>
             <button
               onClick={onClose}
-              style={{ marginTop: 8, padding: '9px 24px', borderRadius: 6, background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary, var(--text-primary))', cursor: 'pointer', fontSize: 13 }}
+              style={{ marginTop: 8, padding: '9px 24px', borderRadius: 6, background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary, #f1f5f9)', cursor: 'pointer', fontSize: 13 }}
             >Close</button>
           </div>
         ) : (
@@ -90,9 +90,9 @@ export default function ReportIssueDialog({ version, onClose }: Props) {
                     onClick={() => setCategory(c.value)}
                     style={{
                       padding: '9px 12px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
-                      border: category === c.value ? '1px solid var(--accent)' : '1px solid var(--border)',
-                      background: category === c.value ? 'var(--accent-tint)' : 'transparent',
-                      color: 'var(--text-primary, var(--text-primary))', textAlign: 'left',
+                      border: category === c.value ? '1px solid #3b82f6' : '1px solid var(--border)',
+                      background: category === c.value ? 'rgba(59,130,246,0.12)' : 'transparent',
+                      color: 'var(--text-primary, #f1f5f9)', textAlign: 'left',
                     }}
                   >
                     {c.label}
@@ -104,7 +104,7 @@ export default function ReportIssueDialog({ version, onClose }: Props) {
             {/* Title */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
-                Title <span style={{ color: 'var(--danger-text)' }}>*</span>
+                Title <span style={{ color: '#f87171' }}>*</span>
               </label>
               <input
                 className="form-input"
@@ -162,7 +162,7 @@ export default function ReportIssueDialog({ version, onClose }: Props) {
                 disabled={!title.trim()}
                 style={{
                   padding: '9px 20px', borderRadius: 6,
-                  background: title.trim() ? 'var(--accent)' : 'var(--border)',
+                  background: title.trim() ? '#3b82f6' : '#334155',
                   border: 'none', color: '#fff', fontWeight: 600, fontSize: 13,
                   cursor: title.trim() ? 'pointer' : 'not-allowed',
                 }}

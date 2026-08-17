@@ -29,8 +29,8 @@ export default function UpdateBanner({ info, onDismiss }: Props) {
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-      background: 'linear-gradient(90deg, #1e3a5f 0%, var(--bg-secondary) 100%)',
-      borderBottom: '1px solid var(--accent)',
+      background: 'linear-gradient(90deg, #1e3a5f 0%, #1e293b 100%)',
+      borderBottom: '1px solid #3b82f6',
       padding: '10px 20px',
       display: 'flex', alignItems: 'center', gap: 12,
       fontSize: 13,
@@ -39,39 +39,39 @@ export default function UpdateBanner({ info, onDismiss }: Props) {
       <div style={{ flex: 1 }}>
         {installing && progress !== null ? (
           <>
-            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
+            <span style={{ color: '#60a5fa', fontWeight: 600 }}>
               Downloading update… {progress}%
             </span>
             <div style={{
               marginTop: 4, height: 3, borderRadius: 2,
-              background: 'var(--border)', overflow: 'hidden',
+              background: '#334155', overflow: 'hidden',
             }}>
               <div style={{
                 height: '100%', borderRadius: 2,
-                background: 'var(--accent)',
+                background: '#3b82f6',
                 width: `${progress}%`,
                 transition: 'width 0.3s',
               }} />
             </div>
           </>
         ) : error ? (
-          <span style={{ color: 'var(--danger-text)' }}>
+          <span style={{ color: '#f87171' }}>
             Update failed: {error} —{' '}
             <a
               onClick={() => window.electronAPI.openReleaseUrl(info.releasePageUrl)}
-              style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline' }}
             >
               download manually
             </a>
           </span>
         ) : (
-          <span style={{ color: 'var(--text-primary)' }}>
-            <span style={{ fontWeight: 600, color: 'var(--accent)' }}>
+          <span style={{ color: '#f1f5f9' }}>
+            <span style={{ fontWeight: 600, color: '#60a5fa' }}>
               Update available: v{info.version}
             </span>
             {' '}— a new version of Signage Manager is ready.
             {info.releaseNotes && (
-              <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--text-secondary)' }}>
+              <span style={{ marginLeft: 8, fontSize: 11, color: '#94a3b8' }}>
                 ({info.releaseNotes.split('\n').filter(Boolean).length} change{info.releaseNotes.split('\n').filter(Boolean).length !== 1 ? 's' : ''})
               </span>
             )}
@@ -85,7 +85,7 @@ export default function UpdateBanner({ info, onDismiss }: Props) {
             onClick={handleInstall}
             style={{
               padding: '6px 16px', borderRadius: 6,
-              background: 'var(--accent)', border: 'none',
+              background: '#3b82f6', border: 'none',
               color: '#fff', fontWeight: 600, fontSize: 12,
               cursor: 'pointer', flexShrink: 0,
             }}
@@ -97,8 +97,8 @@ export default function UpdateBanner({ info, onDismiss }: Props) {
             style={{
               padding: '6px 10px', borderRadius: 6,
               background: 'transparent',
-              border: '1px solid var(--border)',
-              color: 'var(--text-secondary)', fontSize: 12,
+              border: '1px solid #334155',
+              color: '#94a3b8', fontSize: 12,
               cursor: 'pointer', flexShrink: 0,
             }}
           >

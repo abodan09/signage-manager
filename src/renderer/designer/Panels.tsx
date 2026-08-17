@@ -183,8 +183,8 @@ function ShapeButton({ kind, onAdd }: { kind: ShapeKind; onAdd: (p: Partial<Scen
         type: 'shape', kind, fillOpacity: 100,
         w: kind === 'line' ? 600 : 360, h: kind === 'line' ? 16 : 300,
         ...(kind === 'line'
-          ? { fill: null, stroke: 'var(--accent)', strokeWidth: 8 }
-          : { fill: 'var(--accent)' }),
+          ? { fill: null, stroke: '#3b82f6', strokeWidth: 8 }
+          : { fill: '#3b82f6' }),
       } as Partial<SceneElement>)}>
       <svg viewBox="0 0 32 32" width={26} height={26} preserveAspectRatio="none">
         {kind === 'rect' && <rect x={2} y={6} width={28} height={20} rx={3} fill="currentColor" />}
@@ -210,7 +210,7 @@ export function ElementsPanel({ onAdd }: { onAdd: (partial: Partial<SceneElement
         Full-width band
       </button>
       <button className="btn btn-ghost" style={{ width: '100%', marginBottom: 8 }}
-        onClick={() => onAdd({ type: 'shape', kind: 'rect', fill: 'var(--warning)', fillOpacity: 100, w: 260, h: 10, radius: 5 } as Partial<SceneElement>)}>
+        onClick={() => onAdd({ type: 'shape', kind: 'rect', fill: '#f59e0b', fillOpacity: 100, w: 260, h: 10, radius: 5 } as Partial<SceneElement>)}>
         Accent rule
       </button>
       <button className="btn btn-ghost" style={{ width: '100%' }}
@@ -607,7 +607,7 @@ export function LayersPanel({
             style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 6,
               cursor: 'pointer', fontSize: 12,
-              background: selectedId === el.id ? 'var(--accent-tint)' : 'transparent',
+              background: selectedId === el.id ? 'rgba(59,130,246,.15)' : 'transparent',
               border: `1px solid ${selectedId === el.id ? 'var(--accent)' : 'transparent'}`,
             }}>
             <span>{LAYER_ICON[el.type]}</span>

@@ -155,7 +155,7 @@ export default function LayoutsPage() {
                   onClick={() => open(t)}
                   style={{
                     justifyContent: 'space-between', textAlign: 'left',
-                    borderColor: selected?.id === t.id ? 'var(--accent)' : 'var(--border)',
+                    borderColor: selected?.id === t.id ? '#3b82f6' : 'var(--border)',
                   }}
                 >
                   <span>{t.name}</span>
@@ -289,7 +289,7 @@ export default function LayoutsPage() {
                     <input
                       type="range" min={0} max={100} value={draft.theme.bandOpacity}
                       onChange={e => patchTheme({ bandOpacity: Number(e.target.value) })}
-                      style={{ width: '100%', accentColor: 'var(--accent)' }}
+                      style={{ width: '100%', accentColor: '#3b82f6' }}
                     />
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                       Fades the band behind text â€” the words themselves stay fully readable.
@@ -322,7 +322,7 @@ export default function LayoutsPage() {
                           type="checkbox"
                           checked={!!draft.theme[key]}
                           onChange={e => patchTheme({ [key]: e.target.checked } as Partial<Theme>)}
-                          style={{ width: 15, height: 15, accentColor: 'var(--accent)', cursor: 'pointer' }}
+                          style={{ width: 15, height: 15, accentColor: '#3b82f6', cursor: 'pointer' }}
                         />
                         {label}
                       </label>
