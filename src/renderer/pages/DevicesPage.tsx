@@ -22,6 +22,9 @@ export default function DevicesPage() {
   const [content, setContent]   = useState<ContentItem[]>([])
   const [projects, setProjects] = useState<(Project & { items?: ContentItem[] })[]>([])
 
+  // Purely visual: the targeting brackets mark which screen you are looking at
+  // while working across a wall of them. Nothing downstream reads it.
+  const [selectedId, setSelectedId]       = useState<string | null>(null)
   const [pushTarget, setPushTarget]       = useState<PushTarget | null>(null)
   const [pushMode, setPushMode]           = useState<PushMode>('content')
   const [pushContentId, setPushContentId] = useState('')
@@ -479,68 +482,82 @@ export default function DevicesPage() {
           </button>
         </div>
       ) : (
-        <div className="device-list">
+        <div className="m-wall">
           {visibleDevices.map(d => {
             const memberships = (d.groupIds ?? []).map(id => groupsById.get(id)).filter(Boolean) as DeviceGroup[]
+            const isOn = d.status === 'online'
             return (
-              <div key={d.id} className="device-row">
-                <span className="device-icon">📺</span>
-                <div className="device-info">
-                  <div className="device-name" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span className={`dot ${d.status === 'online' ? 'dot-green' : 'dot-gray'}`} />
-                    {d.name}
-                    <span className={`badge ${d.status === 'online' ? 'badge-green' : 'badge-gray'}`} style={{ marginLeft: 4 }}>
-                      {d.status}
-                    </span>
-                    {d.pairingState === 'paired' && (
-                      <span className="badge badge-green" title="This screen was added with a pairing code">🔒 Paired</span>
-                    )}
-                    {d.pairingState === 'unpaired' && (
-                      <span className="badge badge-gray" title="This screen registered itself without a code">Unpaired</span>
-                    )}
-                    {d.pairingState === 'legacy' && (
-                      <span className="badge badge-gray" title="Connected before pairing existed — still trusted">Pre-pairing</span>
-                    )}
-                    {memberships.map(g => (
-                      <span
-                        key={g.id}
-                        title={`In group ${g.name}`}
-                        style={{
-                          fontSize: 11, fontWeight: 500, padding: '2px 9px', borderRadius: 20,
-                          color: g.color, background: `${g.color}1f`, border: `1px solid ${g.color}59`,
-                        }}
-                      >
-                        {g.name}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="device-sub">
-                    ID: {d.id.slice(0, 12)}…
-                    {d.ipAddress ? ` · ${d.ipAddress}` : ''}
-                    {d.lastSeen ? ` · Last seen ${relTime(d.lastSeen)}` : ''}
-                  </div>
-                  {templates.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                      <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>Template</span>
-                      <select
-                        className="form-select"
-                        value={d.templateId ?? ''}
-                        onChange={e => assignTemplate('device', d.id, e.target.value)}
-                        style={{ fontSize: 12, padding: '3px 8px', width: 'auto', minWidth: 160 }}
-                      >
-                        <option value="">Inherit (group or default)</option>
-                        {templates.map(t => (
-                          <option key={t.id} value={t.id}>{t.name}{t.builtin ? ' (built-in)' : ''}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+              <div
+                key={d.id}
+                className={`m-tile${selectedId === d.id ? ' is-sel' : ''}`}
+                onClick={() => setSelectedId(id => (id === d.id ? null : d.id))}
+              >
+                <span className="m-bl" /><span className="m-br" />
+
+                <div className="m-tile-head">
+                  <span className={`dot ${isOn ? 'dot-green' : 'dot-gray'}`} />
+                  <span className="m-tile-nm">{d.name}</span>
+                  <span className={`badge ${isOn ? 'badge-green' : 'badge-gray'}`}>{d.status}</span>
                 </div>
-                <div className="device-actions">
+
+                <div className="m-chips" style={{ marginBottom: 12 }}>
+                  {d.pairingState === 'paired' && (
+                    <span className="badge badge-green" title="This screen was added with a pairing code">Paired</span>
+                  )}
+                  {d.pairingState === 'unpaired' && (
+                    <span className="badge badge-gray" title="This screen registered itself without a code">Unpaired</span>
+                  )}
+                  {d.pairingState === 'legacy' && (
+                    <span className="badge badge-gray" title="Connected before pairing existed — still trusted">Pre-pairing</span>
+                  )}
+                  {memberships.map(g => (
+                    <span
+                      key={g.id}
+                      title={`In group ${g.name}`}
+                      style={{
+                        fontSize: 11, fontWeight: 500, padding: '2px 9px', borderRadius: 20,
+                        color: g.color, background: `${g.color}1f`, border: `1px solid ${g.color}59`,
+                      }}
+                    >
+                      {g.name}
+                    </span>
+                  ))}
+                </div>
+
+                <dl className="m-facts">
+                  <dt>ID</dt><dd title={d.id}>{d.id.slice(0, 12)}…</dd>
+                  {d.ipAddress && (<><dt>Address</dt><dd>{d.ipAddress}</dd></>)}
+                  {d.platform && (<><dt>Platform</dt><dd>{d.platform}{d.playerVersion ? ` · ${d.playerVersion}` : ''}</dd></>)}
+                  <dt>Last seen</dt><dd>{d.lastSeen ? relTime(d.lastSeen) : 'Never'}</dd>
+                </dl>
+
+                {templates.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12 }}>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>Template</span>
+                    <select
+                      className="form-select"
+                      value={d.templateId ?? ''}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => assignTemplate('device', d.id, e.target.value)}
+                      style={{ fontSize: 12, padding: '3px 8px', width: 'auto', minWidth: 160 }}
+                    >
+                      <option value="">Inherit (group or default)</option>
+                      {templates.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}{t.builtin ? ' (built-in)' : ''}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div
+                  className="m-chips"
+                  style={{ marginTop: 14, paddingTop: 13, borderTop: '1px solid var(--hairline)' }}
+                  onClick={e => e.stopPropagation()}
+                >
                   <button
                     className="btn btn-primary btn-sm"
-                    disabled={d.status !== 'online'}
-                    title={d.status !== 'online' ? 'TV must be online to push content' : 'Push content or project to this TV'}
+                    disabled={!isOn}
+                    title={!isOn ? 'TV must be online to push content' : 'Push content or project to this TV'}
                     onClick={() => openPush({ kind: 'device', device: d })}
                   >
                     Push Content

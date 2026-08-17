@@ -60,6 +60,17 @@ const BLANK = (kind: Kind): Partial<Override> => ({
   seconds: kind === 'emergency' ? 1800 : 600,
 })
 
+/* Emergency reads as a hazard triangle, Flash as a bolt. Drawn rather than
+   emoji so they inherit the surrounding colour and sit on the type baseline. */
+function OverrideIcon({ kind, size = 16 }: { kind: Kind; size?: number }) {
+  const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+    strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
+    style: { flexShrink: 0 } }
+  return kind === 'emergency'
+    ? <svg {...p}><path d="M12 4.5 21 19.5H3z" /><path d="M12 10v4" /><circle cx="12" cy="16.8" r=".9" fill="currentColor" stroke="none" /></svg>
+    : <svg {...p}><path d="M13 3 5 13.5h5.5L11 21l8-10.5h-5.5z" /></svg>
+}
+
 function mmss(total: number) {
   const s = Math.max(0, total)
   const h = Math.floor(s / 3600)
@@ -172,7 +183,7 @@ export default function EmergencyPage() {
   }
 
   return (
-    <div className="page">
+    <div>
       <div className="page-header">
         <div className="page-header-left">
           <h1>Emergency & Flash</h1>
@@ -212,9 +223,9 @@ export default function EmergencyPage() {
               display: 'flex', alignItems: 'center', gap: 10,
               fontSize: 13, color: 'var(--text-secondary)', padding: '4px 0',
             }}>
-              <span>{o.kind === 'emergency' ? '🚨' : '⚡'}</span>
+              <span style={{ color: 'var(--danger-text)' }}><OverrideIcon kind={o.kind} /></span>
               <span style={{ flex: 1 }}>{o.name} — {targetSummary(o)}</span>
-              <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+              <span className="m-count">
                 {mmss(Math.max(0, Math.round((Date.parse(o.endsAt ?? '') - Date.now()) / 1000)))} left
               </span>
               <button className="btn btn-ghost btn-sm"
@@ -238,7 +249,9 @@ export default function EmergencyPage() {
           border: '1px dashed var(--border)', borderRadius: 'var(--radius)',
           padding: 32, textAlign: 'center', color: 'var(--text-secondary)',
         }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🚨</div>
+          <div style={{ color: 'var(--hairline-strong)', marginBottom: 10 }}>
+            <OverrideIcon kind="emergency" size={38} />
+          </div>
           <div style={{ marginBottom: 4 }}>No messages prepared yet.</div>
           <div style={{ fontSize: 13 }}>
             The point of these is that they are ready before anything happens. Write them now.
@@ -248,18 +261,15 @@ export default function EmergencyPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
         {list.map(o => (
-          <div key={o.id} className="card" style={{
-            padding: 14,
-            borderColor: o.running ? 'var(--danger)' : undefined,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 18 }}>{o.kind === 'emergency' ? '🚨' : '⚡'}</span>
-              <strong style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {o.name}
-              </strong>
+          <div key={o.id} className={`m-tile${o.running ? ' m-tile-hazard' : ''}`}>
+            <div className="m-tile-head" style={{ marginBottom: 6 }}>
+              <span style={{ color: o.running ? 'var(--danger-text)' : 'var(--muted)' }}>
+                <OverrideIcon kind={o.kind} size={18} />
+              </span>
+              <span className="m-tile-nm">{o.name}</span>
               {o.running && <span className="badge badge-red">LIVE</span>}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
+            <div className="m-eyebrow" style={{ marginBottom: 10, textTransform: 'none', letterSpacing: 0 }}>
               {o.kind === 'emergency' ? 'Emergency' : 'Flash'} · {targetSummary(o)} · {o.deviceCount} screen{o.deviceCount === 1 ? '' : 's'} · {mmss(o.seconds)}
             </div>
             {o.contentKind === 'text' && (
