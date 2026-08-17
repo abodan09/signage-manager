@@ -285,51 +285,75 @@ export default function EmergencyPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
-        {list.map(o => (
-          <div key={o.id} className="card" style={{
-            padding: 14,
-            borderColor: o.running ? 'var(--danger)' : undefined,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 18 }}>{o.kind === 'emergency' ? '🚨' : '⚡'}</span>
-              <strong style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {o.name}
-              </strong>
-              {o.running && <span className="badge badge-red">LIVE</span>}
+      {/* Split by kind, emergencies first. In an incident the operator is
+          reaching for the most serious thing on the page, and should never
+          have to read past a car-park notice to find it. Anything created
+          later sorts itself into the right half by its own kind. */}
+      {([
+        { kind: 'emergency' as const, title: 'Emergency', blurb: 'Take over every screen you point them at, and stay up until they are stood down or time out.' },
+        { kind: 'flash' as const, title: 'Flash', blurb: 'Shorter notices for the things that are inconvenient rather than dangerous.' },
+      ]).map(section => {
+        const items = list.filter(o => o.kind === section.kind)
+        if (!items.length) return null
+        return (
+          <section key={section.kind} style={{ marginBottom: 26 }}>
+            <div style={{
+              display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap',
+              paddingBottom: 8, marginBottom: 12, borderBottom: '1px solid var(--border)',
+            }}>
+              <h2 style={{ margin: 0, fontSize: 15 }}>{section.title}</h2>
+              <span className="badge badge-gray">{items.length}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{section.blurb}</span>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
-              {o.kind === 'emergency' ? 'Emergency' : 'Flash'} · {targetSummary(o)} · {o.deviceCount} screen{o.deviceCount === 1 ? '' : 's'} · {mmss(o.seconds)}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
+              {items.map(o => (
+                <div key={o.id} className="card" style={{
+                  padding: 14,
+                  borderColor: o.running ? 'var(--danger)' : undefined,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 18 }}>{o.kind === 'emergency' ? '🚨' : '⚡'}</span>
+                    <strong style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {o.name}
+                    </strong>
+                    {o.running && <span className="badge badge-red">LIVE</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
+                    {o.kind === 'emergency' ? 'Emergency' : 'Flash'} · {targetSummary(o)} · {o.deviceCount} screen{o.deviceCount === 1 ? '' : 's'} · {mmss(o.seconds)}
+                  </div>
+                  {o.contentKind === 'text' && (
+                    <div style={{
+                      background: o.backgroundColor, color: o.textColor,
+                      borderRadius: 6, padding: '10px 12px', fontSize: 13, fontWeight: 700,
+                      marginBottom: 10, maxHeight: 64, overflow: 'hidden',
+                    }}>{o.text}</div>
+                  )}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {o.running
+                      ? (
+                        <button className="btn btn-ghost btn-sm"
+                          onClick={() => send(`/api/overrides/${o.id}/stand-down`, 'POST', {})}>
+                          Stand down
+                        </button>
+                      )
+                      : (
+                        <button className="btn btn-danger btn-sm" onClick={() => { setConfirming(o); setFlashText(o.text ?? '') }}>
+                          Activate
+                        </button>
+                      )}
+                    <button className="btn btn-ghost btn-sm" onClick={() => setEditing(o)}>Edit</button>
+                    {!o.running && (
+                      <button className="btn btn-ghost btn-sm"
+                        onClick={() => send(`/api/overrides/${o.id}`, 'DELETE')}>Delete</button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-            {o.contentKind === 'text' && (
-              <div style={{
-                background: o.backgroundColor, color: o.textColor,
-                borderRadius: 6, padding: '10px 12px', fontSize: 13, fontWeight: 700,
-                marginBottom: 10, maxHeight: 64, overflow: 'hidden',
-              }}>{o.text}</div>
-            )}
-            <div style={{ display: 'flex', gap: 6 }}>
-              {o.running
-                ? (
-                  <button className="btn btn-ghost btn-sm"
-                    onClick={() => send(`/api/overrides/${o.id}/stand-down`, 'POST', {})}>
-                    Stand down
-                  </button>
-                )
-                : (
-                  <button className="btn btn-danger btn-sm" onClick={() => { setConfirming(o); setFlashText(o.text ?? '') }}>
-                    Activate
-                  </button>
-                )}
-              <button className="btn btn-ghost btn-sm" onClick={() => setEditing(o)}>Edit</button>
-              {!o.running && (
-                <button className="btn btn-ghost btn-sm"
-                  onClick={() => send(`/api/overrides/${o.id}`, 'DELETE')}>Delete</button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+          </section>
+        )
+      })}
 
       {/* Activation asks first, and the question names the blast radius. */}
       {confirming && (
