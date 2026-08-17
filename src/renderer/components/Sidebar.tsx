@@ -8,6 +8,7 @@ const NAV = [
   { to: '/templates', icon: '🎨', label: 'Templates' },
   { to: '/layouts',   icon: '🖥️', label: 'Screen Layouts' },
   { to: '/devices',   icon: '📺', label: 'Devices' },
+  { to: '/emergency', icon: '🚨', label: 'Emergency' },
   { to: '/settings',  icon: '⚙️', label: 'Settings' },
 ]
 

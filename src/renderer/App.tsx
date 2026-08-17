@@ -5,6 +5,7 @@ import AppsPage from './pages/AppsPage'
 import Dashboard from './pages/Dashboard'
 import ContentPage from './pages/ContentPage'
 import DesignerPage from './pages/DesignerPage'
+import EmergencyPage from './pages/EmergencyPage'
 import DevicesPage from './pages/DevicesPage'
 import LayoutsPage from './pages/LayoutsPage'
 import SettingsPage from './pages/SettingsPage'
@@ -259,6 +260,7 @@ export default function App() {
             <Route path="/designer/:id" element={<DesignerPage />} />
             <Route path="/layouts"   element={<LayoutsPage />} />
             <Route path="/devices"   element={<DevicesPage />} />
+            <Route path="/emergency" element={<EmergencyPage />} />
             <Route path="/settings"  element={<SettingsPage />} />
           </Routes>
         </main>
