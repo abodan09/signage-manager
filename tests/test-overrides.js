@@ -191,7 +191,18 @@ const server = app.listen(0, async () => {
   // Whatever was playing keeps playing behind an opaque layer otherwise, and a
   // video carries on decoding.
   check('putting one up tears down what was playing',
-    /layer\.style\.display = 'block';[\s\S]{0,400}hideMainLayers\(\)/.test(player))
+    /layer\.style\.display = 'block';[\s\S]{0,900}hideMainLayers\(\)/.test(player))
+  // Words are measured, not calculated from their length: a formula from the
+  // character count cut the first and last lines off a fire notice.
+  check('the words are fitted by measuring them',
+    /function fitOverrideText/.test(player) && /offsetHeight/.test(player))
+  // And measured only once the layer is visible. A hidden box reports zero for
+  // its size, the fit bails out, and the message is left at the inherited
+  // 16px — which on a 1280-pixel screen is unreadable across a room.
+  check('and only after the layer is on screen',
+    /layer\.style\.display = 'block';[\s\S]{0,700}fitOverrideText\(\)/.test(player))
+  check('a screen that changes shape refits the words',
+    /addEventListener\('resize'[\s\S]{0,140}fitOverrideText/.test(player))
   check('the countdown runs on the screen\'s own clock',
     /secondsRemaining/.test(player) && /setTimeout\(endOverride/.test(player))
   check('the playlist fetch can raise one', /data\.override/.test(player))

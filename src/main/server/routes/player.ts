@@ -495,16 +495,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     } else {
       inner.textContent = String(o.text || '');
       inner.style.color = o.textColor || '#ffffff';
-      /* Sized from the box and the length together: an emergency message is
-         two words or two sentences and both have to be readable across a
-         room. */
-      var len = Math.max(8, String(o.text || '').length);
-      var box = Math.min(window.innerWidth, window.innerHeight * 1.6);
-      inner.style.fontSize = Math.max(18, Math.min(box / 7, box / Math.sqrt(len) * 1.1)) + 'px';
       text.style.display = 'flex';
     }
 
     layer.style.display = 'block';
+    /* Measured after the layer is shown, never before: a hidden box reports
+       zero for its width and height, the fit bails out, and the words are left
+       at whatever the page inherited — which on a fire notice was 16px on a
+       1280-pixel screen. Measured rather than calculated at all, because a
+       formula from the character count cut the first and last lines off. */
+    fitOverrideText();
     /* Whatever was playing keeps playing behind an opaque layer otherwise —
        a video carries on decoding and its sound, if any, carries on. */
     hideMainLayers();
@@ -513,6 +513,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     /* Not showOSD('', 0) — that adds the badge and, with no duration, never
        takes it away again, leaving an empty box over the message. */
     try { qs('#osd').classList.remove('show'); } catch (e) {}
+  }
+
+  /* Shrinks the words until they fit the box they are in. Deliberately its own
+     function so a screen rotated or resized after the message went up refits
+     rather than staying wrong. */
+  function fitOverrideText() {
+    var box = qs('#override-text');
+    var inner = qs('#override-text-inner');
+    if (!box || !inner || box.style.display === 'none') return;
+    var w = box.clientWidth, h = box.clientHeight;
+    if (!w || !h) return;
+    var size = Math.max(14, h * 0.3);
+    var guard = 0;
+    for (;;) {
+      inner.style.fontSize = size + 'px';
+      var fits = inner.offsetHeight <= h * 0.84 && inner.scrollWidth <= w;
+      if (fits || size <= 14 || guard++ >= 90) break;
+      size = Math.max(14, size * 0.94);
+    }
   }
 
   function endOverride() {
@@ -1051,6 +1070,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     if (!currentMainItem || currentMainItem.appInstanceId !== d.instanceId) return;
     clearTimeout(mainTimer);
     nextMain();
+  });
+
+  window.addEventListener('resize', function(){
+    if (overrideIsUp()) fitOverrideText();
   });
 
   // re-check schedule every minute
