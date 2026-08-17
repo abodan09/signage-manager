@@ -15,7 +15,7 @@ const FONTS: Array<{ id: Theme['fontStack']; label: string }> = [
 ]
 const SCALES = [0.75, 1, 1.25, 1.5]
 
-/** Hand-drawn wireframes â€” a generated screenshot would need a headless browser
+/** Hand-drawn wireframes — a generated screenshot would need a headless browser
  *  and would go stale; these never do. */
 function PresetThumb({ preset }: { preset: PresetId }) {
   const box = (x: number, y: number, w: number, h: number, fill: string, key?: string) =>
@@ -80,7 +80,7 @@ export default function LayoutsPage() {
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) { setError(data.error || 'Could not save'); return }
-    setSaved('Saved â€” screens using this layout have been updated.')
+    setSaved('Saved — screens using this layout have been updated.')
     setTimeout(() => setSaved(''), 3500)
     setPreviewNonce(n => n + 1)
     load()
@@ -133,7 +133,7 @@ export default function LayoutsPage() {
       <div className="page-header">
         <div className="page-header-left">
           <h1>Templates</h1>
-          <p className="subtitle">Choose how your content is framed on screen â€” layout, colours, logo and clock</p>
+          <p className="subtitle">Choose how your content is framed on screen — layout, colours, logo and clock</p>
         </div>
       </div>
 
@@ -144,7 +144,7 @@ export default function LayoutsPage() {
             <h2 style={{ fontSize: 15 }}>Your templates</h2>
             {templates.filter(t => !t.builtin).length === 0 && (
               <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 8 }}>
-                None yet â€” start from a layout below.
+                None yet — start from a layout below.
               </p>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
@@ -228,7 +228,7 @@ export default function LayoutsPage() {
                   </div>
                 </div>
 
-                {/* live preview â€” the real player, so it can never drift */}
+                {/* live preview — the real player, so it can never drift */}
                 <div style={{
                   width: '100%', aspectRatio: draft.preset === 'portrait-poster' ? '9 / 16' : '16 / 9',
                   maxHeight: 380, margin: '0 auto', background: '#000',
@@ -242,7 +242,7 @@ export default function LayoutsPage() {
                   />
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8, textAlign: 'center' }}>
-                  Live preview using your real content â€” this is the same player the TVs run.
+                  Live preview using your real content — this is the same player the TVs run.
                 </div>
               </div>
 
@@ -285,14 +285,14 @@ export default function LayoutsPage() {
                   </div>
 
                   <div className="form-group" style={{ marginTop: 14 }}>
-                    <label className="form-label">Text band opacity â€” {draft.theme.bandOpacity}%</label>
+                    <label className="form-label">Text band opacity — {draft.theme.bandOpacity}%</label>
                     <input
                       type="range" min={0} max={100} value={draft.theme.bandOpacity}
                       onChange={e => patchTheme({ bandOpacity: Number(e.target.value) })}
                       style={{ width: '100%', accentColor: '#3b82f6' }}
                     />
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                      Fades the band behind text â€” the words themselves stay fully readable.
+                      Fades the band behind text — the words themselves stay fully readable.
                     </div>
                   </div>
 
@@ -306,7 +306,7 @@ export default function LayoutsPage() {
                     <div className="form-group" style={{ margin: 0 }}>
                       <label className="form-label">Text size</label>
                       <select className="form-select" value={draft.theme.fontScale} onChange={e => patchTheme({ fontScale: Number(e.target.value) })}>
-                        {SCALES.map(s => <option key={s} value={s}>{s === 1 ? 'Normal' : `${s}Ã—`}</option>)}
+                        {SCALES.map(s => <option key={s} value={s}>{s === 1 ? 'Normal' : `${s}×`}</option>)}
                       </select>
                     </div>
                   </div>
