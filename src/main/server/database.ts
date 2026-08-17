@@ -2,7 +2,8 @@ import fs from 'fs'
 import path from 'path'
 import { randomUUID } from 'crypto'
 import type {
-  AppDB, AppSettings, ContentItem, Design, Device, DeviceGroup, InstalledPack, Project, ResolvedTemplate, Template,
+  AppDB, AppSettings, ContentItem, Design, Device, DeviceGroup, InstalledPack, Override,
+  Project, ResolvedTemplate, Template,
 } from './types'
 import type { AppInstance } from './apps/types'
 import { builtinTemplates, DEFAULT_TEMPLATE_ID, isBuiltinId, resolveTemplate } from './templates'
@@ -28,6 +29,7 @@ export class JsonDB {
         if (!raw.designs) raw.designs = []
         if (!raw.installedPacks) raw.installedPacks = []
         if (!raw.appInstances) raw.appInstances = []
+        if (!raw.overrides) raw.overrides = []
         if (!raw.settings) raw.settings = { serverId: randomUUID(), pairingMode: 'open' }
         if (!raw.settings.serverId) raw.settings.serverId = randomUUID()
         if (raw.settings.pairingMode !== 'required') raw.settings.pairingMode = 'open'
@@ -49,7 +51,7 @@ export class JsonDB {
     }
     return {
       content: [], devices: [], projects: [], deviceGroups: [], templates: [], designs: [],
-      installedPacks: [], appInstances: [],
+      installedPacks: [], appInstances: [], overrides: [],
       settings: { serverId: randomUUID(), pairingMode: 'open', defaultTemplateId: DEFAULT_TEMPLATE_ID },
     }
   }
@@ -63,6 +65,34 @@ export class JsonDB {
   }
 
   // ── Content ────────────────────────────────────────────────────────────────
+
+  // ── overrides (emergency / flash) ──────────────────────────────────────────
+
+  getAllOverrides(): Override[] {
+    return [...this.data.overrides]
+  }
+  getOverrideById(id: string): Override | undefined {
+    return this.data.overrides.find(o => o.id === id)
+  }
+  insertOverride(o: Override): Override {
+    this.data.overrides.push(o)
+    this.save()
+    return o
+  }
+  updateOverride(id: string, updates: Partial<Override>): Override | null {
+    const i = this.data.overrides.findIndex(o => o.id === id)
+    if (i < 0) return null
+    this.data.overrides[i] = { ...this.data.overrides[i], ...updates, id }
+    this.save()
+    return this.data.overrides[i]
+  }
+  deleteOverride(id: string): boolean {
+    const i = this.data.overrides.findIndex(o => o.id === id)
+    if (i < 0) return false
+    this.data.overrides.splice(i, 1)
+    this.save()
+    return true
+  }
 
   getAllContent(): ContentItem[] {
     return [...this.data.content].sort((a, b) => a.orderIndex - b.orderIndex)

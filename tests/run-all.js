@@ -30,6 +30,7 @@ const SUITES = [
   ['world clock',        'test-worldclock.js'],
   ['motivational quotes','test-quotes.js'],
   ['countdown & count-up','test-timer.js'],
+  ['emergency & flash',  'test-overrides.js'],
   ['server security',    'test-server-security.js'],
   ['player compat',      'test-player-compat.js'],
 ]

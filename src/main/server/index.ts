@@ -11,6 +11,7 @@ import { createDesignsRouter } from './routes/designs'
 import { createDevicesRouter } from './routes/devices'
 import { createGroupsRouter } from './routes/groups'
 import { createPacksRouter } from './routes/packs'
+import { createOverridesRouter } from './routes/overrides'
 import { createPairRouter } from './routes/pair'
 import { createPlayerRouter } from './routes/player'
 import { createProjectsRouter } from './routes/projects'
@@ -165,6 +166,7 @@ export async function startServer(
   app.use('/api/devices', createDevicesRouter(db, wss, tvClients))
   app.use('/api/groups', createGroupsRouter(db, tvClients))
   app.use('/api/packs', createPacksRouter(db, packs))
+  app.use('/api/overrides', createOverridesRouter(db, tvClients))
   app.use('/api/pair', createPairRouter(db, pairing, tvClients))
   app.use('/api/projects', createProjectsRouter(db, uploadsDir, wss, tvClients))
   app.use('/api/settings', createSettingsRouter(db, tvClients))

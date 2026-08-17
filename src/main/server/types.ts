@@ -419,6 +419,54 @@ export interface InstalledPack {
   installedAt: string
 }
 
+// ── Emergency / Flash overrides ─────────────────────────────────────────────
+
+export type OverrideKind = 'emergency' | 'flash'
+export type OverrideTargetKind = 'all' | 'groups' | 'devices'
+export type OverrideContentKind = 'design' | 'app' | 'image' | 'text'
+
+/** A prepared message and who it goes to. Stored whether or not it is running;
+ *  the point of the feature is that it is ready before it is needed. */
+export interface Override {
+  id: string
+  kind: OverrideKind
+  name: string
+  targetKind: OverrideTargetKind
+  /** Group ids or device ids, per targetKind. Empty when targeting all. */
+  targetIds: string[]
+  contentKind: OverrideContentKind
+  designId?: string
+  appInstanceId?: string
+  imagePath?: string
+  text?: string
+  textColor?: string
+  backgroundColor?: string
+  /** How long an activation runs for, in seconds. */
+  seconds: number
+  /** Set when activated, cleared when stood down. */
+  startedAt?: string
+  endsAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** What a screen is handed — never the targeting, which is none of its
+ *  business, and always a countdown it can run on its own clock. */
+export interface ResolvedOverride {
+  id: string
+  kind: OverrideKind
+  name: string
+  contentKind: OverrideContentKind
+  designId?: string
+  appInstanceId?: string
+  imagePath?: string
+  text?: string
+  textColor?: string
+  backgroundColor?: string
+  endsAt: string
+  secondsRemaining: number
+}
+
 export interface AppDB {
   content: ContentItem[]
   devices: Device[]
@@ -430,5 +478,7 @@ export interface AppDB {
   /** Configured app instances. The type lives in apps/types.ts, next to the
    *  app framework that owns it. */
   appInstances: import('./apps/types').AppInstance[]
+  /** Prepared emergency and flash messages. */
+  overrides: Override[]
   settings: AppSettings
 }

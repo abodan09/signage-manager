@@ -87,6 +87,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 #no-content .icon{font-size:72px;margin-bottom:20px}
 
 /* template chrome */
+/* The override sits above every other layer, including the ticker and the
+   clock. Nothing uses a compositor transform: the layer underneath may still
+   hold a hardware-decoded video, and a transformed layer over the punched hole
+   can blank the picture on a TV. */
+#override-layer{position:absolute;top:0;left:0;right:0;bottom:0;z-index:90;background:#000}
+#override-layer iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;display:none}
+#override-layer img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;display:none}
+#override-text{position:absolute;top:0;left:0;right:0;bottom:0;display:none;
+  align-items:center;justify-content:center;text-align:center;padding:6vh 6vw}
+#override-text-inner{font-weight:700;line-height:1.25;max-width:100%;
+  word-wrap:break-word;overflow-wrap:break-word}
 #logo-layer{position:absolute;display:none;align-items:center;justify-content:flex-start}
 #logo-layer.on{display:flex}
 #logo-layer img{max-width:100%;max-height:100%;object-fit:contain}
@@ -138,6 +149,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 
   <!-- ticker bar -->
   <div id="ticker-layer"><div class="ticker-scroll" id="ticker-text"></div></div>
+
+  <!-- Emergency / flash message. Above everything, including the ticker and
+       the clock: when this is up it is the only thing anybody should read. -->
+  <div id="override-layer" style="display:none">
+    <iframe id="override-frame" src="" allowfullscreen></iframe>
+    <img id="override-img" src="" alt="">
+    <div id="override-text"><div id="override-text-inner"></div></div>
+  </div>
 
   <div id="logo-layer" style="display:none"><img id="logo-img" src="" alt=""></div>
   <div id="clock-layer" style="display:none"><span id="clock-time"></span><span id="clock-date"></span></div>
@@ -427,6 +446,97 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
     qs('#frame').src = '';
   }
 
+  // ── emergency / flash override ─────────────────────────────────────────────
+
+  var overrideId = null;
+  var overrideTimer = null;
+
+  /* The countdown runs on THIS screen's clock, from the seconds the manager
+     sent, never from an end time. A TV's clock is frequently wrong by minutes
+     or years, and the manager may be asleep when the message is due to come
+     off — so a message that could only be ended by an instruction would
+     outlive its emergency. The seconds are refreshed every time the screen
+     asks what to play, so a long message stays honest. */
+  function startOverride(o) {
+    if (!o || !o.id) return;
+    var already = overrideId === o.id;
+    overrideId = o.id;
+
+    clearTimeout(overrideTimer);
+    var secs = Math.max(0, Number(o.secondsRemaining) || 0);
+    if (secs <= 0) { endOverride(); return; }
+    overrideTimer = setTimeout(endOverride, secs * 1000);
+
+    /* Re-pointing an iframe that is already showing the right thing would
+       reload it every time the playlist is re-fetched, so a message with a
+       clock or an animation on it would visibly restart. */
+    if (already && qs('#override-layer').style.display === 'block') return;
+
+    var frame = qs('#override-frame');
+    var img = qs('#override-img');
+    var text = qs('#override-text');
+    var inner = qs('#override-text-inner');
+    frame.style.display = 'none';
+    img.style.display = 'none';
+    text.style.display = 'none';
+
+    var layer = qs('#override-layer');
+    layer.style.background = o.backgroundColor || '#000000';
+
+    if (o.contentKind === 'design' && o.designId) {
+      frame.src = '/tv/scene/' + encodeURIComponent(o.designId);
+      frame.style.display = 'block';
+    } else if (o.contentKind === 'app' && o.appInstanceId) {
+      frame.src = '/tv/app/' + encodeURIComponent(o.appInstanceId);
+      frame.style.display = 'block';
+    } else if (o.contentKind === 'image' && o.imagePath) {
+      img.src = o.imagePath;
+      img.style.display = 'block';
+    } else {
+      inner.textContent = String(o.text || '');
+      inner.style.color = o.textColor || '#ffffff';
+      /* Sized from the box and the length together: an emergency message is
+         two words or two sentences and both have to be readable across a
+         room. */
+      var len = Math.max(8, String(o.text || '').length);
+      var box = Math.min(window.innerWidth, window.innerHeight * 1.6);
+      inner.style.fontSize = Math.max(18, Math.min(box / 7, box / Math.sqrt(len) * 1.1)) + 'px';
+      text.style.display = 'flex';
+    }
+
+    layer.style.display = 'block';
+    /* Whatever was playing keeps playing behind an opaque layer otherwise —
+       a video carries on decoding and its sound, if any, carries on. */
+    hideMainLayers();
+    clearTimeout(mainTimer);
+    clearProgress();
+    /* Not showOSD('', 0) — that adds the badge and, with no duration, never
+       takes it away again, leaving an empty box over the message. */
+    try { qs('#osd').classList.remove('show'); } catch (e) {}
+  }
+
+  function endOverride() {
+    clearTimeout(overrideTimer);
+    overrideTimer = null;
+    if (overrideId === null) return;
+    overrideId = null;
+
+    var frame = qs('#override-frame');
+    frame.src = '';
+    frame.style.display = 'none';
+    qs('#override-img').src = '';
+    qs('#override-img').style.display = 'none';
+    qs('#override-text').style.display = 'none';
+    qs('#override-layer').style.display = 'none';
+
+    /* Back to the playlist from the top rather than from where it was: the
+       playlist may have changed while the message was up, and resuming
+       mid-item would show the tail of something nobody saw the start of. */
+    try { fetchPlaylist(rebuildAndRestart); } catch (e) { rebuildAndRestart(); }
+  }
+
+  function overrideIsUp() { return overrideId !== null; }
+
   function showLayer(id) {
     hideMainLayers();
     var el = qs('#' + id);
@@ -684,6 +794,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
 
   // ── WebSocket ──────────────────────────────────────────────────────────────
 
+  var hasConnectedBefore = false;
+
   function connectWS() {
     var wsUrl = BASE.replace(/^http/, 'ws');
     try { ws = new WebSocket(wsUrl); } catch(e){ setTimeout(connectWS, 5000); return; }
@@ -693,6 +805,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
       if (token) reg.token = token;
       ws.send(JSON.stringify(reg));
       showOSD('Connected', 2500);
+      /* Coming back after a drop, ask what we missed. A message put up — or
+         stood down — while this screen was off the network is exactly the case
+         a push cannot cover, and it is the case that matters most. */
+      if (hasConnectedBefore) fetchPlaylist(overrideIsUp() ? null : rebuildAndRestart);
+      hasConnectedBefore = true;
     };
 
     ws.onmessage = function(evt) {
@@ -707,10 +824,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
           return;
         }
         if (msg.type === 'reload_player') { location.reload(); return; }
+        if (msg.type === 'override_start' && msg.override) { startOverride(msg.override); return; }
+        if (msg.type === 'override_end') { endOverride(); return; }
         if (msg.type === 'template_update' && msg.template) { applyTemplate(msg.template); return; }
         if (msg.template) applyTemplate(msg.template);
+        /* A message is up: the playlist may be re-fetched so it is current for
+           afterwards, but nothing is allowed to draw over the message. */
         if (msg.type === 'playlist_update') {
+          if (overrideIsUp()) { fetchPlaylist(null); return; }
           fetchPlaylist(rebuildAndRestart);
+        } else if (overrideIsUp()) {
+          return;
         } else if (msg.type === 'manual_push' && msg.content) {
           clearTimeout(mainTimer);
           mainIndex = 0;
@@ -747,6 +871,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Ari
           try { applyTemplate(data.template); }
           catch (e) { showOSD('Layout error', 4000); }
         }
+
+        /* The reason this feature can be trusted. A screen that rebooted, was
+           asleep, or simply missed the push learns here that a message is up —
+           and a screen still showing one that has since been stood down learns
+           that too. The seconds are refreshed on every pass, so a long message
+           does not drift. */
+        try {
+          if (data.override) { startOverride(data.override); }
+          else if (overrideIsUp()) { endOverride(); return; }
+        } catch (e) {}
         // The callback runs in its own guard: a throw in here used to land in
         // the .catch below, which re-fetches every 5s — turning any rendering
         // bug into a permanent black screen with a silent request loop.

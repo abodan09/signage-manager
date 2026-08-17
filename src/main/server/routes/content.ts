@@ -5,6 +5,7 @@ import fs from 'fs'
 import { v4 as uuid } from 'uuid'
 import { WebSocketServer, WebSocket } from 'ws'
 import type { JsonDB } from '../database'
+import { activeFor, resolveOverride } from '../overrides'
 import type { ContentItem } from '../types'
 
 export function createContentRouter(
@@ -62,7 +63,19 @@ export function createContentRouter(
     // Presentation is per-screen even though the playlist is not: every device
     // gets the same items wrapped in its own resolved template.
     const deviceId = typeof req.query.deviceId === 'string' ? req.query.deviceId : undefined
-    res.json({ items, template: db.resolveTemplateForDevice(deviceId) })
+
+    /* An emergency or flash message rides along with the playlist rather than
+       living only in the push that announced it. This is the whole reason the
+       feature can be trusted: a screen that was rebooting, asleep, or off the
+       network when the button was pressed finds the message here, the moment
+       it next asks what to play. */
+    const override = activeFor(db, deviceId)
+
+    res.json({
+      items,
+      template: db.resolveTemplateForDevice(deviceId),
+      override: override ? resolveOverride(override) : null,
+    })
   })
 
   // POST /api/content  (multipart for file types, JSON for html/text)
