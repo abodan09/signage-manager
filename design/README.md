@@ -2,12 +2,11 @@
 
 Visual design explorations for the desktop management console. **These are mockups, not the shipping UI** — nothing here is wired to the real server, and the app in `src/renderer/` does not use these styles.
 
-| File | Concept | Covers | Status |
-|---|---|---|---|
-| [`meridian-1.8.html`](meridian-1.8.html) | **Signage Meridian 1.8** | All eight sections | **Current — build against this one** |
-| [`meridian.html`](meridian.html) | Signage Meridian | The old five sections | Superseded, kept for provenance |
+| File | Concept | Covers |
+|---|---|---|
+| [`meridian.html`](meridian.html) | **Signage Meridian** | All eight sections of v1.8.0 |
 
-**Use `meridian-1.8.html`.** The original was drawn against v1.7.0's five-section sidebar, before Apps, Screen Layouts and Emergency existed. It is kept only to show where the direction came from. Building the UI against it would reproduce an app that is a version behind.
+This is the only concept, and it is the one to build against. An earlier draft drawn against v1.7.0's five-section sidebar has been deleted: it predated Apps, Screen Layouts and Emergency, and anything built from it would reproduce an app a version behind.
 
 Open the file directly in a browser. It is fully self-contained: no build step, no network requests, no fonts or scripts to fetch. It uses Windows system fonts (Segoe UI Variable, Consolas) and inline SVG icons only.
 

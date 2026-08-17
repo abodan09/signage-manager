@@ -61,14 +61,21 @@ const NAV: { to: string; icon: ReactElement; label: string }[] = [
 export default function Sidebar() {
   const [serverUrl, setServerUrl] = useState('')
   const [online, setOnline] = useState(false)
+  // A message taking over the walls has to be visible from every page, not just
+  // from Emergency — so the rail carries the flag.
+  const [liveCount, setLiveCount] = useState(0)
 
   useEffect(() => {
     window.electronAPI.getServerUrl().then(url => {
       setServerUrl(url)
-      const check = () =>
+      const check = () => {
         fetch(`${url}/api/health`)
           .then(() => setOnline(true))
           .catch(() => setOnline(false))
+        fetch(`${url}/api/overrides`).then(r => r.json())
+          .then(d => setLiveCount((d.overrides ?? []).filter((o: { running?: boolean }) => o.running).length))
+          .catch(() => setLiveCount(0))
+      }
       check()
       const t = setInterval(check, 5000)
       return () => clearInterval(t)
@@ -107,6 +114,10 @@ export default function Sidebar() {
 
       {/* nav */}
       <nav style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '1.4px',
+          textTransform: 'uppercase', color: 'var(--sb-muted)', padding: '6px 12px 8px',
+        }}>Console</div>
         {NAV.map(n => (
           <NavLink
             key={n.to}
@@ -114,7 +125,10 @@ export default function Sidebar() {
             className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}
           >
             {n.icon}
-            <span>{n.label}</span>
+            <span style={{ flex: 1 }}>{n.label}</span>
+            {n.to === '/emergency' && liveCount > 0 && (
+              <span className="sidebar-live" title={`${liveCount} message${liveCount === 1 ? '' : 's'} on screen now`}>Live</span>
+            )}
           </NavLink>
         ))}
       </nav>
