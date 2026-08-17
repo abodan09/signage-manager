@@ -349,7 +349,7 @@ function EffectsProps({ el, patch }: {
     <>
       <button onClick={() => setOpen(o => !o)}
         style={{
-          background: 'transparent', border: 'none', color: '#60a5fa', cursor: 'pointer',
+          background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer',
           fontSize: 12, padding: '4px 0', marginBottom: 10, width: '100%', textAlign: 'left',
         }}>
         Effects {active > 0 && `(${active})`} {open ? '▾' : '▸'}
@@ -399,7 +399,7 @@ function EffectsProps({ el, patch }: {
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <span className="toggle">
                     <input type="checkbox" checked={!!gradient}
-                      onChange={e => patch({ gradient: e.target.checked ? { from: '#3b82f6', to: '#8b5cf6', angle: 90 } : null })} />
+                      onChange={e => patch({ gradient: e.target.checked ? { from: 'var(--accent)', to: '#8b5cf6', angle: 90 } : null })} />
                     <span className="toggle-slider" />
                   </span>
                   <span style={{ fontSize: 13 }}>Gradient fill</span>

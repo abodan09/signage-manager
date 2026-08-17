@@ -278,12 +278,12 @@ export default function DevicesPage() {
       {discoveryInfo && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
-          background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.25)',
+          background: 'var(--ok-tint)', border: '1px solid var(--ok-line)',
           borderRadius: 10, padding: '10px 18px', marginBottom: 20, fontSize: 13,
         }}>
-          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite', flexShrink: 0 }} />
+          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: 'var(--success)', animation: 'pulse 2s infinite', flexShrink: 0 }} />
           <span>
-            Broadcasting on <strong style={{ color: '#4ade80' }}>{discoveryInfo.ip}:{discoveryInfo.port}</strong>
+            Broadcasting on <strong style={{ color: 'var(--ok-text)' }}>{discoveryInfo.ip}:{discoveryInfo.port}</strong>
             {' '}— companion TV apps on the same network will auto-detect this server.
           </span>
           <style>{`@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}`}</style>
@@ -292,7 +292,7 @@ export default function DevicesPage() {
 
       {/* ── Screens waiting to be added ────────────────────────────────────── */}
       {(pending.length > 0 || pairOpen) && (
-        <div className="card" style={{ marginBottom: 20, borderColor: '#3b82f6' }}>
+        <div className="card" style={{ marginBottom: 20, borderColor: 'var(--accent)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <h2 style={{ margin: 0 }}>Add a screen</h2>
             {pending.length > 0 && (
@@ -597,7 +597,7 @@ export default function DevicesPage() {
                     fontWeight: pushMode === m ? 600 : 400,
                     background: 'transparent', border: 'none', cursor: 'pointer',
                     color: pushMode === m ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    borderBottom: pushMode === m ? '2px solid #3b82f6' : '2px solid transparent',
+                    borderBottom: pushMode === m ? '2px solid var(--accent)' : '2px solid transparent',
                     marginBottom: -1,
                   }}
                 >
@@ -826,7 +826,7 @@ function FilterChip({
   attached?: boolean
   onClick: () => void
 }) {
-  const accent = color ?? 'var(--accent, #3b82f6)'
+  const accent = color ?? 'var(--accent, var(--accent))'
   return (
     <button
       onClick={onClick}
@@ -835,7 +835,7 @@ function FilterChip({
         display: 'inline-flex', alignItems: 'center', gap: 7,
         borderRadius: attached ? '8px 0 0 8px' : 8,
         border: `1px solid ${active ? accent : 'var(--border)'}`,
-        background: active ? `${color ? color + '1f' : 'rgba(59,130,246,0.12)'}` : 'transparent',
+        background: active ? `${color ? color + '1f' : 'var(--accent-tint)'}` : 'transparent',
         color: active ? 'var(--text-primary)' : muted ? 'var(--text-secondary)' : 'var(--text-primary)',
         fontWeight: active ? 600 : 400,
         cursor: 'pointer',

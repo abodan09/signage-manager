@@ -166,14 +166,14 @@ export default function ProjectForm({ serverUrl, project, existingContent, onSav
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '6px 14px', cursor: 'pointer',
-                    background: selectedIds.has(item.id) ? 'rgba(59,130,246,0.12)' : 'transparent',
+                    background: selectedIds.has(item.id) ? 'var(--accent-tint)' : 'transparent',
                   }}
                 >
                   <input
                     type="checkbox"
                     checked={selectedIds.has(item.id)}
                     onChange={() => toggleSelect(item.id)}
-                    style={{ accentColor: '#3b82f6' }}
+                    style={{ accentColor: 'var(--accent)' }}
                   />
                   <span style={{ fontSize: 14 }}>{typeIcon(item.type)} {item.name}</span>
                   <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 'auto' }}>{item.type}</span>
@@ -181,7 +181,7 @@ export default function ProjectForm({ serverUrl, project, existingContent, onSav
               ))}
             </div>
             {selectedIds.size > 0 && (
-              <div style={{ fontSize: 12, color: '#60a5fa', marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 4 }}>
                 {selectedIds.size} item{selectedIds.size !== 1 ? 's' : ''} selected
               </div>
             )}

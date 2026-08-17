@@ -75,7 +75,7 @@ export default function Dashboard() {
           {content.length === 0
             ? <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No content added yet.</div>
             : [...content].slice(-5).reverse().map(c => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(51,65,85,.4)' }}>
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
                 <span>{typeIcon(c.type)}</span>
                 <span style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
                 <span className={`badge ${c.isActive ? 'badge-green' : 'badge-gray'}`}>{c.isActive ? 'Active' : 'Off'}</span>
@@ -90,7 +90,7 @@ export default function Dashboard() {
           {devices.length === 0
             ? <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No TVs registered yet.</div>
             : devices.map(d => (
-              <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(51,65,85,.4)' }}>
+              <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
                 <span className={`dot ${d.status === 'online' ? 'dot-green' : 'dot-gray'}`} />
                 <span style={{ flex: 1, fontSize: 13 }}>{d.name}</span>
                 <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{d.lastSeen ? relTime(d.lastSeen) : 'Never'}</span>

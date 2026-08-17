@@ -253,7 +253,7 @@ function ConnectionField({ serverUrl, field, config }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{
           width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-          background: account ? 'var(--success, #22c55e)' : 'var(--text-secondary)',
+          background: account ? 'var(--success, var(--success))' : 'var(--text-secondary)',
         }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13 }}>
@@ -588,7 +588,7 @@ function Row({ field, config, onChange, serverUrl }: {
   if (field.type === 'note') {
     return (
       <div style={{
-        background: 'rgba(59,130,246,.08)', border: '1px solid var(--border)',
+        background: 'var(--accent-tint)', border: '1px solid var(--border)',
         borderRadius: 'var(--radius)', padding: '10px 12px', marginBottom: 16,
         fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5,
       }}>
@@ -643,7 +643,7 @@ export function AppConfigForm({ fields, config, onChange, serverUrl }: {
           <button
             onClick={() => setShowAdvanced(v => !v)}
             style={{
-              background: 'transparent', border: 'none', color: '#60a5fa', cursor: 'pointer',
+              background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer',
               fontSize: 13, padding: '6px 0', margin: '4px 0 12px', display: 'block', width: '100%', textAlign: 'center',
             }}>
             Advanced {showAdvanced ? '▾' : '▸'}

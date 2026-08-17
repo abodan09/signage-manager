@@ -13,7 +13,7 @@ function Step({ num, title, children }: StepProps) {
     }}>
       <div style={{
         width: 28, height: 28, borderRadius: '50%',
-        background: 'rgba(59,130,246,.15)', color: '#60a5fa',
+        background: 'var(--accent-tint)', color: 'var(--accent)',
         fontSize: 13, fontWeight: 700,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginBottom: 10,
@@ -30,9 +30,9 @@ function Code({ children }: { children: string }) {
   return (
     <code style={{
       display: 'block', marginTop: 8,
-      background: '#0f172a', border: '1px solid var(--border)',
+      background: 'var(--bg-primary)', border: '1px solid var(--border)',
       borderRadius: 6, padding: '7px 10px',
-      fontFamily: 'monospace', fontSize: 12, color: '#60a5fa',
+      fontFamily: 'monospace', fontSize: 12, color: 'var(--accent)',
       wordBreak: 'break-all',
     }}>{children}</code>
   )
@@ -194,7 +194,7 @@ export default function HelpDialog({ onClose }: HelpDialogProps) {
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div style={{
-        background: 'var(--bg-primary, #0f172a)',
+        background: 'var(--bg-primary, var(--bg-primary))',
         border: '1px solid var(--border)',
         borderRadius: 14,
         width: '100%', maxWidth: 900,
@@ -237,9 +237,9 @@ export default function HelpDialog({ onClose }: HelpDialogProps) {
               style={{
                 padding: '8px 16px', borderRadius: '6px 6px 0 0',
                 border: '1px solid var(--border)',
-                borderBottom: tab === t ? '1px solid var(--bg-primary, #0f172a)' : undefined,
-                background: tab === t ? 'var(--bg-primary, #0f172a)' : 'transparent',
-                color: tab === t ? 'var(--text-primary, #f1f5f9)' : 'var(--text-secondary)',
+                borderBottom: tab === t ? '1px solid var(--bg-primary, var(--bg-primary))' : undefined,
+                background: tab === t ? 'var(--bg-primary, var(--bg-primary))' : 'transparent',
+                color: tab === t ? 'var(--text-primary, var(--text-primary))' : 'var(--text-secondary)',
                 fontSize: 13, fontWeight: tab === t ? 600 : 400,
                 cursor: 'pointer', marginBottom: -1,
               }}
@@ -266,7 +266,7 @@ export default function HelpDialog({ onClose }: HelpDialogProps) {
             Download TV apps at{' '}
             <a
               onClick={() => window.electronAPI.openExternal('https://signage.frozenbit.eu')}
-              style={{ color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}
             >
               signage.frozenbit.eu
             </a>
@@ -276,7 +276,7 @@ export default function HelpDialog({ onClose }: HelpDialogProps) {
             style={{
               padding: '7px 20px', borderRadius: 6,
               background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-              color: 'var(--text-primary, #f1f5f9)', fontSize: 13,
+              color: 'var(--text-primary, var(--text-primary))', fontSize: 13,
               cursor: 'pointer',
             }}
           >Close</button>

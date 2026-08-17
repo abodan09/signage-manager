@@ -122,7 +122,7 @@ export default function ContentPage() {
               padding: '10px 22px', fontSize: 14, fontWeight: tab === t ? 600 : 400,
               background: 'transparent', border: 'none', cursor: 'pointer',
               color: tab === t ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderBottom: tab === t ? '2px solid #3b82f6' : '2px solid transparent',
+              borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
               marginBottom: -1, transition: 'color 0.15s',
             }}
           >

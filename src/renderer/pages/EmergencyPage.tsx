@@ -194,7 +194,7 @@ export default function EmergencyPage() {
       {running.length > 0 && (
         <div style={{
           border: '1px solid var(--danger)', borderRadius: 'var(--radius)',
-          background: 'rgba(239,68,68,.10)', padding: 14, marginBottom: 16,
+          background: 'var(--danger-tint)', padding: 14, marginBottom: 16,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <span className="badge badge-red">ON SCREEN NOW</span>
@@ -230,7 +230,7 @@ export default function EmergencyPage() {
         <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>
       )}
       {notice && (
-        <div style={{ color: 'var(--success, #22c55e)', marginBottom: 12 }}>{notice}</div>
+        <div style={{ color: 'var(--success, var(--success))', marginBottom: 12 }}>{notice}</div>
       )}
 
       {!list.length && (

@@ -79,7 +79,7 @@ export function CategoryPicker({
       {source === 'bundled' && (
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
           Offline — showing the categories bundled with this version.{' '}
-          <a onClick={() => load(true)} style={{ color: '#60a5fa', cursor: 'pointer', textDecoration: 'underline' }}>Check again</a>
+          <a onClick={() => load(true)} style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}>Check again</a>
         </div>
       )}
 
@@ -94,7 +94,7 @@ export function CategoryPicker({
             <div key={cat.category} className="card" style={{
               padding: 16,
               borderColor: cat.installed ? 'var(--accent)' : 'var(--border)',
-              background: cat.installed ? 'rgba(59,130,246,.08)' : 'var(--bg-secondary)',
+              background: cat.installed ? 'var(--accent-tint)' : 'var(--bg-secondary)',
               display: 'flex', flexDirection: 'column',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -170,7 +170,7 @@ export function TemplateSetupWizard({ serverUrl, onClose }: { serverUrl: string;
       background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
     }}>
       <div style={{
-        background: 'var(--bg-primary, #0f172a)', border: '1px solid var(--border)', borderRadius: 14,
+        background: 'var(--bg-primary, var(--bg-primary))', border: '1px solid var(--border)', borderRadius: 14,
         width: '100%', maxWidth: 940, maxHeight: '90vh', display: 'flex', flexDirection: 'column',
       }}>
         <div style={{ padding: '24px 28px 16px', borderBottom: '1px solid var(--border)' }}>
