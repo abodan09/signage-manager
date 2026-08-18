@@ -350,6 +350,12 @@ export interface UpdateInfo {
   downloadUrl?: string
   releasePageUrl: string
   releaseNotes?: string
+  /** From the release manifest, checked against the bytes that arrive. */
+  sha512?: string
+  size?: number
+  /** Why the check failed. `available: false` means "up to date" ONLY when
+   *  this is absent — otherwise the check never got an answer. */
+  error?: string
 }
 
 export interface WhatsNew {
@@ -392,7 +398,7 @@ declare global {
       setTelemetryEnabled: (enabled: boolean) => Promise<void>
       checkForUpdates:  () => Promise<UpdateInfo>
       getWhatsNew:      () => Promise<WhatsNew | null>
-      installUpdate:    (url: string) => Promise<void>
+      installUpdate:    (info: UpdateInfo) => Promise<void>
       openReleaseUrl:   (url: string) => Promise<void>
       onMenuEvent:      (cb: (event: string, payload?: any) => void) => void
       onUpdateProgress: (cb: (pct: number) => void) => void

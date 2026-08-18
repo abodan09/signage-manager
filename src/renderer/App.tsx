@@ -87,15 +87,41 @@ function AboutDialog({ version, onClose }: { version: string; onClose: () => voi
 
 function CheckUpdatesDialog({
   onClose,
-}: { onClose: () => void }) {
+  onInstall,
+}: { onClose: () => void; onInstall: (info: UpdateInfo) => void }) {
   const [state, setState] = useState<'checking' | 'up-to-date' | 'available' | 'error'>('checking')
   const [info, setInfo]   = useState<UpdateInfo | null>(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
+    let answered = false
+    // A check that never comes back used to leave this spinner turning for
+    // ever, with no way out but closing the dialog — and every reopen started
+    // another one. Twenty seconds is well past a slow answer and well short of
+    // the operator concluding the app is broken.
+    const watchdog = setTimeout(() => {
+      if (answered) return
+      setError('No response from the update service. Please try again later.')
+      setState('error')
+    }, 20_000)
+
     window.electronAPI.checkForUpdates().then(result => {
+      answered = true
+      clearTimeout(watchdog)
       setInfo(result)
-      setState(result.available ? 'available' : 'up-to-date')
-    }).catch(() => setState('error'))
+      // "Up to date" is only true when the check actually succeeded. Every
+      // failure — a rate limit, a 404, no network — used to arrive here as
+      // available:false and was reported as a green tick.
+      if (result.error) { setError(result.error); setState('error') }
+      else setState(result.available ? 'available' : 'up-to-date')
+    }).catch(err => {
+      answered = true
+      clearTimeout(watchdog)
+      setError(err?.message ? String(err.message) : 'The update check could not be completed.')
+      setState('error')
+    })
+
+    return () => clearTimeout(watchdog)
   }, [])
 
   return (
@@ -159,7 +185,7 @@ function CheckUpdatesDialog({
             <div style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'center' }}>
               {info.downloadUrl && (
                 <button
-                  onClick={() => { onClose(); window.electronAPI.installUpdate(info.downloadUrl!) }}
+                  onClick={() => onInstall(info)}
                   style={{
                     padding: '9px 20px', borderRadius: 6,
                     background: '#3b82f6', border: 'none',
@@ -183,8 +209,17 @@ function CheckUpdatesDialog({
             <div style={{ fontSize: 36 }}>⚠️</div>
             <div style={{ fontWeight: 600 }}>Couldn't check for updates</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-              Check your internet connection or visit the releases page.
+              {error || 'Check your internet connection or visit the releases page.'}
             </div>
+            <button
+              onClick={() => window.electronAPI.openReleaseUrl(
+                info?.releasePageUrl ?? 'https://github.com/abodan09/signage-manager/releases/latest')}
+              style={{
+                padding: '9px 20px', borderRadius: 6,
+                background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                color: 'var(--text-primary, #f1f5f9)', fontSize: 13, cursor: 'pointer',
+              }}
+            >Open releases page</button>
           </>
         )}
         <button
@@ -205,6 +240,9 @@ export default function App() {
   const [showHelp, setShowHelp]                 = useState(false)
   const [showAbout, setShowAbout]               = useState(false)
   const [showCheckUpdate, setShowCheckUpdate]   = useState(false)
+  // Set when the operator presses Update Now in the manual dialog, so the
+  // banner that replaces it starts downloading rather than asking again.
+  const [autoInstall, setAutoInstall]           = useState(false)
   const [showReportIssue, setShowReportIssue]   = useState(false)
   const [version, setVersion]                   = useState('')
   const [serverUrl, setServerUrl]               = useState('')
@@ -249,7 +287,11 @@ export default function App() {
   return (
     <>
       {updateInfo && (
-        <UpdateBanner info={updateInfo} onDismiss={() => setUpdateInfo(null)} />
+        <UpdateBanner
+          info={updateInfo}
+          startImmediately={autoInstall}
+          onDismiss={() => { setUpdateInfo(null); setAutoInstall(false) }}
+        />
       )}
 
       {whatsNew && (
@@ -282,7 +324,16 @@ export default function App() {
       )}
       {showHelp        && <HelpDialog onClose={() => setShowHelp(false)} />}
       {showAbout       && <AboutDialog version={version} onClose={() => setShowAbout(false)} />}
-      {showCheckUpdate && <CheckUpdatesDialog onClose={() => setShowCheckUpdate(false)} />}
+      {showCheckUpdate && (
+        <CheckUpdatesDialog
+          onClose={() => setShowCheckUpdate(false)}
+          // Update Now hands over to the banner instead of closing into
+          // nothing: the progress bar and the error line both live there, so
+          // this path used to download ~78 MB with no sign it was happening
+          // and then quit the app out from under the operator.
+          onInstall={info => { setShowCheckUpdate(false); setAutoInstall(true); setUpdateInfo(info) }}
+        />
+      )}
       {showReportIssue && <ReportIssueDialog version={version} onClose={() => setShowReportIssue(false)} />}
     </>
   )

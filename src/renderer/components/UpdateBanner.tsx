@@ -4,27 +4,41 @@ import type { UpdateInfo } from '../types'
 interface Props {
   info: UpdateInfo
   onDismiss: () => void
+  /** The operator already pressed Update Now in the manual dialog; this banner
+   *  is only here to show them it is happening. */
+  startImmediately?: boolean
 }
 
-export default function UpdateBanner({ info, onDismiss }: Props) {
+export default function UpdateBanner({ info, onDismiss, startImmediately }: Props) {
   const [progress, setProgress] = useState<number | null>(null)
   const [error, setError]       = useState<string | null>(null)
   const [installing, setInstalling] = useState(false)
+  const [showNotes, setShowNotes]   = useState(false)
+  const notes = (info.releaseNotes ?? '').split('\n').map(l => l.trim()).filter(Boolean)
 
   useEffect(() => {
     window.electronAPI.onUpdateProgress(pct => setProgress(pct))
     window.electronAPI.onUpdateError(msg => { setError(msg); setInstalling(false) })
   }, [])
 
-  async function handleInstall() {
+  function handleInstall() {
     if (!info.downloadUrl) {
       window.electronAPI.openReleaseUrl(info.releasePageUrl)
       return
     }
     setInstalling(true)
     setError(null)
-    window.electronAPI.installUpdate(info.downloadUrl)
+    // The whole info object, not just the address: the checksum and length
+    // travel with it so the main process can refuse an installer that did not
+    // arrive intact.
+    window.electronAPI.installUpdate(info)
   }
+
+  useEffect(() => {
+    if (startImmediately && info.downloadUrl && !installing) handleInstall()
+    // Once, on the handover from the manual dialog.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startImmediately])
 
   return (
     <div style={{
@@ -37,10 +51,13 @@ export default function UpdateBanner({ info, onDismiss }: Props) {
     }}>
       <span style={{ fontSize: 16 }}>🔄</span>
       <div style={{ flex: 1 }}>
-        {installing && progress !== null ? (
+        {installing ? (
           <>
             <span style={{ color: '#60a5fa', fontWeight: 600 }}>
-              Downloading update… {progress}%
+              {/* A server that sends no Content-Length gives us no percentage,
+                  and the old banner fell through to "a new version is ready"
+                  with its buttons hidden while 78 MB quietly downloaded. */}
+              {progress === null ? 'Starting download…' : `Downloading update… ${progress}%`}
             </span>
             <div style={{
               marginTop: 4, height: 3, borderRadius: 2,
@@ -49,7 +66,7 @@ export default function UpdateBanner({ info, onDismiss }: Props) {
               <div style={{
                 height: '100%', borderRadius: 2,
                 background: '#3b82f6',
-                width: `${progress}%`,
+                width: `${progress ?? 3}%`,
                 transition: 'width 0.3s',
               }} />
             </div>
@@ -69,7 +86,23 @@ export default function UpdateBanner({ info, onDismiss }: Props) {
             <span style={{ fontWeight: 600, color: '#60a5fa' }}>
               Update available: v{info.version}
             </span>
-            {' '}— a new version of Signage Manager is ready.
+            {/* What is in it, before the operator commits to a download and a
+                restart. The banner is the path most people see and it used to
+                say only "a new version is ready", which is not enough to
+                decide on. Kept to one line so the fixed-height strip the app
+                pads for does not have to change. */}
+            {' '}— {notes.length ? notes.slice(0, 2).join(' · ') : 'a new version of Signage Manager is ready.'}
+            {notes.length > 2 && (
+              <span
+                onClick={() => setShowNotes(v => !v)}
+                style={{ color: '#60a5fa', cursor: 'pointer', marginLeft: 6, textDecoration: 'underline' }}
+              >{showNotes ? 'less' : `+${notes.length - 2} more`}</span>
+            )}
+            {showNotes && (
+              <span style={{ display: 'block', marginTop: 4, color: '#cbd5e1', fontSize: 12 }}>
+                {notes.slice(2).join(' · ')}
+              </span>
+            )}
           </span>
         )}
       </div>

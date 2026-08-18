@@ -28,7 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── updates ─────────────────────────────────────────────────────────────────
   checkForUpdates: (): Promise<UpdateInfo> => ipcRenderer.invoke('updater:check'),
   getWhatsNew:     (): Promise<WhatsNew | null> => ipcRenderer.invoke('updater:whats-new'),
-  installUpdate:   (url: string): Promise<void> => ipcRenderer.invoke('updater:install', url),
+  installUpdate:   (info: UpdateInfo): Promise<void> => ipcRenderer.invoke('updater:install', info),
   openReleaseUrl:  (url: string): Promise<void> => ipcRenderer.invoke('updater:open-url', url),
 
   // ── push from main process ──────────────────────────────────────────────────
