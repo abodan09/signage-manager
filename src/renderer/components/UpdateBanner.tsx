@@ -70,11 +70,6 @@ export default function UpdateBanner({ info, onDismiss }: Props) {
               Update available: v{info.version}
             </span>
             {' '}— a new version of Signage Manager is ready.
-            {info.releaseNotes && (
-              <span style={{ marginLeft: 8, fontSize: 11, color: '#94a3b8' }}>
-                ({info.releaseNotes.split('\n').filter(Boolean).length} change{info.releaseNotes.split('\n').filter(Boolean).length !== 1 ? 's' : ''})
-              </span>
-            )}
           </span>
         )}
       </div>

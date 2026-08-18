@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, shell, Menu, MenuItemConstructorOptions } 
 import path from 'path'
 import { startServer } from './server'
 import { getLocalIP } from './server/discovery'
-import { setupUpdaterIpc, checkForUpdates } from './updater'
+import { setupUpdaterIpc, checkForUpdates, prepareWhatsNew, setupWhatsNewIpc } from './updater'
 import { initTelemetry, track } from './telemetry'
 import { initReporting } from './report'
 
@@ -93,6 +93,8 @@ async function main() {
   ipcMain.handle('get-lan-url', () => `http://${getLocalIP()}:${serverPort}`)
   ipcMain.handle('open-external', (_event, url: string) => shell.openExternal(url))
   initReporting()
+  setupWhatsNewIpc()
+  void prepareWhatsNew()
 
   setupUpdaterIpc(() => mainWindow)
 

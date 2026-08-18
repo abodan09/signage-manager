@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { UpdateInfo } from './updater'
 import type { ReportInput, ReportResult } from './report'
+import type { WhatsNew } from './updater'
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // ── existing ────────────────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // ── updates ─────────────────────────────────────────────────────────────────
   checkForUpdates: (): Promise<UpdateInfo> => ipcRenderer.invoke('updater:check'),
+  getWhatsNew:     (): Promise<WhatsNew | null> => ipcRenderer.invoke('updater:whats-new'),
   installUpdate:   (url: string): Promise<void> => ipcRenderer.invoke('updater:install', url),
   openReleaseUrl:  (url: string): Promise<void> => ipcRenderer.invoke('updater:open-url', url),
 

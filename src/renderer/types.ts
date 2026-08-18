@@ -352,6 +352,13 @@ export interface UpdateInfo {
   releaseNotes?: string
 }
 
+export interface WhatsNew {
+  version: string
+  previousVersion: string
+  notes: string[]
+  releasePageUrl: string
+}
+
 export interface IssueReport {
   category: string
   title: string
@@ -384,6 +391,7 @@ declare global {
       getTelemetryStatus: () => Promise<{ enabled: boolean; installId: string }>
       setTelemetryEnabled: (enabled: boolean) => Promise<void>
       checkForUpdates:  () => Promise<UpdateInfo>
+      getWhatsNew:      () => Promise<WhatsNew | null>
       installUpdate:    (url: string) => Promise<void>
       openReleaseUrl:   (url: string) => Promise<void>
       onMenuEvent:      (cb: (event: string, payload?: any) => void) => void

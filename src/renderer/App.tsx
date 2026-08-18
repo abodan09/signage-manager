@@ -12,9 +12,10 @@ import SettingsPage from './pages/SettingsPage'
 import TemplatesPage from './pages/TemplatesPage'
 import { TemplateSetupWizard } from './components/CategoryPicker'
 import UpdateBanner from './components/UpdateBanner'
+import WhatsNewDialog from './components/WhatsNewDialog'
 import HelpDialog from './components/HelpDialog'
 import ReportIssueDialog from './components/ReportIssueDialog'
-import type { UpdateInfo } from './types'
+import type { WhatsNew, UpdateInfo } from './types'
 
 function AboutDialog({ version, onClose }: { version: string; onClose: () => void }) {
   return (
@@ -208,6 +209,7 @@ export default function App() {
   const [version, setVersion]                   = useState('')
   const [serverUrl, setServerUrl]               = useState('')
   const [showTemplateSetup, setShowTemplateSetup] = useState(false)
+  const [whatsNew, setWhatsNew]                 = useState<WhatsNew | null>(null)
   const location = useLocation()
 
   useEffect(() => {
@@ -227,6 +229,11 @@ export default function App() {
     })
   }, [])
 
+  // First run after an update: say what arrived. The main process decides
+  // whether this run qualifies and hands the notes over exactly once.
+  useEffect(() => {
+    window.electronAPI.getWhatsNew().then(setWhatsNew).catch(() => {})
+  }, [])
   useEffect(() => {
     window.electronAPI.getVersion().then(setVersion)
 
@@ -243,6 +250,10 @@ export default function App() {
     <>
       {updateInfo && (
         <UpdateBanner info={updateInfo} onDismiss={() => setUpdateInfo(null)} />
+      )}
+
+      {whatsNew && (
+        <WhatsNewDialog info={whatsNew} onClose={() => setWhatsNew(null)} />
       )}
 
       <div
