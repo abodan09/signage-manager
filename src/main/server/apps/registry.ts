@@ -13,6 +13,7 @@ import { powerbi } from './powerbi'
 import { qrcode } from './qrcode'
 import { quotes } from './quotes'
 import { sharepoint } from './sharepoint'
+import { socialmix } from './socialmix'
 import { countdown, countup } from './timer'
 import { split } from './split'
 import { weather } from './weather'
@@ -28,6 +29,7 @@ export const APPS: AppDefinition[] = [
   weather,
   canva,
   facebook,
+  socialmix,
   powerbi,
   gslides,
   gcal,

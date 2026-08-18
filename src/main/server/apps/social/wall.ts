@@ -41,6 +41,9 @@ body{background:${t.bg};color:${t.fg}}
 .caption{font-size:${s(20)};line-height:1.5;margin-top:${s(18)};
          transform:translateY(20px);opacity:0;transition:all 600ms ease;
          overflow:hidden;word-wrap:break-word}
+/* A post with no picture is all words, so the words get the room the picture
+   would have had. */
+.caption.big{font-size:${s(34)};line-height:1.45;margin-top:${s(24)}}
 .pane.on .caption{transform:translateY(0);opacity:1}
 
 /* ── wall (masonry, continuous scroll) ── */
@@ -57,6 +60,12 @@ body{background:${t.bg};color:${t.fg}}
 .card .cmeta{font-size:${s(14)};opacity:.7;margin-bottom:${s(8)}}
 .card .cdes{font-size:${s(14)};line-height:1.45;white-space:pre-wrap;word-wrap:break-word;opacity:.92}
 .card .clogo{margin:${s(6)} auto ${s(4)};width:${s(30)};height:${s(30)}}
+/* A card with no picture — a text post, which a mixed feed is full of. The
+   avatar hangs 30px above .meta to straddle the photo's bottom edge, so with
+   no photo to straddle it has to come back into the flow or it is clipped
+   away by the card's own overflow:hidden. */
+.card.nophoto .meta{padding-top:${s(14)}}
+.card.nophoto .cav{position:relative;top:auto}
 
 /* ── bricks (paged tiles) ── */
 #bricks{position:absolute;top:0;left:0;right:0;bottom:0}
@@ -69,6 +78,13 @@ body{background:${t.bg};color:${t.fg}}
             background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.82));
             max-height:55%;overflow:hidden}
 .tile .tname{font-weight:600;font-size:${s(16)};margin-bottom:${s(3)}}
+/* A pictureless tile: the words are the tile, so they get the whole cell
+   rather than a gradient strip along the bottom of an empty box. */
+.tile .ttext{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;
+             align-items:center;padding:${s(18)};font-size:${s(17)};
+             line-height:1.4;overflow:hidden;word-wrap:break-word}
+.tile .tbadge{position:absolute;right:${s(10)};top:${s(10)};
+              width:${s(26)};height:${s(26)};z-index:5}
 
 /* ── scrolling strip (thin split-screen zones) ── */
 #strip{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;overflow:hidden}
@@ -100,13 +116,74 @@ export const IG_GLYPH =
   '<rect x="2" y="2" width="20" height="20" rx="5.5"/>' +
   '<circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none"/></svg>'
 
+export const X_GLYPH =
+  '<svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor" aria-hidden="true">' +
+  '<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835' +
+  'L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'
+
+/** The badge a mixed wall falls back to for a post whose network is unknown.
+ *  Deliberately not any network's mark: borrowing one would label a post as
+ *  something it is not. */
+export const MIX_GLYPH =
+  '<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" ' +
+  'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+  '<circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/>' +
+  '<path d="M8.3 10.8 15.7 6.4"/><path d="M8.3 13.2l7.4 4.4"/></svg>'
+
+/** Which glyph a post wears when a wall is showing more than one network.
+ *  Keyed by Post.platform; a wall with a single source leaves this empty and
+ *  every post keeps the app's own BRAND_SVG. */
+export const PLATFORM_GLYPHS: Record<string, string> = {
+  instagram: IG_GLYPH,
+  facebook: FB_GLYPH,
+  twitter: X_GLYPH,
+}
+
+/** Brand colour per network, so a mixed wall is readable at a glance from
+ *  across a room. X is deliberately absent: its mark is black on light and
+ *  white on dark, which is exactly what inheriting the text colour gives. */
+export const PLATFORM_TINTS: Record<string, string> = {
+  instagram: '#e1306c',
+  facebook: '#1877f2',
+}
+
 export const SOCIAL_WALL_JS = `
 var root = document.getElementById('root');
 var posts = [], profile = {}, idx = 0, mode = CFG.mode, timer = null, raf = null;
 var lastKey = '';
 
-function logoEl(sizePx, css){
-  return '<div class="ig-logo" style="width:' + sizePx + 'px;height:' + sizePx + 'px;' + (css || '') + '">' + BRAND_SVG + '</div>';
+/* A wall fed by one account wears that account's badge on every post. A wall
+   fed by several declares PLATFORM_GLYPHS above this script and each post
+   wears its own network's instead. The typeof guard is what lets both share
+   one file: an app that never declares the map falls through to BRAND_SVG and
+   renders exactly as it did before the map existed. */
+var GLYPHS = (typeof PLATFORM_GLYPHS !== 'undefined') ? PLATFORM_GLYPHS : {};
+var TINTS = (typeof PLATFORM_TINTS !== 'undefined') ? PLATFORM_TINTS : {};
+
+function glyphFor(p){
+  var g = p && p.platform ? GLYPHS[p.platform] : null;
+  return g || BRAND_SVG;
+}
+function tintCss(p){
+  var c = p && p.platform ? TINTS[p.platform] : null;
+  return c ? 'color:' + c + ';' : '';
+}
+function tintStyle(p){
+  var css = tintCss(p);
+  return css ? ' style="' + css + '"' : '';
+}
+
+/* Picture addresses are written into a style attribute and an img src, where
+   esc() is the wrong tool — it would turn a legitimate &amp; in a query string
+   into visible text. What matters here is that a feed cannot end the attribute
+   early, so the characters that would do that are dropped. Any real URL comes
+   through untouched; those characters have to be percent-encoded in one. */
+function safeUrl(u){
+  return String(u == null ? '' : u).replace(/["'\\\\<>]/g, '');
+}
+
+function logoEl(sizePx, css, svg){
+  return '<div class="ig-logo" style="width:' + sizePx + 'px;height:' + sizePx + 'px;' + (css || '') + '">' + (svg || BRAND_SVG) + '</div>';
 }
 function msg(text){ root.innerHTML = '<div id="msg">' + esc(text) + '</div>'; }
 
@@ -132,7 +209,7 @@ function layoutFor(p){
 
 function postHead(p){
   var qr = CFG.qr ? '<div class="qr">' + QR_SVG + '</div>' : '';
-  var av = p.avatar ? 'background-image:url(\\'' + p.avatar + '\\')' : '';
+  var av = p.avatar ? 'background-image:url(\\'' + safeUrl(p.avatar) + '\\')' : '';
   return '<div class="head"><div class="who">' +
     '<div class="avatar" style="' + av + '"></div>' +
     '<div><div class="name">' + esc(p.displayName || p.username) + '</div>' +
@@ -143,22 +220,26 @@ function postHead(p){
 function drawSingle(){
   var p = posts[idx % posts.length];
   if (!p) { msg('Waiting for posts'); return; }
-  var variant = layoutFor(p);
+  var variant = p.image ? layoutFor(p) : 'text';
   var isKiosk = mode === 'kiosk';
   var html = '<div class="pane" id="pane">';
 
-  if (variant === 'col') {
-    html += '<div class="photo" style="left:0;top:0;width:50%;height:100%;background-image:url(\\'' + p.image + '\\')"></div>';
+  if (variant === 'text') {
+    /* Nothing to photograph — the post is the caption, centred and given the
+       whole pane. */
+    html += '<div class="body" style="left:8%;right:8%;top:0;bottom:0;align-items:center">';
+  } else if (variant === 'col') {
+    html += '<div class="photo" style="left:0;top:0;width:50%;height:100%;background-image:url(\\'' + safeUrl(p.image) + '\\')"></div>';
     html += '<div class="scrim" style="background:linear-gradient(to right,rgba(0,0,0,0) 10%,' + CFG.bg + ' 45%)"></div>';
     html += '<div class="body" style="left:50%;right:4%;top:0;bottom:0;align-items:center">';
   } else {
-    html += '<div class="photo" style="left:0;top:0;width:100%;height:60%;background-image:url(\\'' + p.image + '\\')"></div>';
+    html += '<div class="photo" style="left:0;top:0;width:100%;height:60%;background-image:url(\\'' + safeUrl(p.image) + '\\')"></div>';
     html += '<div class="scrim" style="background:linear-gradient(to bottom,rgba(0,0,0,0) 10%,' + CFG.bg + ' 50%)"></div>';
     html += '<div class="body" style="left:8%;right:8%;top:52%;bottom:4%;align-items:flex-start">';
   }
   html += '<div class="inner">' + postHead(p) +
-          '<div class="caption">' + esc(p.caption) + '</div></div></div>';
-  html += logoEl(64, variant === 'col' ? 'right:20px;top:20px' : 'right:20px;bottom:20px');
+          '<div class="caption' + (variant === 'text' ? ' big' : '') + '">' + esc(p.caption) + '</div></div></div>';
+  html += logoEl(64, tintCss(p) + (variant === 'row' ? 'right:20px;bottom:20px' : 'right:20px;top:20px'), glyphFor(p));
   html += '</div>';
   root.innerHTML = html;
 
@@ -191,15 +272,20 @@ function wallColumns(){
 }
 
 function cardHtml(p, wide){
-  var av = p.avatar ? 'background-image:url(\\'' + p.avatar + '\\')' : '';
-  var ratio = (p.w && p.h) ? (p.h / p.w) : 1;
-  var ph = Math.round(wide * ratio);
-  return '<div class="card">' +
-    '<div class="ph" style="height:' + ph + 'px;background-image:url(\\'' + p.image + '\\');background-size:cover;background-position:50%"></div>' +
+  var av = p.avatar ? 'background-image:url(\\'' + safeUrl(p.avatar) + '\\')' : '';
+  /* No picture is a normal post on a mixed wall, not a broken one — draw the
+     words and let the card shrink to them. */
+  var photo = '';
+  if (p.image) {
+    var ratio = (p.w && p.h) ? (p.h / p.w) : 1;
+    photo = '<div class="ph" style="height:' + Math.round(wide * ratio) +
+      'px;background-image:url(\\'' + safeUrl(p.image) + '\\');background-size:cover;background-position:50%"></div>';
+  }
+  return '<div class="card' + (p.image ? '' : ' nophoto') + '">' + photo +
     '<div class="meta"><div class="cav"><div style="' + av + '"></div></div>' +
     '<div class="cname">' + esc(p.displayName || p.username) + '</div>' +
     '<div class="cmeta">@' + esc(p.username) + ' &bull; ' + esc(relTime(p.timestamp)) + '</div>' +
-    '<div class="clogo">' + BRAND_SVG + '</div>' +
+    '<div class="clogo"' + tintStyle(p) + '>' + glyphFor(p) + '</div>' +
     '<div class="cdes">' + esc(p.caption) + '</div></div></div>';
 }
 
@@ -225,8 +311,22 @@ function drawWall(){
     holder.style.marginBottom = gap + 'px';
     holder.innerHTML = cardHtml(p, wide);
     col.appendChild(holder);
-    var ratio = (p.w && p.h) ? (p.h / p.w) : 1;
-    heights[shortest] += Math.round(wide * ratio) + 150 + gap;
+    /* An estimate, not a measurement: reading offsetHeight per card would
+       force a reflow for every one of them, which a TV cannot spare. It only
+       has to be good enough to pick the shortest column — the true loop point
+       is measured once, below.
+
+       A picture post keeps the flat allowance it has always had, so a wall of
+       one account balances exactly as it did. A text post has no picture to
+       measure, so its words are counted instead; without that, a column of
+       them reads as empty and greedily collects the whole feed. */
+    if (p.image) {
+      var ratio = (p.w && p.h) ? (p.h / p.w) : 1;
+      heights[shortest] += Math.round(wide * ratio) + 150 + gap;
+    } else {
+      var perLine = Math.max(12, Math.floor(wide / 8));
+      heights[shortest] += 120 + Math.ceil((p.caption || '').length / perLine) * 20 + gap;
+    }
   }
 
   var wall = document.getElementById('wall');
@@ -274,11 +374,16 @@ function drawBricks(){
     var d = dirs[i % 4];
     var startTf = d === 'isDown' ? 'translateY(-150%)' : d === 'isUp' ? 'translateY(150%)'
       : d === 'isLeft' ? 'translateX(-150%)' : 'translateX(150%)';
+    var face = p.image
+      ? '<div class="tph" style="background-image:url(\\'' + safeUrl(p.image) + '\\')"></div>' +
+        (p.caption ? '<div class="tcap"><div class="tname">@' + esc(p.username) + '</div>' + esc(p.caption) + '</div>' : '')
+      : '<div class="ttext"><div><div class="tname">@' + esc(p.username) + '</div>' + esc(p.caption) + '</div></div>';
+    /* The badge is drawn only where it tells the viewer something they cannot
+       already see: a wall of one account does not need every tile labelled. */
+    var badge = p.platform ? '<div class="tbadge"' + tintStyle(p) + '>' + glyphFor(p) + '</div>' : '';
     html += '<div class="tile" data-i="' + i + '" style="left:' + (gap + cx * (w + gap)) + 'px;top:' + (gap + cy * (h + gap)) +
       'px;width:' + w + 'px;height:' + h + 'px;transform:' + startTf + '">' +
-      '<div class="tph" style="background-image:url(\\'' + p.image + '\\')"></div>' +
-      (p.caption ? '<div class="tcap"><div class="tname">@' + esc(p.username) + '</div>' + esc(p.caption) + '</div>' : '') +
-      '</div>';
+      face + badge + '</div>';
   }
   html += '</div>' + logoEl(46, 'right:18px;top:18px');
   root.innerHTML = html;
@@ -303,7 +408,8 @@ function drawStrip(){
   var html = '<div id="strip"><div id="striprow">';
   for (var i = 0; i < posts.length; i++) {
     var p = posts[i];
-    html += '<span class="sitem"><img src="' + p.image + '" alt=""><b>' + esc(relTime(p.timestamp)) + ':</b> ' + esc(p.caption) + '</span>';
+    html += '<span class="sitem">' + (p.image ? '<img src="' + safeUrl(p.image) + '" alt="">' : '') +
+      '<b>' + esc(relTime(p.timestamp)) + ':</b> ' + esc(p.caption) + '</span>';
   }
   html += '</div></div>';
   root.innerHTML = html;

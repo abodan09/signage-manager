@@ -27,11 +27,15 @@ import type { AppConnection } from '../types'
 
 export type MediaType = 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM'
 
+export type SocialPlatform = 'instagram' | 'facebook' | 'twitter'
+
 export interface Post {
   id: string
   caption: string
   mediaType: MediaType
-  /** Remote URL as fetched. Mirrored to a local path before it reaches a TV. */
+  /** Remote URL as fetched. Mirrored to a local path before it reaches a TV.
+   *  Empty for a text-only post, which every network has and X is mostly
+   *  made of. */
   imageUrl: string
   permalink?: string
   timestamp: string
@@ -40,6 +44,10 @@ export interface Post {
   avatarUrl?: string
   width?: number
   height?: number
+  /** Which network this came from. Set only by a wall that mixes several: a
+   *  single-account wall leaves it undefined, and every post then wears that
+   *  app's own badge rather than a per-post one. */
+  platform?: SocialPlatform
 }
 
 export interface Profile {
@@ -56,7 +64,10 @@ export interface FeedPayload {
 
 const UA = 'SignageManager/1.0'
 
-async function getJson(url: string, init?: RequestInit): Promise<unknown> {
+/** One fetch, body returned as text. Split out from getJson so a source that
+ *  might be RSS can look at what actually arrived before deciding how to read
+ *  it — sniffing costs a second request otherwise. */
+async function getText(url: string, init?: RequestInit): Promise<{ body: string; contentType: string }> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 20_000)
   try {
@@ -72,10 +83,14 @@ async function getJson(url: string, init?: RequestInit): Promise<unknown> {
       } catch { detail = body.slice(0, 140) }
       throw new Error(detail ? `${res.status}: ${detail}` : `HTTP ${res.status}`)
     }
-    return JSON.parse(body)
+    return { body, contentType: res.headers.get('content-type') || '' }
   } finally {
     clearTimeout(timer)
   }
+}
+
+async function getJson(url: string, init?: RequestInit): Promise<unknown> {
+  return JSON.parse((await getText(url, init)).body)
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v : '')
@@ -87,8 +102,13 @@ const str = (v: unknown) => (typeof v === 'string' ? v : '')
  *  and already rehosts media to a stable CDN. Other services that return a
  *  posts array with the same field names drop straight in. */
 export async function fetchFeedService(feedUrl: string): Promise<FeedPayload> {
-  const raw = await getJson(feedUrl) as Record<string, unknown>
-  const rawPosts = Array.isArray(raw.posts) ? raw.posts : Array.isArray(raw) ? raw : []
+  return normaliseFeedJson(await getJson(feedUrl))
+}
+
+/** The parsing half of fetchFeedService, callable on a body already in hand. */
+export function normaliseFeedJson(input: unknown): FeedPayload {
+  const raw = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const rawPosts = Array.isArray(raw.posts) ? raw.posts : Array.isArray(input) ? input : []
 
   const username = str(raw.username) || 'instagram'
   const displayName = str(raw.fullName) || str(raw.name) || username
@@ -121,6 +141,202 @@ export async function fetchFeedService(feedUrl: string): Promise<FeedPayload> {
     profile: { username, displayName, avatarUrl, followers: Number(raw.followersCount) || undefined },
     posts,
   }
+}
+
+// ── RSS / Atom ───────────────────────────────────────────────────────────────
+//
+// The second shape a feed link can arrive in, and for X the only one that is
+// reachable without money: X retired its free API tier, so a wall showing X
+// posts is fed either by a paid wall service or by an RSS bridge. Both come
+// down this path, as does any ordinary blog or news feed an operator points at
+// a screen.
+//
+// Written against a real bridge feed rather than the spec, because the spec is
+// not what arrives: pictures are buried in CDATA HTML rather than in an
+// <enclosure>, items are not in date order, and links point back at the bridge
+// instead of at the network. Each of those is handled below.
+
+/** The entities a feed actually emits. A full HTML table would be a page of
+ *  code for characters no feed contains. &amp; is decoded last so that a
+ *  double-escaped "&amp;lt;" survives as text rather than becoming a tag. */
+function decodeEntities(s: string): string {
+  // fromCodePoint throws on anything above U+10FFFF, and "&#9999999;" in one
+  // post would otherwise abort the whole feed. An entity we cannot decode is
+  // left standing as text, which is ugly but is still a wall.
+  const codePoint = (n: number) => (n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : '')
+  return s
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#0?39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d{1,7});/g, (whole, d: string) => codePoint(Number(d)) || whole)
+    .replace(/&#x([0-9a-f]{1,6});/gi, (whole, h: string) => codePoint(parseInt(h, 16)) || whole)
+    .replace(/&amp;/g, '&')
+}
+
+/** Text of the first <name> element, CDATA unwrapped. */
+function tagText(xml: string, name: string): string {
+  const m = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}\\s*>`, 'i').exec(xml)
+  if (!m) return ''
+  const inner = m[1].trim()
+  const cdata = /^<!\[CDATA\[([\s\S]*?)\]\]>$/.exec(inner)
+  return cdata ? cdata[1] : decodeEntities(inner)
+}
+
+function attrOf(tag: string, name: string): string {
+  const m = new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, 'i').exec(tag)
+  return m ? decodeEntities(m[1]) : ''
+}
+
+function htmlToText(html: string): string {
+  return decodeEntities(
+    html.replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(?:p|div|li)>/gi, '\n')
+      .replace(/<[^>]*>/g, ''),
+  ).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+function hostOf(url: string): string {
+  try { return new URL(url).host.toLowerCase() } catch { return '' }
+}
+
+/** A bridge rehosts every picture through its own proxy, with the real address
+ *  percent-encoded into the path. Unwrapping it means the manager mirrors from
+ *  the network's own CDN: better pictures, and one fewer volunteer-run host
+ *  that has to be up for a lobby screen to work.
+ *
+ *  Only applied to pictures served by the feed's own host, so an ordinary feed
+ *  that happens to have "/pic/" in an image path is left alone. */
+function unproxyImage(url: string, feedUrl: string): string {
+  if (!/\/pic\//.test(url) || hostOf(url) !== hostOf(feedUrl)) return url
+  const m = /\/pic\/(.+)$/.exec(url)
+  if (!m) return url
+  let decoded: string
+  try { decoded = decodeURIComponent(m[1]) } catch { return url }
+  if (/^https?:\/\//i.test(decoded)) return decoded
+  return /^(media|card_img|amplify_video_thumb|tweet_video_thumb|ext_tw_video_thumb|profile_images)\//.test(decoded)
+    ? `https://pbs.twimg.com/${decoded}`
+    : url
+}
+
+/** A bridge's own permalink points back at the bridge, which will not be there
+ *  in a year. A /status/ path is X's shape, so it can be sent home. */
+function unproxyLink(url: string, feedUrl: string): string {
+  if (!url || hostOf(url) !== hostOf(feedUrl)) return url
+  const m = /^https?:\/\/[^/]+\/([A-Za-z0-9_]{1,15})\/status\/(\d+)/.exec(url)
+  return m ? `https://x.com/${m[1]}/status/${m[2]}` : url
+}
+
+function firstImageIn(html: string, feedUrl: string): string {
+  const m = /<img\b[^>]*\bsrc\s*=\s*"([^"]+)"/i.exec(html)
+  return m ? unproxyImage(decodeEntities(m[1]), feedUrl) : ''
+}
+
+/** RSS 2.0 or Atom into the same Post shape every view already draws. */
+export function parseRssFeed(xml: string, feedUrl: string): FeedPayload {
+  // Everything before the first item is the channel, so a per-item <title> or
+  // <image> cannot be mistaken for the feed's own.
+  const head = xml.split(/<(?:item|entry)[\s>]/i)[0]
+  const channelTitle = tagText(head, 'title')
+  const imageBlock = /<image(?:\s[^>]*)?>[\s\S]*?<\/image\s*>/i.exec(head)
+  const channelAvatar = imageBlock ? tagText(imageBlock[0], 'url') : (tagText(head, 'logo') || tagText(head, 'icon'))
+
+  // "Display Name / @handle" is how the bridges title a profile feed.
+  const handleInTitle = /@([A-Za-z0-9_]{1,15})/.exec(channelTitle)
+  const fallbackUser = handleInTitle ? handleInTitle[1] : (hostOf(feedUrl) || 'feed')
+  const fallbackName = channelTitle.split('/')[0].trim() || fallbackUser
+
+  const posts: Post[] = []
+  const itemRe = /<(item|entry)(?:\s[^>]*)?>([\s\S]*?)<\/\1\s*>/gi
+  let m: RegExpExecArray | null
+  while ((m = itemRe.exec(xml)) !== null) {
+    const item = m[2]
+
+    const rawTitle = tagText(item, 'title')
+    const descRaw = tagText(item, 'description') || tagText(item, 'content:encoded') || tagText(item, 'content')
+    const descText = htmlToText(descRaw)
+    // A bridge puts the whole post in <title> and a marked-up copy of it in
+    // <description>; a blog puts a headline in one and a summary in the other.
+    // Telling them apart by content: when the two say the same thing the title
+    // is the clean copy — no proxied anchors, no "Link" markers — so it wins,
+    // unless it is so much shorter that it is plainly just a headline.
+    const key = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '')
+    const t = key(rawTitle), d = key(descText)
+    const sameThing = !!t && !!d && (d.indexOf(t.slice(0, 40)) !== -1 || t.indexOf(d.slice(0, 40)) !== -1)
+    const caption = !descText ? rawTitle
+      : !rawTitle ? descText
+        : sameThing && rawTitle.length >= descText.length * 0.4 ? rawTitle
+          : `${rawTitle}\n\n${descText}`
+
+    // Pictures, in the order a feed is likely to carry them.
+    const mediaTag = /<media:(?:content|thumbnail)\b[^>]*>/i.exec(item)
+    const enclosure = /<enclosure\b[^>]*>/i.exec(item)
+    const enclosureType = enclosure ? attrOf(enclosure[0], 'type') : ''
+    const image =
+      (mediaTag ? unproxyImage(attrOf(mediaTag[0], 'url'), feedUrl) : '') ||
+      (enclosure && /^image\//i.test(enclosureType) ? unproxyImage(attrOf(enclosure[0], 'url'), feedUrl) : '') ||
+      firstImageIn(descRaw, feedUrl)
+
+    // Atom puts the link in an attribute, RSS in the element's text.
+    const linkTag = /<link\b[^>]*\bhref\s*=\s*"[^"]*"[^>]*>/i.exec(item)
+    const link = unproxyLink(
+      (linkTag ? attrOf(linkTag[0], 'href') : '') || tagText(item, 'link'),
+      feedUrl,
+    ).replace(/#m$/, '')
+
+    const when = tagText(item, 'pubDate') || tagText(item, 'published') || tagText(item, 'updated')
+    const parsed = when ? Date.parse(when) : NaN
+    // dc:creator is "@handle" on a bridge and a person's name on a blog; Atom
+    // wraps a <name> inside <author>. Only the first is a username.
+    const creator = (tagText(item, 'dc:creator') || tagText(item, 'author') || '')
+      .replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+    const asHandle = /^@([A-Za-z0-9_]{1,15})$/.exec(creator)
+
+    if (!caption && !image) continue
+    posts.push({
+      id: tagText(item, 'guid') || tagText(item, 'id') || link || String(posts.length),
+      caption,
+      mediaType: 'IMAGE',
+      imageUrl: image,
+      permalink: link || undefined,
+      // An undated item sorts to "now", which puts it at the top of a wall —
+      // wrong, but better than dropping a post over a missing date.
+      timestamp: Number.isFinite(parsed) ? new Date(parsed).toISOString() : new Date().toISOString(),
+      username: asHandle ? asHandle[1] : fallbackUser,
+      displayName: !creator || asHandle ? fallbackName : creator,
+      avatarUrl: channelAvatar || undefined,
+    })
+  }
+
+  return {
+    profile: { username: fallbackUser, displayName: fallbackName, avatarUrl: channelAvatar || undefined },
+    posts,
+  }
+}
+
+/** Reads a feed link without being told which kind it is. Operators paste
+ *  whatever their provider gave them, and a wall service, a bridge and a blog
+ *  all call it "the feed URL". */
+export async function fetchAnyFeed(feedUrl: string): Promise<FeedPayload> {
+  const { body, contentType } = await getText(feedUrl)
+  const head = body.slice(0, 500).replace(/^﻿/, '').trim()
+  if (!head) throw new Error('That feed returned nothing at all.')
+
+  if (head.charAt(0) === '<' || /xml|rss|atom/i.test(contentType)) {
+    // A bridge answers an unknown account with a styled HTML error page, and
+    // feeding that to the parser yields an empty wall and no explanation.
+    if (/^<(?:!doctype\s+html|html)\b/i.test(head)) {
+      throw new Error('That address returned a web page rather than a feed.')
+    }
+    return parseRssFeed(body, feedUrl)
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(body)
+  } catch {
+    throw new Error('That address returned neither a JSON feed nor RSS.')
+  }
+  return normaliseFeedJson(parsed)
 }
 
 // ── Meta, via a long-lived token ─────────────────────────────────────────────
