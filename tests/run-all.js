@@ -15,6 +15,7 @@ const SUITES = [
   ['youtube app',        'test-youtube.js'],
   ['weather app',        'test-weather.js'],
   ['canva app',          'test-canva.js'],
+  ['musthavemenus',      'test-musthavemenus.js'],
   ['facebook app',       'test-facebook.js'],
   ['social mix',         'test-socialmix.js'],
   ['power bi app',       'test-powerbi.js'],

@@ -8,6 +8,7 @@ import { gdrive } from './gdrive'
 import { gslides } from './gslides'
 import { instagram } from './instagram'
 import { livetv } from './livetv'
+import { musthavemenus } from './musthavemenus'
 import { onedrive } from './onedrive'
 import { powerbi } from './powerbi'
 import { qrcode } from './qrcode'
@@ -28,6 +29,7 @@ export const APPS: AppDefinition[] = [
   youtube,
   weather,
   canva,
+  musthavemenus,
   facebook,
   socialmix,
   powerbi,
