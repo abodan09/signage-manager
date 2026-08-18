@@ -141,6 +141,15 @@ const ZONE_PRESETS: Array<{ label: string; zones: Zone[] }> = [
       { name: 'Bottom right', top: 50, left: 50, width: 50, height: 50, kind: 'empty', refId: '' },
     ],
   },
+  {
+    label: 'Four columns',
+    zones: [
+      { name: 'Column 1', top: 0, left: 0, width: 25, height: 100, kind: 'empty', refId: '' },
+      { name: 'Column 2', top: 0, left: 25, width: 25, height: 100, kind: 'empty', refId: '' },
+      { name: 'Column 3', top: 0, left: 50, width: 25, height: 100, kind: 'empty', refId: '' },
+      { name: 'Column 4', top: 0, left: 75, width: 25, height: 100, kind: 'empty', refId: '' },
+    ],
+  },
 ]
 
 const ZONE_TINTS = ['#2e7d9a', '#3aa99a', '#e8e6a8', '#a67cb8', '#d98b5f', '#6b8fb5', '#8fb56b', '#b56b8f']
