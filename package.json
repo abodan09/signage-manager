@@ -1,6 +1,6 @@
 {
   "name": "signage-manager",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Digital Signage Management System",
   "main": "dist/main/index.js",
   "scripts": {
