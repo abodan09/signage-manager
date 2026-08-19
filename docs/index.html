@@ -3,1205 +3,1212 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Signage Manager — Downloads</title>
-<meta name="description" content="Free, open-source digital signage. One Windows PC commands every screen on your network — Android TV, LG webOS, Samsung Tizen or any browser. No cloud, no subscription.">
+<title>Signage Manager — Command every screen</title>
+<meta name="description" content="Open-source digital signage. One Windows PC drives every display on your network — Android TV, LG webOS, Samsung Tizen, or any browser. Runs entirely on your own LAN.">
+<meta name="theme-color" content="#0D1B31">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta property="og:title" content="Signage Manager — Command every screen">
+<meta property="og:description" content="One Windows PC drives every display on your network. Free and open source.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --void:   #05080f;
-    --deep:   #090e1a;
-    --panel:  rgba(13, 21, 38, 0.62);
-    --line:   #1b2a42;
-    --line-2: #24365a;
-    --ice:    #d9e7f8;
-    --dim:    #8199ba;
-    /* Third text tier. Keep at or above 4.5:1 on --void/--deep/--panel:
-       the previous #55688a measured 3.4:1 and failed WCAG AA on all three. */
-    --faint:  #7286ad;
-    --glow:   #4cc9ff;
-    --glow-2: #8b7bff;
-    --ok:     #3ddc97;
-    --warn:   #ffb454;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-  body {
-    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-    font-size: 15.5px; line-height: 1.65;
-    background: var(--void);
-    color: var(--ice);
-    min-height: 100vh;
-    display: flex; flex-direction: column;
-    overflow-x: hidden;
-  }
-  .disp { font-family: Bahnschrift, "Segoe UI Semibold", "Avenir Next Condensed", "Arial Narrow", sans-serif; }
-  .hud  { font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
-  a:focus-visible, button:focus-visible { outline: 2px solid var(--glow); outline-offset: 3px; }
-  b { color: var(--ice); }
-  [id] { scroll-margin-top: 74px; }
-  .kicker { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--glow); font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
+:root{
+  --paper:#FFFFFF; --paper-2:#F2F6FB; --ink:#0B1626; --ink-2:#51647F; --ink-3:#5F6C7E;
+  --line:#DCE5F0; --navy:#0D1B31; --navy-2:#16294A;
+  --cyan:#4CC9FF; --accent:#0E86C4; --accent-ink:#0B6C9E; --accent-tint:#E4F4FE;
+  --live:#3DDC97; --warn:#FFB454;
+  --maxw:1120px; --r:6px; --r-sm:4px;
+  --disp:'Oswald','Arial Narrow',sans-serif;
+  --mono:ui-monospace,'Cascadia Code',Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
+img,svg{max-width:100%}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+[id]{scroll-margin-top:86px}
 
-  /* ── nav ── */
-  .nav {
-    position: sticky; top: 0; z-index: 20;
-    border-bottom: 1px solid var(--line);
-    background: rgba(5,8,15,0.82); backdrop-filter: blur(9px);
-  }
-  .nav-in { max-width: 1080px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; height: 58px; gap: 26px; }
-  .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: var(--ice); }
-  .brand-mark { width: 22px; height: 22px; position: relative; flex-shrink: 0; }
-  .brand-mark::before { content: ""; position: absolute; inset: 0; border: 1.5px solid var(--glow); transform: rotate(45deg); }
-  .brand-mark::after  { content: ""; position: absolute; inset: 6.5px; background: var(--glow); box-shadow: 0 0 12px var(--glow); }
-  .brand b { font-size: 13.5px; letter-spacing: 0.16em; font-weight: 600; }
-  .nav-links { margin-left: auto; display: flex; gap: 20px; align-items: center; }
-  .nav-links a { color: var(--dim); font-size: 11.5px; letter-spacing: 0.13em; text-transform: uppercase; text-decoration: none; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
-  .nav-links a:hover { color: var(--ice); }
-  .nav-links a.go { color: #04121d; background: var(--glow); padding: 8px 16px; font-weight: 700; box-shadow: 0 0 20px rgba(76,201,255,0.3); }
-  .nav-links a.go:hover { background: #7ad8ff; color: #04121d; }
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+.sec{padding:clamp(56px,7vw,96px) 0}
+.sec-tight{padding:clamp(40px,5vw,60px) 0}
+.tinted{background:var(--paper-2)}
+.disp{font-family:var(--disp);font-weight:600;letter-spacing:.004em;line-height:1.06;
+  text-wrap:balance;margin:0;color:var(--ink)}
+.h1{font-size:clamp(40px,6.4vw,68px)}
+.h2{font-size:clamp(28px,3.9vw,42px)}
+.h3{font-size:clamp(19px,2vw,23px)}
+.eyebrow{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--accent-ink);margin:0}
+.lede{font-size:clamp(16.5px,1.5vw,19px);line-height:1.6;color:var(--ink-2);margin:0;max-width:60ch}
+.small{font-size:14.5px;line-height:1.6;color:var(--ink-2);margin:0}
+.stack{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.stack-c{align-items:center;text-align:center;margin:0 auto;max-width:64ch}
 
-  /* ── hero ── */
-  header.hero { position: relative; padding: 88px 24px 66px; border-bottom: 1px solid var(--line); }
-  #net { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .hero-in { position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; }
-  .frame { position: absolute; z-index: 2; width: 24px; height: 24px; border: 1.5px solid var(--line-2); pointer-events: none; }
-  .fr-tl { top: 20px; left: 22px; border-right: none; border-bottom: none; }
-  .fr-tr { top: 20px; right: 22px; border-left: none; border-bottom: none; }
-  .fr-bl { bottom: 20px; left: 22px; border-right: none; border-top: none; }
-  .fr-br { bottom: 20px; right: 22px; border-left: none; border-top: none; }
-  .sys {
-    display: inline-flex; gap: 10px; align-items: center;
-    border: 1px solid var(--line-2); background: rgba(9,14,26,0.72);
-    padding: 7px 14px; font-size: 10.5px; color: var(--dim); letter-spacing: 0.18em;
-  }
-  .sys i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); }
-  .hero h1 {
-    margin: 24px 0 18px;
-    font-size: clamp(42px, 7vw, 76px);
-    line-height: 0.98; font-weight: 700; letter-spacing: 0.015em; text-transform: uppercase;
-    text-wrap: balance;
-    background: linear-gradient(105deg, #eef6ff 30%, var(--glow) 62%, var(--glow-2) 95%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-    max-width: 720px;
-  }
-  .hero p.sub { color: var(--dim); font-size: 16.5px; max-width: 56ch; margin-bottom: 30px; }
-  .cta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
-  .btn-go {
-    text-decoration: none; background: var(--glow); color: #04121d; font-weight: 700; font-size: 13px;
-    letter-spacing: 0.1em; text-transform: uppercase; padding: 14px 26px;
-    box-shadow: 0 0 28px rgba(76,201,255,0.38);
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-  }
-  .btn-go:hover { background: #7ad8ff; }
-  .btn-ghost {
-    text-decoration: none; color: var(--ice); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
-    padding: 13px 20px; border: 1px solid var(--line-2);
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-  }
-  .btn-ghost:hover { border-color: var(--glow); color: var(--glow); }
+.btn{display:inline-flex;align-items:center;gap:9px;border:1px solid transparent;cursor:pointer;
+  font:inherit;font-size:15px;font-weight:600;padding:14px 24px;border-radius:var(--r-sm);
+  text-decoration:none;transition:transform .15s,box-shadow .15s,background .15s;white-space:nowrap}
+.btn-1{background:var(--navy);color:#fff}
+.btn-1:hover{background:var(--navy-2);transform:translateY(-1px);box-shadow:0 8px 22px -10px var(--navy)}
+.btn-2{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn-2:hover{border-color:var(--ink-3);background:var(--paper-2)}
+.btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 
-  /* ── version banner ── */
-  #version-bar {
-    text-align: center; padding: 9px 24px;
-    background: rgba(76,201,255,0.06);
-    border-bottom: 1px solid var(--line);
-    font-size: 11.5px; letter-spacing: 0.14em; color: var(--glow);
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-    display: none;
-  }
-  #version-bar.visible { display: block; }
+/* ── nav ── */
+.nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:var(--maxw);margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;gap:26px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);
+  font-family:var(--disp);font-weight:600;font-size:18px;letter-spacing:.06em;white-space:nowrap}
+.logo-m{width:26px;height:26px;position:relative;flex:none}
+.logo-m::before{content:"";position:absolute;inset:2px;border:1.6px solid var(--navy);transform:rotate(45deg)}
+.logo-m::after{content:"";position:absolute;inset:9px;background:var(--accent)}
+.nav-links{display:flex;gap:22px;margin-left:4px}
+.nav-links a{color:var(--ink-2);text-decoration:none;font-size:14.5px;font-weight:500}
+.nav-links a:hover{color:var(--ink)}
+.nav-cta{margin-left:auto;display:flex;align-items:center;gap:12px}
+.nav-cta .btn{padding:9px 18px;font-size:14px}
+.burger{display:none;width:38px;height:38px;border:0;background:transparent;cursor:pointer;
+  align-items:center;justify-content:center;color:var(--ink);border-radius:var(--r-sm)}
+.burger:hover{background:var(--paper-2)}
+.mobile{display:none;border-top:1px solid var(--line);background:#fff;padding:8px 24px 14px}
+.mobile a{display:block;padding:10px 0;color:var(--ink-2);text-decoration:none;font-size:15px;font-weight:500}
+.mobile a:hover{color:var(--ink)}
+.mobile.open{display:block}
+@media (max-width:880px){.nav-links{display:none}.burger{display:flex}}
 
-  /* ── hud strip ── */
-  .strip { border-bottom: 1px solid var(--line); background: var(--deep); }
-  .strip-in { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
-  .cell { padding: 18px 22px; border-left: 1px solid var(--line); font-size: 11px; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
-  .cell:first-child { border-left: none; }
-  .cell .k { color: var(--faint); letter-spacing: 0.18em; }
-  .cell .v { color: var(--ice); font-size: 13.5px; margin-top: 3px; letter-spacing: 0.06em; }
-  .cell .v em { color: var(--glow); font-style: normal; }
+/* ── hero ── */
+.hero{padding:clamp(48px,6vw,80px) 0 clamp(52px,6vw,80px)}
+.hero-in{display:flex;flex-direction:column;gap:20px;align-items:flex-start}
+.hero .h1{max-width:14ch}
+.hero .lede{max-width:52ch}
+.pricetag{display:block;font-size:15px;color:var(--ink-2);margin:0}
+.pricetag b{font-size:19px;color:var(--ink);font-weight:700;margin-right:5px}
+.hero-foot{display:flex;gap:20px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-3);align-items:center}
+.hero-foot span{display:inline-flex;align-items:center;gap:6px}
+.calib{display:flex;align-items:center;height:12px;color:var(--accent);opacity:.55}
+.calib i{display:block;width:1px;background:currentColor;height:5px}
+.calib i:nth-child(4n+1){height:11px}
+.calib span{display:block;width:7px}
+#version-bar{display:none;font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  color:var(--accent-ink);background:var(--accent-tint);border-radius:999px;padding:5px 13px}
+#version-bar.visible{display:inline-block}
 
-  /* ── main ── */
-  main { flex: 1; max-width: 1080px; margin: 0 auto; padding: 64px 24px; width: 100%; }
-  .sec-sub { color: var(--dim); max-width: 60ch; font-size: 14.5px; margin-top: 8px; }
-  .sec-head { margin-bottom: 30px; }
+/* ── app tiles ── */
+.appbar{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:26px}
+.apps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.app{display:flex;flex-direction:column;align-items:center;gap:9px;padding:16px 4px 14px;
+  border-radius:var(--r);text-decoration:none;color:var(--ink);transition:background .16s,transform .16s}
+.app:hover{background:#fff;transform:translateY(-2px);box-shadow:0 10px 26px -16px rgba(11,22,38,.5)}
+.app-i{width:40px;height:40px;border-radius:5px;display:grid;place-items:center;flex:none;
+  background:var(--accent-tint);color:#0B5E88}
+.app-i.hot{background:#E8F7EF;color:#0B7A4E}
+.app b{font-size:12px;font-weight:600;text-align:center;line-height:1.3}
+@media (max-width:1000px){.apps{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:620px){.apps{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
-  /* ── modules ── */
-  .mods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 34px 0 72px; }
-  .mod {
-    border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(6px);
-    padding: 22px 20px 24px; position: relative; transition: border-color 0.2s, transform 0.2s;
-  }
-  .mod:hover { border-color: var(--glow); transform: translateY(-3px); }
-  .mod::before {
-    content: ""; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px;
-    border-top: 1.5px solid var(--glow); border-left: 1.5px solid var(--glow);
-    opacity: 0; transition: opacity 0.2s;
-  }
-  .mod:hover::before { opacity: 1; }
-  .mod .id { font-size: 10px; color: var(--faint); letter-spacing: 0.2em; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
-  .mod h3 { font-size: 14px; letter-spacing: 0.14em; margin: 9px 0 7px; color: var(--glow); font-weight: 700; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
-  .mod p { font-size: 13px; color: var(--dim); }
+/* ── feature rows ── */
+.frow{display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);gap:clamp(30px,5vw,68px);align-items:center}
+.frow+.frow{margin-top:clamp(56px,8vw,104px)}
+.frow.flip .fr-txt{order:2}
+.fr-txt{display:flex;flex-direction:column;gap:15px;align-items:flex-start}
+.fr-list{margin:2px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.fr-list li{display:flex;gap:10px;font-size:15px;color:var(--ink-2);line-height:1.5}
+.fr-list li::before{content:"";flex:none;width:15px;height:15px;margin-top:4px;background:var(--accent);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.4 4.6 4.6L19 7.4' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.4 4.6 4.6L19 7.4' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+@media (max-width:860px){.frow{grid-template-columns:1fr}.frow.flip .fr-txt{order:0}}
 
-  /* ── fleet screens ── */
-  .screens { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin: 34px 0 72px; perspective: 1200px; }
-  .tvw { transition: transform 0.25s; }
-  .tvw:nth-child(1) { transform: rotateY(7deg); }
-  .tvw:nth-child(3) { transform: rotateY(-7deg); }
-  .tvw:hover { transform: rotateY(0) translateY(-4px); }
-  .tv { border: 2px solid var(--line-2); background: #060b16; box-shadow: 0 0 40px rgba(76,201,255,0.08), inset 0 0 60px rgba(76,201,255,0.04); }
-  .tv svg { display: block; width: 100%; height: auto; }
-  .tv-cap { margin-top: 11px; font-size: 10.5px; color: var(--faint); letter-spacing: 0.16em; text-transform: uppercase; display: flex; justify-content: space-between; font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
-  .tv-cap i { color: var(--ok); font-style: normal; }
-  .sec-head h2, .steps > h2 {
-    font-size: clamp(22px, 3vw, 30px); text-transform: uppercase; letter-spacing: 0.04em;
-    font-weight: 700; margin-top: 10px; text-wrap: balance;
-    font-family: Bahnschrift, "Segoe UI Semibold", "Avenir Next Condensed", "Arial Narrow", sans-serif;
-  }
-  .steps > h2 { margin-bottom: 22px; }
+/* ── cards ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.card{background:#fff;padding:26px 22px 28px;display:flex;flex-direction:column;gap:10px}
+.card b{font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+.card p{margin:0;font-size:14.5px;color:var(--ink-2);line-height:1.55}
+.card .ci{width:30px;height:30px;color:var(--accent)}
 
-  /* ── download cards ── */
-  .download-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 16px; margin-bottom: 72px;
-  }
-  .card {
-    background: var(--panel); border: 1px solid var(--line);
-    padding: 26px 24px; display: flex; flex-direction: column; gap: 14px;
-    position: relative; transition: border-color 0.2s, transform 0.2s;
-    backdrop-filter: blur(6px);
-  }
-  .card:hover { border-color: var(--glow); transform: translateY(-3px); }
-  .card::before {
-    content: ""; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px;
-    border-top: 1.5px solid var(--glow); border-left: 1.5px solid var(--glow);
-    opacity: 0; transition: opacity 0.2s;
-  }
-  .card:hover::before { opacity: 1; }
-  .card-icon { height: 48px; display: flex; align-items: center; }
-  .card h2 { font-size: 18px; font-weight: 700; letter-spacing: 0.03em; }
-  .card > p { font-size: 13.5px; color: var(--dim); }
-  .card-meta { display: flex; gap: 7px; flex-wrap: wrap; font-size: 10.5px; color: var(--dim); font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
-  .pill { padding: 3px 10px; background: rgba(76,201,255,0.05); border: 1px solid var(--line-2); letter-spacing: 0.08em; }
-  .btn-download {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 13px 22px;
-    background: var(--glow); color: #04121d;
-    font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
-    text-decoration: none; border: none; cursor: pointer;
-    transition: background 0.15s, box-shadow 0.15s;
-    margin-top: auto;
-    box-shadow: 0 0 20px rgba(76,201,255,0.22);
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-  }
-  .btn-download:hover:not(:disabled) { background: #7ad8ff; box-shadow: 0 0 30px rgba(76,201,255,0.4); }
-  .btn-download:disabled { opacity: 0.45; cursor: not-allowed; }
-  .btn-download.loading { opacity: 0.6; }
-  .btn-secondary {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 10px 18px;
-    background: transparent; color: var(--dim);
-    font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase;
-    text-decoration: none; border: 1px solid var(--line-2); cursor: pointer;
-    transition: all 0.15s;
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-  }
-  .btn-secondary:hover { border-color: var(--glow); color: var(--glow); }
+/* ── proof strip ── */
+.proof{display:grid;grid-template-columns:1fr auto;gap:clamp(28px,4vw,56px);align-items:center}
+.proof blockquote{margin:0;font-family:var(--disp);font-weight:600;font-size:clamp(20px,2.5vw,29px);
+  line-height:1.34;color:var(--ink);text-wrap:balance}
+.pstat{text-align:right;display:flex;flex-direction:column;gap:18px}
+.pstat div b{display:block;font-family:var(--disp);font-weight:600;font-size:38px;line-height:1;
+  color:var(--accent-ink);font-variant-numeric:tabular-nums}
+.pstat div span{font-size:12.5px;color:var(--ink-3)}
+@media (max-width:760px){.proof{grid-template-columns:1fr}.pstat{text-align:left;flex-direction:row;gap:30px;flex-wrap:wrap}}
 
-  /* ── install steps ── */
-  .steps { margin-bottom: 72px; }
-  .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 28px; }
-  .step { background: var(--panel); border: 1px solid var(--line); padding: 22px 20px; }
-  .step-num {
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-    font-size: 11px; letter-spacing: 0.2em; color: var(--glow);
-    margin-bottom: 10px;
-  }
-  .step-num::before { content: "STEP "; color: var(--faint); }
-  .step h3 { font-size: 14.5px; font-weight: 650; margin-bottom: 6px; }
-  .step p  { font-size: 13px; color: var(--dim); }
-  .step code {
-    display: block; margin-top: 10px;
-    background: #04070d; border: 1px solid var(--line-2);
-    padding: 9px 12px;
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-    font-size: 12px; color: var(--glow);
-    word-break: break-all;
-  }
-  code { font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
+/* ── pricing ── */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:34px}
+.plan{border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 24px;background:#fff;
+  display:flex;flex-direction:column;gap:12px}
+.plan.pick{border-color:var(--navy);box-shadow:0 0 0 1px var(--navy)}
+.plan-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.plan-top b{font-size:15px;font-weight:700}
+.chip{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--navy);color:#fff;padding:3px 8px;border-radius:999px}
+.plan-p{font-family:var(--disp);font-weight:600;font-size:34px;line-height:1;color:var(--ink)}
+.plan-p small{font-family:'Inter',sans-serif;font-size:13px;font-weight:500;color:var(--ink-3);letter-spacing:0}
+.plan ul{margin:2px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;flex:1}
+.plan li{font-size:13.5px;color:var(--ink-2);display:flex;gap:8px}
+.plan li::before{content:"";flex:none;width:13px;height:13px;margin-top:4px;background:var(--accent);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.4 4.6 4.6L19 7.4' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.4 4.6 4.6L19 7.4' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+.plan .btn{justify-content:center;margin-top:6px}
+.pnote{display:flex;gap:9px;align-items:flex-start;border-left:2px solid var(--accent);
+  background:var(--accent-tint);padding:12px 15px;border-radius:0 var(--r-sm) var(--r-sm) 0;
+  font-size:13px;line-height:1.55;color:var(--ink-2);max-width:74ch;margin:26px auto 0}
+.pnote b{color:var(--ink)}
 
-  /* ── video guide ── */
-  .video-wrap {
-    position: relative; width: 100%; aspect-ratio: 16 / 9;
-    background: #000; overflow: hidden;
-    border: 1px solid var(--line-2); margin-bottom: 28px;
-    box-shadow: 0 0 40px rgba(76,201,255,0.06);
-  }
-  .video-wrap video { width: 100%; height: 100%; display: block; object-fit: contain; background: #000; }
-  .video-placeholder {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-    color: var(--dim); background: var(--deep); pointer-events: none;
-  }
-  .video-placeholder .ph-icon { font-size: 46px; opacity: 0.6; }
-  .video-placeholder p { font-size: 14px; }
-  .video-placeholder small { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); font-family: "Cascadia Code", Consolas, ui-monospace, monospace; }
+/* ── downloads ── */
+.dl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:34px}
+.dl{border:1px solid var(--line);border-radius:var(--r);padding:24px 22px;background:#fff;
+  display:flex;flex-direction:column;gap:12px}
+.dl.lead{border-color:var(--navy);box-shadow:0 0 0 1px var(--navy)}
+.dl-ico{width:46px;height:46px;border-radius:var(--r-sm);display:grid;place-items:center;flex:none;
+  background:var(--paper-2)}
+.dl h3{margin:0;font-family:var(--disp);font-weight:600;font-size:17px;letter-spacing:.04em;text-transform:uppercase}
+.dl p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.55;flex:1}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--ink-3);border:1px solid var(--line);border-radius:3px;padding:3px 7px;white-space:nowrap}
+.dl .btn{justify-content:center}
+.dl .sub-link{font-size:13px;color:var(--accent-ink);text-decoration:none;font-weight:600;text-align:center}
+.dl .sub-link:hover{text-decoration:underline}
+.spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;
+  border-radius:50%;animation:spin .7s linear infinite;flex:none}
+.btn-2 .spinner{border-color:rgba(11,22,38,.2);border-top-color:var(--ink)}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-  /* ── consoles (adb / cli / troubleshooting boxes) ── */
-  .adb-box { background: var(--panel); border: 1px solid var(--line); padding: 24px 24px; margin-top: 8px; }
-  .adb-box.warn { border-left: 2px solid var(--warn); }
-  .adb-box h3 { font-size: 14.5px; font-weight: 650; margin-bottom: 8px; letter-spacing: 0.02em; }
-  .adb-box p  { font-size: 13px; color: var(--dim); margin-bottom: 14px; }
-  .adb-box p:last-child { margin-bottom: 0; }
-  .adb-box p code { background: #04070d; border: 1px solid var(--line-2); padding: 2px 6px; font-size: 11.5px; color: var(--glow); }
-  .adb-command {
-    display: flex; align-items: center; gap: 10px;
-    background: #04070d; border: 1px solid var(--line-2);
-    padding: 12px 14px;
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-    font-size: 12.5px; color: var(--glow);
-  }
-  .adb-command::before { content: ">"; color: var(--glow-2); flex-shrink: 0; }
-  .adb-command span { flex: 1; word-break: break-all; }
-  .copy-btn {
-    background: transparent; border: 1px solid var(--line-2);
-    color: var(--dim); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
-    padding: 5px 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
-    transition: all 0.15s;
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-  }
-  .copy-btn:hover { border-color: var(--glow); color: var(--glow); }
-  .copy-btn.copied { color: var(--ok); border-color: var(--ok); }
+/* ── install guides ── */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:30px 0 24px}
+.tab{font:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:10px 18px;border-radius:var(--r-sm);
+  border:1px solid var(--line);background:#fff;color:var(--ink-2);transition:all .16s}
+.tab:hover{border-color:var(--ink-3);color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.panel[hidden]{display:none}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.step{background:#fff;padding:22px 20px 24px;display:flex;flex-direction:column;gap:8px}
+.step-n{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--accent-ink)}
+.step h4{margin:0;font-size:15px;font-weight:700;color:var(--ink);line-height:1.3}
+.step p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.55}
+.step b{color:var(--ink);font-weight:600}
+code{font-family:var(--mono);font-size:12px;background:var(--paper-2);border:1px solid var(--line);
+  border-radius:3px;padding:2px 6px;color:var(--ink);word-break:break-word}
+.cmd{display:flex;align-items:center;gap:10px;background:var(--navy);border-radius:var(--r-sm);
+  padding:12px 14px;margin-top:6px;overflow-x:auto}
+.cmd span{font-family:var(--mono);font-size:12px;color:#CFE6F5;white-space:nowrap;flex:1}
+.copy{font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  cursor:pointer;background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:3px;padding:6px 11px;flex:none}
+.copy:hover{background:rgba(255,255,255,.22)}
+.callout{border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:0 var(--r) var(--r) 0;
+  background:#FFFBF3;padding:18px 20px;margin-top:16px}
+.callout h4{margin:0 0 8px;font-size:14.5px;font-weight:700;color:var(--ink)}
+.callout p{margin:0 0 8px;font-size:13.5px;color:var(--ink-2);line-height:1.6}
+.callout p:last-child{margin-bottom:0}
 
-  /* ── changelog ── */
-  .log-entry { background: var(--panel); border: 1px solid var(--line); padding: 20px 24px; }
-  .log-entry.latest { border-color: var(--line-2); box-shadow: 0 0 30px rgba(76,201,255,0.07); }
-  .log-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-  .log-ver { font-family: "Cascadia Code", Consolas, ui-monospace, monospace; font-size: 14.5px; font-weight: 700; color: var(--glow); letter-spacing: 0.06em; }
-  .log-tag {
-    font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #04121d;
-    background: var(--glow); padding: 2px 10px; font-weight: 700;
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-  }
-  .log-entry ul { font-size: 13px; color: var(--dim); line-height: 1.8; padding-left: 18px; }
-  .log-entry ul li::marker { color: var(--glow-2); }
+/* ── changelog ── */
+.logs{display:flex;flex-direction:column;gap:12px;margin-top:26px}
+.log{border:1px solid var(--line);border-radius:var(--r);background:#fff;overflow:hidden}
+.log.latest{border-color:var(--accent)}
+.log summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:14px 18px;font-weight:600;font-size:14.5px}
+.log summary::-webkit-details-marker{display:none}
+.log summary::after{content:"+";margin-left:auto;font-family:var(--mono);color:var(--ink-3);font-size:16px}
+.log[open] summary::after{content:"–"}
+.log-ver{font-family:var(--mono);font-size:13px;color:var(--accent-ink);font-weight:700}
+.log-tag{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--accent);color:#fff;padding:2px 7px;border-radius:999px}
+.log ul{margin:0;padding:0 18px 18px 36px;display:flex;flex-direction:column;gap:8px}
+.log li{font-size:13.5px;color:var(--ink-2);line-height:1.6}
+.log li b{color:var(--ink)}
 
-  /* ── footer ── */
-  footer {
-    border-top: 1px solid var(--line);
-    padding: 26px 24px 38px;
-    font-size: 11.5px; letter-spacing: 0.1em; color: var(--faint);
-    font-family: "Cascadia Code", Consolas, ui-monospace, monospace;
-  }
-  .foot-in { max-width: 1080px; margin: 0 auto; display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
-  footer a { color: var(--dim); text-decoration: none; }
-  footer a:hover { color: var(--glow); }
+/* ── footer ── */
+.foot{border-top:1px solid var(--line);background:var(--paper-2);padding:50px 0 28px}
+.foot-g{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:30px}
+.foot-g h4{margin:0 0 13px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.foot-g ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.foot-g a{color:var(--ink-2);text-decoration:none;font-size:14px}
+.foot-g a:hover{color:var(--ink)}
+.foot-bot{margin-top:34px;padding-top:20px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink-3)}
+@media (max-width:720px){.foot-g{grid-template-columns:1fr 1fr}}
 
-  /* ── spinner ── */
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner {
-    width: 14px; height: 14px; border: 2px solid rgba(4,18,29,0.3);
-    border-top-color: #04121d; border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: inline-block;
-  }
-  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 1.6s; } }
-
-  @media (max-width: 760px) {
-    .strip-in { grid-template-columns: 1fr 1fr; }
-    .cell { border-top: 1px solid var(--line); }
-    .nav-links a:not(.go) { display: none; }
-    header.hero { padding-top: 64px; }
-    .mods, .screens { grid-template-columns: 1fr; }
-    .tvw, .tvw:nth-child(1), .tvw:nth-child(3) { transform: none; }
-  }
+/* ── dark app screenshots ── */
+.shot{border-radius:calc(var(--r) + 2px);overflow:hidden;border:1px solid var(--line);background:#fff;
+  box-shadow:0 28px 70px -34px rgba(11,22,38,.5),0 4px 14px -8px rgba(11,22,38,.18)}
+.shot-sm{box-shadow:0 18px 44px -26px rgba(11,22,38,.42),0 2px 8px -5px rgba(11,22,38,.14)}
+.shot-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0A1220;border-bottom:1px solid #1B2A42}
+.shot-bar i{width:9px;height:9px;border-radius:50%;background:#25364F;display:block;flex:none}
+.shot-bar em{margin:0 auto;font-style:normal;font-size:11px;color:#8FA6C4;background:#060D18;
+  border:1px solid #1B2A42;border-radius:5px;padding:3px 14px;max-width:60%;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.au{display:grid;grid-template-columns:158px minmax(0,1fr);font-size:11px;line-height:1.45;
+  color:#D9E7F8;background:#070C16}
+.au-side{background:#0A111F;border-right:1px solid #18263C;padding:13px 9px;display:flex;flex-direction:column;gap:3px}
+.au-brand{display:flex;align-items:center;gap:8px;padding:0 5px 12px;font-family:var(--disp);
+  font-weight:600;font-size:12px;letter-spacing:.09em;color:#D9E7F8}
+.au-brand i{width:15px;height:15px;position:relative;flex:none}
+.au-brand i::before{content:"";position:absolute;inset:0;border:1.4px solid var(--cyan);transform:rotate(45deg)}
+.au-brand i::after{content:"";position:absolute;inset:5px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+.au-n{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:4px;color:#8199BA;
+  font-weight:500;white-space:nowrap}
+.au-n.on{background:#12253C;color:#D9E7F8;box-shadow:inset 2px 0 0 var(--cyan);font-weight:600}
+.au-side hr{border:0;border-top:1px solid #18263C;margin:9px 2px;width:100%}
+.au-live{margin-top:auto;display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:4px;
+  background:#0D2418;color:var(--live);font-weight:600;font-size:10px}
+.au-live i{width:6px;height:6px;border-radius:50%;background:var(--live);flex:none;box-shadow:0 0 0 3px rgba(61,220,151,.16)}
+.au-main{display:flex;flex-direction:column;min-width:0}
+.au-top{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #18263C}
+.au-top b{font-size:14px;font-weight:700;color:#EAF3FF}
+.au-pill{margin-left:auto;font-size:10px;color:#8199BA;border:1px solid #24365A;border-radius:999px;padding:4px 10px}
+.au-av{width:24px;height:24px;border-radius:50%;background:#12253C;color:var(--cyan);display:grid;
+  place-items:center;font-size:9.5px;font-weight:700;flex:none}
+.au-body{padding:14px 16px 17px}
+.screens{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.scr{border:1px solid #18263C;border-radius:4px;overflow:hidden;background:#0A111F}
+.scr .prev{aspect-ratio:16/9;position:relative;overflow:hidden;background:#050A13;display:grid;place-items:center}
+.scr .meta{padding:7px 8px 8px;display:flex;align-items:center;gap:6px}
+.scr .meta b{font-size:10px;font-weight:600;color:#D9E7F8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scr .meta u{text-decoration:none;margin-left:auto;font-size:8.5px;color:#7286AD;font-family:var(--mono)}
+.dot{width:6px;height:6px;border-radius:50%;flex:none;background:var(--live);box-shadow:0 0 0 3px rgba(61,220,151,.15)}
+.dot.off{background:#6E85AF;box-shadow:0 0 0 3px rgba(110,133,175,.15)}
+.dot.warn{background:var(--warn);box-shadow:0 0 0 3px rgba(255,180,84,.15)}
+.badge{position:absolute;top:5px;left:5px;font-family:var(--mono);font-size:7.5px;letter-spacing:.09em;
+  color:var(--cyan);background:rgba(5,10,19,.78);border:1px solid #1B3550;padding:1.5px 5px;border-radius:3px}
+.mini{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:8px}
+.mini .big{font-family:var(--disp);font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.mini .sub{font-size:7px;letter-spacing:.14em;text-transform:uppercase}
+.mini-rows{position:absolute;inset:0;padding:7px 8px;display:flex;flex-direction:column;gap:3px;justify-content:center}
+.mini-rows div{display:flex;gap:5px;align-items:center;font-size:6.5px;letter-spacing:.03em}
+.mini-rows div u{text-decoration:none;margin-left:auto;font-variant-numeric:tabular-nums;opacity:.85}
+.canvas{background:#050A13;border:1px solid #18263C;border-radius:4px;padding:11px;display:flex;flex-direction:column;gap:9px}
+.stage{aspect-ratio:16/9;background:#0B1423;border:1px solid #1B3550;border-radius:3px;
+  display:grid;grid-template-columns:2.1fr 1fr;grid-template-rows:1fr auto;gap:5px;padding:6px}
+.zone{border:1px dashed #2C4A72;border-radius:3px;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;gap:3px;position:relative;background:rgba(76,201,255,.03);min-height:0}
+.zone.sel{border:1.4px solid var(--cyan);background:rgba(76,201,255,.09);box-shadow:0 0 18px -4px rgba(76,201,255,.4)}
+.zone u{text-decoration:none;font-family:var(--mono);font-size:7px;letter-spacing:.1em;color:var(--cyan);
+  position:absolute;top:4px;left:5px}
+.zone.strip{grid-column:1/-1;min-height:22px;flex-direction:row;gap:8px;padding:0 8px;justify-content:flex-start}
+.hnd{position:absolute;width:6px;height:6px;background:var(--cyan);border-radius:1px;box-shadow:0 0 6px var(--cyan)}
+.hnd.tl{top:-3px;left:-3px}.hnd.tr{top:-3px;right:-3px}.hnd.bl{bottom:-3px;left:-3px}.hnd.br{bottom:-3px;right:-3px}
+.tools{display:flex;gap:5px;flex-wrap:wrap}
+.tool{font-family:var(--mono);font-size:8px;letter-spacing:.07em;color:#8199BA;border:1px solid #1B3550;
+  border-radius:3px;padding:4px 8px;background:#0A111F;white-space:nowrap}
+.tool.on{color:#04121D;background:var(--cyan);border-color:var(--cyan);font-weight:700}
+.pair{aspect-ratio:16/9;background:#050A13;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;padding:16px;text-align:center}
+.pair .code{font-family:var(--mono);font-size:clamp(24px,4.6vw,40px);letter-spacing:.22em;color:var(--cyan);
+  text-shadow:0 0 26px rgba(76,201,255,.5);font-weight:700}
+.pair .cap{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#7286AD}
+.pair .host{font-family:var(--mono);font-size:9.5px;color:#8199BA;border:1px solid #1B3550;
+  border-radius:3px;padding:5px 11px;background:#0A111F}
+.emg{aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;background:#3D0D12;text-align:center;padding:16px}
+.emg .t{font-family:var(--disp);font-weight:600;font-size:clamp(17px,3vw,27px);letter-spacing:.06em;color:#FFE3E6}
+.emg .s{font-size:10px;color:#F0A9B1;max-width:34ch;line-height:1.5}
+.emg .b{font-family:var(--mono);font-size:8px;letter-spacing:.16em;color:#FF8A96;border:1px solid #8A1D28;
+  border-radius:3px;padding:3px 9px;background:rgba(109,21,32,.5)}
+.band{background:#060C16;color:#D9E7F8}
+.band .eyebrow{color:var(--cyan)}
+.band .disp{color:#EAF3FF}
+.band .lede{color:#8FA6C4}
+.band .wall{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:32px}
+@media (max-width:900px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.steps{grid-template-columns:1fr}}
+@media (max-width:720px){.screens{grid-template-columns:repeat(2,minmax(0,1fr))}.au{grid-template-columns:1fr}.au-side{display:none}}
 </style>
 </head>
 <body>
 
-<div class="nav">
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><defs>
+<g id="i-clock" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 6.8V12l3.4 2"/></g>
+<g id="i-globe" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M3.6 12h16.8M12 3.4c2.2 2.4 3.3 5.3 3.3 8.6s-1.1 6.2-3.3 8.6c-2.2-2.4-3.3-5.3-3.3-8.6S9.8 5.8 12 3.4z"/></g>
+<g id="i-cloud" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 18.4a4.4 4.4 0 0 1-.5-8.8 5.6 5.6 0 0 1 10.8-1.2 4 4 0 0 1 .5 8h-1"/><path d="m9 21.2 1-2M12.6 21.2l1-2M16.2 21.2l1-2"/></g>
+<g id="i-timer" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.4" r="7.6"/><path d="M12 9.6v3.8h2.8M9.4 2.6h5.2M12 2.6v3.2"/></g>
+<g id="i-timerup" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.4" r="7.6"/><path d="M12 16.6v-6m0 0-2.2 2.2M12 10.6l2.2 2.2M9.4 2.6h5.2"/></g>
+<g id="i-cal" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="5" width="17.2" height="15.4" rx="2.6"/><path d="M3.4 9.6h17.2M8 3.2v3.4M16 3.2v3.4"/></g>
+<g id="i-drive" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 3.8 6 10.4H9L3 14.2z"/><path d="M3 14.2 6 19.6h12l3-5.4z"/><path d="M15 14.2 9 3.8h6l6 10.4z"/></g>
+<g id="i-slides" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4" width="17.6" height="12" rx="2.2"/><path d="M12 16v4.4M8.4 20.4h7.2M7.6 8.6h6.4M7.6 11.8h4.2"/></g>
+<g id="i-onedrive" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 18.6a3.8 3.8 0 0 1-.4-7.6 5.2 5.2 0 0 1 9.6-1.6 4.2 4.2 0 0 1 4 4.2 4.9 4.9 0 0 1-.2 1.4"/><path d="M8.4 18.6h10.2a2.6 2.6 0 0 0 0-5.2"/></g>
+<g id="i-share" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="17.4" cy="5.6" r="2.6"/><circle cx="6.6" cy="12" r="2.6"/><circle cx="17.4" cy="18.4" r="2.6"/><path d="m9 10.7 6-3.8M9 13.3l6 3.8"/></g>
+<g id="i-powerbi" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 20.4h16.8"/><rect x="5" y="12" width="3.6" height="6.4" rx="1"/><rect x="10.2" y="7.6" width="3.6" height="10.8" rx="1"/><rect x="15.4" y="3.6" width="3.6" height="14.8" rx="1"/></g>
+<g id="i-play" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="5" width="18.8" height="14" rx="4"/><path d="m10.2 9.4 5 2.6-5 2.6z"/></g>
+<g id="i-tv" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="6" width="18.4" height="12.4" rx="2.4"/><path d="m8.4 2.8 3.6 3.2 3.6-3.2M9 21.2h6"/></g>
+<g id="i-ig" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="3.4" width="17.2" height="17.2" rx="5"/><circle cx="12" cy="12" r="3.9"/><circle cx="17" cy="7" r="1.1" fill="currentColor" stroke="none"/></g>
+<g id="i-fb" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 21v-8h2.7l.5-3.2h-3.2V7.7c0-.9.3-1.6 1.7-1.6h1.6V3.2A22 22 0 0 0 15.4 3c-2.5 0-4.2 1.5-4.2 4.3v2.5H8.4V13h2.8v8z"/></g>
+<g id="i-mix" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="2.8" width="8" height="8" rx="2"/><rect x="13.2" y="2.8" width="8" height="8" rx="2"/><rect x="2.8" y="13.2" width="8" height="8" rx="2"/><path d="M13.2 17.2h8M17.2 13.2v8"/></g>
+<g id="i-counter" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="6.4" width="18.4" height="11.2" rx="2.2"/><path d="M8.2 6.4v11.2M15.8 6.4v11.2M2.8 12h18.4"/></g>
+<g id="i-qr" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="3.4" width="7" height="7" rx="1.4"/><rect x="13.6" y="3.4" width="7" height="7" rx="1.4"/><rect x="3.4" y="13.6" width="7" height="7" rx="1.4"/><path d="M13.6 13.6h3.2v3.2h-3.2zM20.6 13.6v3.2M17.4 20.6h3.2M13.6 20.6h.8"/></g>
+<g id="i-quote" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 6.4C6.6 7.6 5 10 5 13.2v4.4h5.4v-5.4H7.8c0-2.2.8-3.7 2.6-4.4zM19.4 6.4C16.6 7.6 15 10 15 13.2v4.4h5.4v-5.4h-2.6c0-2.2.8-3.7 2.6-4.4z"/></g>
+<g id="i-canva" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 12A8.6 8.6 0 1 0 12 20.6c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.5-1.1-.3-.3-.4-.6-.4-1 0-.9.7-1.6 1.6-1.6h1.9a4.4 4.4 0 0 0 4.4-4.4z"/><circle cx="7.6" cy="11.4" r="1.1" fill="currentColor" stroke="none"/><circle cx="11" cy="7.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.4" cy="8.6" r="1.1" fill="currentColor" stroke="none"/></g>
+<g id="i-menu" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5.4 2.8h13.2a1.6 1.6 0 0 1 1.6 1.6v15.2a1.6 1.6 0 0 1-1.6 1.6H5.4a1.6 1.6 0 0 1-1.6-1.6V4.4a1.6 1.6 0 0 1 1.6-1.6z"/><path d="M8 7.4h8M8 11.4h8M8 15.4h4.6"/></g>
+<g id="i-split" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="4.6" width="18.4" height="14.8" rx="2.4"/><path d="M13.4 4.6v14.8M13.4 12h7.8"/></g>
+<g id="i-folder" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3.2 7.4a2.2 2.2 0 0 1 2.2-2.2h3.6l2 2.6h7.4a2.2 2.2 0 0 1 2.2 2.2v7.8a2.2 2.2 0 0 1-2.2 2.2H5.4a2.2 2.2 0 0 1-2.2-2.2z"/></g>
+<g id="i-monitor" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="4" width="18.4" height="12.6" rx="2.2"/><path d="M8.6 20.4h6.8M12 16.6v3.8"/></g>
+<g id="i-grid" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="3.4" width="7.2" height="7.2" rx="1.6"/><rect x="13.4" y="3.4" width="7.2" height="7.2" rx="1.6"/><rect x="3.4" y="13.4" width="7.2" height="7.2" rx="1.6"/><rect x="13.4" y="13.4" width="7.2" height="7.2" rx="1.6"/></g>
+<g id="i-arr" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 12h14.2M13 6.2 18.8 12 13 17.8"/></g>
+<g id="i-dl" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6v11.2M7.4 10.4 12 15l4.6-4.6M4 19.4h16"/></g>
+<g id="i-cpu" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2.2"/><rect x="9.6" y="9.6" width="4.8" height="4.8" rx="1"/><path d="M9.4 2.8v3.2M14.6 2.8v3.2M9.4 18v3.2M14.6 18v3.2M2.8 9.4H6M2.8 14.6H6M18 9.4h3.2M18 14.6h3.2"/></g>
+<g id="i-key" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4.4"/><path d="M12.4 12h8.2M17.6 12v3.4M20 12v2.4"/></g>
+<g id="i-shield" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 4.6 6v6c0 4.5 3.1 8.1 7.4 9.2 4.3-1.1 7.4-4.7 7.4-9.2V6z"/><path d="m9 12 2.2 2.2L15.4 10"/></g>
+<g id="i-bolt" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 2.6 4.6 13.6h6.2l-.2 7.8 8.8-11h-6.2z"/></g>
+<g id="i-info" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.8"/><path d="M12 11.2v5.2"/><circle cx="12" cy="7.8" r="1.1" fill="currentColor" stroke="none"/></g>
+<g id="i-win" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 6.2 10.4 5v6.4H3.6zM12 4.8l8.4-1.4v8H12zM3.6 12.6h6.8V19L3.6 17.8zM12 12.6h8.4v8L12 19.2z"/></g>
+<g id="i-android" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4.4 10.4a7.6 7.6 0 0 1 15.2 0"/><path d="M4.4 10.4h15.2v6.4a1.8 1.8 0 0 1-1.8 1.8H6.2a1.8 1.8 0 0 1-1.8-1.8z"/><path d="m7 6.4-1.4-2.2M17 6.4l1.4-2.2M9.6 18.6v2.2M14.4 18.6v2.2"/><circle cx="9.2" cy="7.6" r=".9" fill="currentColor" stroke="none"/><circle cx="14.8" cy="7.6" r=".9" fill="currentColor" stroke="none"/></g>
+<g id="i-burger" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></g>
+</defs></svg>
+
+<!-- ══════════════════ nav ══════════════════ -->
+<nav class="nav">
   <div class="nav-in">
-    <a class="brand" href="#top"><span class="brand-mark"></span><b class="disp">SIGNAGE&nbsp;MANAGER</b></a>
+    <a class="logo" href="#top"><span class="logo-m"></span>SIGNAGE MANAGER</a>
     <div class="nav-links">
-      <a href="#modules">Modules</a>
-      <a href="#fleet">Fleet</a>
-      <a href="#downloads">Downloads</a>
-      <a href="#adb-setup">Install</a>
-      <a href="#changelog">Patch log</a>
-      <a class="go" href="#downloads">Deploy</a>
+      <a href="#apps">Apps</a>
+      <a href="#designer">Designer</a>
+      <a href="#screens">Screens</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#download">Download</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#download" class="btn btn-1">Download free</a>
+      <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="mobile">
+        <svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-burger"/></svg>
+      </button>
     </div>
   </div>
-</div>
+  <div class="mobile" id="mobile">
+    <a href="#apps">Apps</a>
+    <a href="#designer">Designer</a>
+    <a href="#screens">Screens</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#download">Download</a>
+    <a href="#install">Install guides</a>
+  </div>
+</nav>
 
+<!-- ══════════════════ hero ══════════════════ -->
 <header class="hero" id="top">
-  <canvas id="net" aria-hidden="true"></canvas>
-  <span class="frame fr-tl"></span><span class="frame fr-tr"></span><span class="frame fr-bl"></span><span class="frame fr-br"></span>
-  <div class="hero-in">
-    <span class="sys hud"><i></i>GRID ONLINE · FREE · OPEN SOURCE · 0 CLOUD DEPENDENCIES</span>
-    <h1 class="disp">Command every screen.</h1>
-    <p class="sub">
-      One Windows PC becomes mission control for all your displays — ads, menus, schedules and
-      announcements deployed over your own network to <b>Android&nbsp;TV, LG&nbsp;webOS, Samsung&nbsp;Tizen</b>
-      or any browser. No cloud between you and your screens.
-    </p>
-    <div class="cta">
-      <a class="btn-go" href="#downloads">Deploy the console</a>
-      <a class="btn-ghost" href="#fleet">View the fleet →</a>
+  <div class="wrap hero-in">
+    <p class="eyebrow">Digital signage &nbsp;·&nbsp; Runs on your own network</p>
+    <div class="calib" aria-hidden="true"><i></i><span></span><i></i><span></span><i></i><span></span><i></i><span></span><i></i><span></span><i></i><span></span><i></i><span></span><i></i><span></span><i></i></div>
+    <h1 class="disp h1">Command every screen.</h1>
+    <p class="lede">One Windows PC drives every display on your network — Android TV, LG webOS, Samsung Tizen, or any browser that can open a URL.</p>
+    <p class="pricetag"><b>Free and open source.</b> No per-screen fee, no account, no cloud in between.</p>
+    <div class="btns">
+      <a href="#download" class="btn btn-1"><svg viewBox="0 0 24 24" width="16" height="16"><use href="#i-dl"/></svg> Download for Windows</a>
+      <a href="#apps" class="btn btn-2">See the 23 apps <svg viewBox="0 0 24 24" width="16" height="16"><use href="#i-arr"/></svg></a>
+      <span id="version-bar"></span>
+    </div>
+    <div class="hero-foot">
+      <span><svg viewBox="0 0 24 24" width="15" height="15"><use href="#i-cpu"/></svg> Runs on your LAN</span>
+      <span><svg viewBox="0 0 24 24" width="15" height="15"><use href="#i-key"/></svg> Pairs a TV in 30 seconds</span>
+      <span><svg viewBox="0 0 24 24" width="15" height="15"><use href="#i-shield"/></svg> Nothing phones home</span>
+    </div>
+  </div>
+
+  <div class="wrap" style="margin-top:clamp(36px,5vw,56px)">
+    <div class="shot">
+      <div class="shot-bar"><i></i><i></i><i></i><em>Signage Manager — 12 devices · server online</em></div>
+      <div class="au">
+        <aside class="au-side">
+          <div class="au-brand"><i></i>SIGNAGE</div>
+          <span class="au-n"><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-grid"/></svg>Dashboard</span>
+          <span class="au-n"><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-folder"/></svg>Content Library</span>
+          <span class="au-n"><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-canva"/></svg>Apps</span>
+          <span class="au-n"><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-slides"/></svg>Templates</span>
+          <span class="au-n"><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-split"/></svg>Screen Layouts</span>
+          <span class="au-n on"><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-monitor"/></svg>Devices</span>
+          <hr>
+          <span class="au-n"><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-bolt"/></svg>Emergency</span>
+          <span class="au-n"><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-cpu"/></svg>Settings</span>
+          <span class="au-live"><i></i>Server Online</span>
+        </aside>
+        <div class="au-main">
+          <div class="au-top">
+            <b>Devices</b><span class="au-pill">10 online · 1 idle · 1 offline</span><span class="au-av">SM</span>
+          </div>
+          <div class="au-body">
+            <div class="screens">
+              <div class="scr"><div class="prev"><span class="badge">LOBBY-01</span>
+                <div class="mini" style="background:linear-gradient(155deg,#0C2440,#071322)">
+                  <span class="big" style="font-size:26px;color:#4CC9FF;text-shadow:0 0 20px rgba(76,201,255,.45)">09:41</span>
+                  <span class="sub" style="color:#8FA6C4">Monday · 18 August</span></div></div>
+                <div class="meta"><span class="dot"></span><b>Main Lobby</b><u>1080p</u></div></div>
+
+              <div class="scr"><div class="prev"><span class="badge">CAFE-02</span>
+                <div class="mini-rows" style="background:linear-gradient(155deg,#12202E,#080F18);color:#D9E7F8">
+                  <div><b style="color:#FFB454">MENU</b></div>
+                  <div>Jollof &amp; chicken<u>&#8373;45</u></div>
+                  <div>Waakye special<u>&#8373;38</u></div>
+                  <div>Banku &amp; tilapia<u>&#8373;60</u></div>
+                  <div>Fresh juice<u>&#8373;15</u></div></div></div>
+                <div class="meta"><span class="dot"></span><b>Canteen Board</b><u>4K</u></div></div>
+
+              <div class="scr"><div class="prev"><span class="badge">RECEP-03</span>
+                <div class="mini" style="background:linear-gradient(155deg,#0E2A22,#06120E)">
+                  <span class="big" style="font-size:22px;color:#3DDC97">28°C</span>
+                  <span class="sub" style="color:#8FC4AC">Accra · Partly cloudy</span></div></div>
+                <div class="meta"><span class="dot"></span><b>Reception</b><u>1080p</u></div></div>
+
+              <div class="scr"><div class="prev"><span class="badge">WARD-04</span>
+                <div class="mini-rows" style="background:linear-gradient(155deg,#101A33,#070B16);color:#C9D8F2">
+                  <div><b style="color:#4CC9FF">NOW SERVING</b></div>
+                  <div>Counter 1<u>A-214</u></div>
+                  <div>Counter 2<u>A-215</u></div>
+                  <div>Counter 3<u>B-088</u></div></div></div>
+                <div class="meta"><span class="dot warn"></span><b>Queue Display</b><u>720p</u></div></div>
+
+              <div class="scr"><div class="prev"><span class="badge">HALL-05</span>
+                <div class="mini" style="background:linear-gradient(155deg,#2A1440,#100820)">
+                  <span class="big" style="font-size:24px;color:#C9A6FF">04:12</span>
+                  <span class="sub" style="color:#B49CD6">Countdown to doors</span></div></div>
+                <div class="meta"><span class="dot"></span><b>Main Hall</b><u>4K</u></div></div>
+
+              <div class="scr"><div class="prev"><span class="badge">STORE-06</span>
+                <div class="mini" style="background:#070C14">
+                  <span class="sub" style="color:#6E85AF;letter-spacing:.2em">LAST SEEN 6H AGO</span></div></div>
+                <div class="meta"><span class="dot off"></span><b>Stockroom</b><u>—</u></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
 
-<div id="version-bar"></div>
-
-<div class="strip">
-  <div class="strip-in">
-    <div class="cell"><div class="k">TRANSPORT</div><div class="v">LAN-ONLY · <em>ZERO UPLINK</em></div></div>
-    <div class="cell"><div class="k">FLEET SIZE</div><div class="v"><em>UNLIMITED</em> SCREENS</div></div>
-    <div class="cell"><div class="k">PAYLOADS</div><div class="v">IMG · VIDEO · HTML · TEXT</div></div>
-    <div class="cell"><div class="k">MODES</div><div class="v">LOOP · SCHEDULED · <em>MANUAL</em></div></div>
+<!-- ══════════════════ apps ══════════════════ -->
+<section class="sec tinted" id="apps">
+  <div class="wrap">
+    <div class="appbar">
+      <div class="stack" style="gap:10px;flex:1;min-width:260px">
+        <p class="eyebrow">23 live apps</p>
+        <h2 class="disp h2">Screens that update themselves.</h2>
+      </div>
+      <p class="small" style="max-width:36ch">Point an app at a calendar, a folder or a feed. It redraws on the TV without anyone touching the PC.</p>
+    </div>
+    <div class="apps">
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-clock"/></svg></span><b>Simple Clock</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-globe"/></svg></span><b>World Clock</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-cloud"/></svg></span><b>Weather</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-timer"/></svg></span><b>Countdown</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-timerup"/></svg></span><b>Count-up</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-cal"/></svg></span><b>Google Calendar</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-drive"/></svg></span><b>Google Drive</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-slides"/></svg></span><b>Google Slides</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-onedrive"/></svg></span><b>OneDrive</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-share"/></svg></span><b>SharePoint</b></span>
+      <span class="app"><span class="app-i hot"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-powerbi"/></svg></span><b>Power BI</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-play"/></svg></span><b>YouTube</b></span>
+      <span class="app"><span class="app-i hot"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-tv"/></svg></span><b>Live TV + Ads</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-ig"/></svg></span><b>Instagram</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-fb"/></svg></span><b>Facebook</b></span>
+      <span class="app"><span class="app-i hot"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-mix"/></svg></span><b>Social Mix</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-counter"/></svg></span><b>Instagram Counter</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-counter"/></svg></span><b>Facebook Counter</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-qr"/></svg></span><b>QR Code</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-quote"/></svg></span><b>Motivational Quotes</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-canva"/></svg></span><b>Canva</b></span>
+      <span class="app"><span class="app-i hot"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-menu"/></svg></span><b>MustHaveMenus</b></span>
+      <span class="app"><span class="app-i"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#i-split"/></svg></span><b>Split Screen</b></span>
+    </div>
   </div>
-</div>
+</section>
 
-<main>
-  <!-- ── System modules ───────────────────────────────────────────────────── -->
-  <section id="modules">
-    <span class="kicker">// SYSTEM MODULES</span>
-    <div class="sec-head" style="margin-bottom:0">
-      <h2 class="disp">Six systems. One console.</h2>
-      <p class="sec-sub">Everything ships inside the desktop app — the server boots with it, and the grid assembles itself.</p>
+<!-- ══════════════════ dark band ══════════════════ -->
+<section class="sec band" id="screens">
+  <div class="wrap">
+    <div class="stack" style="gap:14px;max-width:56ch">
+      <p class="eyebrow">One PC · Every screen</p>
+      <h2 class="disp h2">Twelve TVs. One person. No cloud in between.</h2>
+      <p class="lede">The server runs on the machine already sitting in your office. Screens pull from it over your own network — so signage keeps playing when the internet drops.</p>
     </div>
-    <div class="mods">
-      <div class="mod"><div class="id">MOD-01</div><h3>BROADCAST</h3><p>Override any screen — or all of them — instantly. A flash promo reaches the floor before the meeting ends.</p></div>
-      <div class="mod"><div class="id">MOD-02</div><h3>TIMELINE</h3><p>Scheduled projects rotate content by time of day. Breakfast board at 07:00, happy hour at 17:00, unattended.</p></div>
-      <div class="mod"><div class="id">MOD-03</div><h3>AUTO-LINK</h3><p>TVs discover the console over the network and register themselves. Pairing a screen takes under a minute.</p></div>
-      <div class="mod"><div class="id">MOD-04</div><h3>FLEET</h3><p>Live status for every display — online, playing, last seen. Name them, group them, command them individually.</p></div>
-      <div class="mod"><div class="id">MOD-05</div><h3>PAYLOADS</h3><p>Images, full-motion video, live HTML and text tickers in one playlist. If a browser renders it, a screen can play it.</p></div>
-      <div class="mod"><div class="id">MOD-06</div><h3>AIR-GAP</h3><p>The internet can go down; the grid keeps playing. Content never leaves your building — by architecture, not policy.</p></div>
+    <div class="wall">
+      <div class="scr"><div class="prev"><span class="badge">ANDROID TV</span><div class="mini" style="background:linear-gradient(155deg,#0C2440,#071322)"><span class="big" style="font-size:20px;color:#4CC9FF">09:41</span><span class="sub" style="color:#8FA6C4">Lobby</span></div></div><div class="meta"><span class="dot"></span><b>Android TV</b><u>×5</u></div></div>
+      <div class="scr"><div class="prev"><span class="badge">WEBOS</span><div class="mini" style="background:linear-gradient(155deg,#0E2A22,#06120E)"><span class="big" style="font-size:20px;color:#3DDC97">28°C</span><span class="sub" style="color:#8FC4AC">Reception</span></div></div><div class="meta"><span class="dot"></span><b>LG webOS</b><u>×3</u></div></div>
+      <div class="scr"><div class="prev"><span class="badge">TIZEN</span><div class="mini-rows" style="background:linear-gradient(155deg,#12202E,#080F18);color:#D9E7F8"><div><b style="color:#FFB454">MENU</b></div><div>Jollof<u>&#8373;45</u></div><div>Waakye<u>&#8373;38</u></div></div></div><div class="meta"><span class="dot"></span><b>Samsung Tizen</b><u>×2</u></div></div>
+      <div class="scr"><div class="prev"><span class="badge">BROWSER</span><div class="mini" style="background:linear-gradient(155deg,#2A1440,#100820)"><span class="big" style="font-size:20px;color:#C9A6FF">04:12</span><span class="sub" style="color:#B49CD6">Main Hall</span></div></div><div class="meta"><span class="dot"></span><b>Any browser</b><u>×2</u></div></div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ── Live fleet ───────────────────────────────────────────────────────── -->
-  <section id="fleet">
-    <span class="kicker">// LIVE FLEET</span>
-    <div class="sec-head" style="margin-bottom:0">
-      <h2 class="disp">Three screens, one push</h2>
-    </div>
-    <div class="screens">
-      <div class="tvw">
-        <div class="tv">
-          <svg viewBox="0 0 320 190" role="img" aria-label="Menu board screen">
-            <rect width="320" height="190" fill="#060b16"/>
-            <rect x="0" y="0" width="320" height="34" fill="#0d1b31"/>
-            <text x="18" y="22" font-size="13" fill="#4cc9ff" font-family="Consolas, monospace" letter-spacing="2">NIGHT MENU</text>
-            <text x="302" y="22" font-size="10" fill="#55688a" font-family="Consolas, monospace" text-anchor="end">22:41</text>
-            <g font-family="Segoe UI, sans-serif" font-size="12" fill="#d9e7f8">
-              <text x="18" y="62">Suya skewers</text><text x="302" y="62" text-anchor="end" fill="#4cc9ff">30</text>
-              <text x="18" y="88">Kelewele bowl</text><text x="302" y="88" text-anchor="end" fill="#4cc9ff">22</text>
-              <text x="18" y="114">Chichinga wrap</text><text x="302" y="114" text-anchor="end" fill="#4cc9ff">28</text>
-            </g>
-            <rect x="18" y="140" width="284" height="30" fill="#0d1b31"/>
-            <text x="30" y="159" font-size="11" fill="#8b7bff" font-family="Consolas, monospace">▶ 2-FOR-1 UNTIL MIDNIGHT</text>
-          </svg>
+<!-- ══════════════════ features ══════════════════ -->
+<section class="sec" id="designer">
+  <div class="wrap">
+
+    <div class="frow">
+      <div class="fr-txt">
+        <p class="eyebrow">Designer</p>
+        <h3 class="disp h2">Design the screen, not a slideshow.</h3>
+        <p class="lede">Split a display into zones and give each one its own source — a video in the main area, a menu beside it, a news ticker along the bottom.</p>
+        <ul class="fr-list">
+          <li>Drag zones on a 16:9 stage, snap to a grid</li>
+          <li>Any app or playlist can fill any zone</li>
+          <li>Save it as a template and push it to a whole group</li>
+        </ul>
+      </div>
+      <div class="shot shot-sm">
+        <div class="shot-bar"><i></i><i></i><i></i><em>Screen Layouts — Canteen Board</em></div>
+        <div class="au" style="grid-template-columns:1fr">
+          <div class="au-main">
+            <div class="au-top"><b>Designer</b><span class="au-pill">1920 × 1080 · 16:9</span></div>
+            <div class="au-body">
+              <div class="canvas">
+                <div class="stage">
+                  <div class="zone sel"><u>ZONE A · VIDEO</u><span class="hnd tl"></span><span class="hnd tr"></span><span class="hnd bl"></span><span class="hnd br"></span>
+                    <svg viewBox="0 0 24 24" width="22" height="22" style="color:#4CC9FF"><use href="#i-play"/></svg></div>
+                  <div class="zone"><u>ZONE B</u><svg viewBox="0 0 24 24" width="18" height="18" style="color:#5B7BAA"><use href="#i-cloud"/></svg></div>
+                  <div class="zone strip"><u style="position:static">ZONE C · TICKER</u><span style="font-size:7px;color:#6E85AF;letter-spacing:.08em">RSS · Company announcements</span></div>
+                </div>
+                <div class="tools">
+                  <span class="tool on">Zones · 3</span><span class="tool">Snap 8px</span><span class="tool">Transition: fade</span><span class="tool">Push to group · Canteen</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="tv-cap"><span>SCR-01 · KITCHEN PASS</span><i>● LIVE</i></div>
       </div>
-      <div class="tvw">
-        <div class="tv">
-          <svg viewBox="0 0 320 190" role="img" aria-label="Promo countdown screen">
-            <rect width="320" height="190" fill="#060b16"/>
-            <text x="160" y="52" font-size="13" fill="#8199ba" font-family="Consolas, monospace" text-anchor="middle" letter-spacing="4">DROP INCOMING</text>
-            <text x="160" y="106" font-size="44" fill="#4cc9ff" font-family="Bahnschrift, sans-serif" text-anchor="middle" font-weight="700">02:14:09</text>
-            <rect x="60" y="128" width="200" height="1.5" fill="#1b2a42"/>
-            <rect x="60" y="128" width="132" height="1.5" fill="#8b7bff"/>
-            <text x="160" y="158" font-size="11" fill="#d9e7f8" font-family="Segoe UI, sans-serif" text-anchor="middle">New collection · Aisle 3 · Friday 09:00</text>
-          </svg>
+    </div>
+
+    <div class="frow flip">
+      <div class="fr-txt">
+        <p class="eyebrow">Pairing</p>
+        <h3 class="disp h2">Pair a TV in thirty seconds.</h3>
+        <p class="lede">Install the player, and the screen shows a code. Type it once on the PC and that TV is yours — no keyboard, no account, no cable.</p>
+        <ul class="fr-list">
+          <li>Standard device-code pairing, the way a TV app should do it</li>
+          <li>Group screens and push content to all of them at once</li>
+          <li>Players already on the network keep working, unchanged</li>
+        </ul>
+      </div>
+      <div class="shot shot-sm">
+        <div class="shot-bar"><i></i><i></i><i></i><em>Player — waiting to pair</em></div>
+        <div class="pair">
+          <span class="cap">Enter this code on the manager</span>
+          <span class="code">K4P-72Q</span>
+          <span class="host">signage.local:8080 · LOBBY-07 · 1920×1080</span>
         </div>
-        <div class="tv-cap"><span>SCR-02 · SHOP FLOOR</span><i>● LIVE</i></div>
       </div>
-      <div class="tvw">
-        <div class="tv">
-          <svg viewBox="0 0 320 190" role="img" aria-label="Departures-style schedule screen">
-            <rect width="320" height="190" fill="#060b16"/>
-            <rect x="0" y="0" width="320" height="30" fill="#0d1b31"/>
-            <text x="18" y="20" font-size="12" fill="#3ddc97" font-family="Consolas, monospace" letter-spacing="2">TODAY // SESSIONS</text>
-            <g font-family="Consolas, monospace" font-size="11">
-              <text x="18" y="58" fill="#8199ba">09:00</text><text x="80" y="58" fill="#d9e7f8">Intro to 3D printing</text><text x="302" y="58" fill="#3ddc97" text-anchor="end">HALL A</text>
-              <text x="18" y="84" fill="#8199ba">11:30</text><text x="80" y="84" fill="#d9e7f8">Drone assembly lab</text><text x="302" y="84" fill="#3ddc97" text-anchor="end">HALL C</text>
-              <text x="18" y="110" fill="#8199ba">14:00</text><text x="80" y="110" fill="#d9e7f8">Robotics finals</text><text x="302" y="110" fill="#8b7bff" text-anchor="end">ARENA</text>
-              <text x="18" y="136" fill="#8199ba">17:00</text><text x="80" y="136" fill="#d9e7f8">Closing keynote</text><text x="302" y="136" fill="#3ddc97" text-anchor="end">ARENA</text>
-            </g>
-            <rect x="0" y="160" width="320" height="30" fill="#0d1b31"/>
-            <text x="18" y="179" font-size="10" fill="#55688a" font-family="Consolas, monospace">TICKER // Doors open 30 min before each session</text>
-          </svg>
+    </div>
+
+    <div class="frow">
+      <div class="fr-txt">
+        <p class="eyebrow">Emergency override</p>
+        <h3 class="disp h2">Take every screen, right now.</h3>
+        <p class="lede">One button interrupts whatever is playing, everywhere, and puts your message up instead. Release it and every screen returns to its schedule.</p>
+        <ul class="fr-list">
+          <li>Fire drills, closures, safety notices — instantly</li>
+          <li>Target one group or the whole building</li>
+          <li>Nothing is lost — playlists resume exactly where they were</li>
+        </ul>
+      </div>
+      <div class="shot shot-sm">
+        <div class="shot-bar"><i></i><i></i><i></i><em>Emergency — active on 12 screens</em></div>
+        <div class="emg">
+          <span class="b">OVERRIDE ACTIVE · ALL SCREENS</span>
+          <span class="t">FIRE DRILL — EVACUATE</span>
+          <span class="s">Use the nearest marked exit. Assembly point: north car park.</span>
         </div>
-        <div class="tv-cap"><span>SCR-03 · ATRIUM</span><i>● LIVE</i></div>
       </div>
-    </div>
-  </section>
-
-  <!-- ── Downloads ────────────────────────────────────────────────────────── -->
-  <span class="kicker" id="downloads">// DEPLOY PACKAGES</span>
-  <div class="sec-head"><h2 class="disp">Start with the console, add screens</h2></div>
-  <div class="download-grid">
-
-    <!-- Windows Desktop App -->
-    <div class="card">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 48 48" width="44" height="44"><rect x="4" y="8" width="40" height="26" rx="2" fill="none" stroke="#4cc9ff" stroke-width="2.5"/><rect x="9" y="13" width="14" height="9" fill="#4cc9ff"/><rect x="26" y="13" width="13" height="3" fill="#24365a"/><rect x="26" y="19" width="13" height="3" fill="#24365a"/><rect x="9" y="25" width="30" height="4" fill="#24365a"/><rect x="20" y="36" width="8" height="4" fill="#24365a"/><rect x="14" y="41" width="20" height="2.5" fill="#24365a"/></svg>
-      </div>
-      <h2 class="disp">MISSION CONTROL</h2>
-      <p>
-        Windows management console that runs the local server automatically.
-        Upload content, set schedules, monitor TVs, and push ads on demand.
-      </p>
-      <div class="card-meta">
-        <span class="pill">WINDOWS 11 / 10</span>
-        <span class="pill">CONSOLE + SERVER</span>
-        <span class="pill">~74 MB</span>
-      </div>
-      <a id="btn-desktop" class="btn-download" href="#" target="_blank">
-        <span class="spinner" id="spin-desktop"></span>
-        <span id="label-desktop">Checking for latest…</span>
-      </a>
-      <a id="btn-releases" class="btn-secondary" href="#" target="_blank">View all releases ↗</a>
-    </div>
-
-    <!-- Android TV APK -->
-    <div class="card">
-      <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 48 48" width="44" height="44"><rect x="4" y="10" width="40" height="24" rx="2" fill="none" stroke="#4cc9ff" stroke-width="2.5"/><rect x="8" y="14" width="32" height="16" fill="#0d1b31"/><path d="M18 18 l8 4 -8 4 z" fill="#4cc9ff"/><rect x="19" y="36" width="10" height="3" fill="#24365a"/><circle cx="17" cy="6" r="1.6" fill="#3ddc97"/><circle cx="31" cy="6" r="1.6" fill="#3ddc97"/></svg>
-      </div>
-      <h2 class="disp">TV APP — ANDROID</h2>
-      <p>
-        Fullscreen kiosk player for TCL / Google TV / Android TV.
-        Sideload via ADB — auto-starts on boot, reconnects automatically.
-      </p>
-      <div class="card-meta">
-        <span class="pill">ANDROID TV / GOOGLE TV</span>
-        <span class="pill">ANDROID 5.0+</span>
-        <span class="pill">~2.4 MB</span>
-      </div>
-      <a id="btn-tv" class="btn-download" href="#" target="_blank">
-        <span class="spinner" id="spin-tv"></span>
-        <span id="label-tv">Checking for latest…</span>
-      </a>
-      <a id="btn-adb-jump" class="btn-secondary" href="#adb-setup">ADB install guide ↓</a>
-    </div>
-
-    <!-- LG webOS IPK -->
-    <div class="card">
-      <div class="card-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="44" height="44" style="display:block">
-          <circle cx="24" cy="24" r="23" fill="none" stroke="#A50034" stroke-width="2.5"/>
-          <text x="24" y="31" font-family="'Arial Black',Arial,sans-serif" font-weight="900" font-size="17" fill="#A50034" text-anchor="middle">LG</text>
-        </svg>
-      </div>
-      <h2 class="disp">TV APP — LG WEBOS</h2>
-      <p>
-        Fullscreen kiosk player for LG OLED / QNED / NanoCell TVs running
-        webOS. Pre-packaged IPK — install directly via the webOS Dev Manager,
-        no building required.
-      </p>
-      <div class="card-meta">
-        <span class="pill">WEBOS 4+</span>
-        <span class="pill">LG C1 / C2 / C3…</span>
-        <span class="pill">~50 KB</span>
-      </div>
-      <a id="btn-webos" class="btn-download" href="#" target="_blank">
-        <span class="spinner" id="spin-webos"></span>
-        <span id="label-webos">Checking for latest…</span>
-      </a>
-      <a id="btn-webos-jump" class="btn-secondary" href="#webos-setup">Install guide ↓</a>
-    </div>
-
-    <!-- Samsung Tizen WGT -->
-    <div class="card">
-      <div class="card-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 44" width="110" height="40" style="display:block">
-          <rect x="1" y="1" width="118" height="42" rx="6" fill="none" stroke="#3b5aa8" stroke-width="2"/>
-          <text x="60" y="28" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="13" fill="#7a9ce8" text-anchor="middle" letter-spacing="3">SAMSUNG</text>
-        </svg>
-      </div>
-      <h2 class="disp">TV APP — SAMSUNG TIZEN</h2>
-      <p>
-        Fullscreen kiosk player for Samsung QLED / Neo QLED / Frame TVs
-        running Tizen OS. Pre-built and signed WGT — install directly with
-        Device Manager or the Tizen CLI, no building required.
-      </p>
-      <div class="card-meta">
-        <span class="pill">TIZEN 6.0+</span>
-        <span class="pill">SAMSUNG 2021+</span>
-        <span class="pill">~50 KB</span>
-      </div>
-      <a id="btn-tizen" class="btn-download" href="#" target="_blank">
-        <span class="spinner" id="spin-tizen"></span>
-        <span id="label-tizen">Checking for latest…</span>
-      </a>
-      <a id="btn-tizen-jump" class="btn-secondary" href="#tizen-setup">Install guide ↓</a>
     </div>
 
   </div>
+</section>
 
-  <!-- ── webOS Install Steps ───────────────────────────────────────────────── -->
-  <section class="steps" id="webos-setup">
-    <span class="kicker">// INSTALL SEQUENCE — LG WEBOS</span>
-    <h2 class="disp" style="margin-top:10px">How to install on LG webOS</h2>
-    <div class="steps-grid" style="margin-top:22px">
-      <div class="step">
-        <div class="step-num">01</div>
-        <h3>Enable Developer Mode</h3>
-        <p>On your LG TV go to <b>Settings → Support → TV Information</b>, then click the TV logo <b>5 times</b> to reveal the Developer Mode app in the LG Content Store.</p>
+<!-- ══════════════════ benefit cards ══════════════════ -->
+<section class="sec-tight">
+  <div class="wrap">
+    <div class="cards">
+      <div class="card"><svg class="ci" viewBox="0 0 24 24"><use href="#i-cpu"/></svg><b>One PC is the whole server</b><p>No hosting bill, no rack, no VM. The machine in your office already does the job.</p></div>
+      <div class="card"><svg class="ci" viewBox="0 0 24 24"><use href="#i-tv"/></svg><b>The TVs you already own</b><p>Android TV, LG webOS and Samsung Tizen have native players. Anything else just opens a URL.</p></div>
+      <div class="card"><svg class="ci" viewBox="0 0 24 24"><use href="#i-shield"/></svg><b>Nothing leaves your network</b><p>Media, schedules and device names stay on your LAN. The API only answers to the local machine.</p></div>
+      <div class="card"><svg class="ci" viewBox="0 0 24 24"><use href="#i-bolt"/></svg><b>Built for old panels</b><p>The player targets Chromium 53, so the eight-year-old TV in the corridor renders it correctly too.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ proof ══════════════════ -->
+<section class="sec tinted">
+  <div class="wrap proof">
+    <div>
+      <p class="eyebrow" style="margin-bottom:14px">Runs on</p>
+      <blockquote>Android TV · LG webOS · Samsung Tizen · any browser that can open a URL.</blockquote>
+      <p class="small" style="margin-top:18px;max-width:52ch">Native shells for the three TV platforms, plus a plain web player for PCs, media sticks and set-top boxes. Same server, same schedule, same content.</p>
+    </div>
+    <div class="pstat">
+      <div><b>23</b><span>live apps</span></div>
+      <div><b>201</b><span>tests passing</span></div>
+      <div><b id="stat-ver">v1.9</b><span>latest release</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ pricing ══════════════════ -->
+<section class="sec" id="pricing">
+  <div class="wrap">
+    <div class="stack stack-c">
+      <p class="eyebrow">Pricing</p>
+      <h2 class="disp h2">Free.</h2>
+      <p class="lede" style="text-align:center">Every screen, every app, every layout. Download it and run it — there is nothing to buy today.</p>
+    </div>
+
+    <div class="plans">
+      <div class="plan pick">
+        <div class="plan-top"><b>Signage Manager</b><span class="chip">Free</span></div>
+        <div class="plan-p">&#8373;0<small> / screen / month</small></div>
+        <ul>
+          <li>Unlimited screens and playlists</li>
+          <li>All 23 apps, Designer and layouts</li>
+          <li>Emergency override and groups</li>
+        </ul>
+        <a class="btn btn-1" href="#download"><svg viewBox="0 0 24 24" width="16" height="16"><use href="#i-dl"/></svg> Download for Windows</a>
       </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <h3>Install Developer Mode app</h3>
-        <p>Open the <b>LG Developer Mode</b> app from the Content Store, sign in with an LG developer account (free), and turn <b>Dev Mode Status</b> on.</p>
+
+      <div class="plan">
+        <div class="plan-top"><b>TV players</b></div>
+        <div class="plan-p">&#8373;0<small> / device</small></div>
+        <ul>
+          <li>Android TV APK</li>
+          <li>LG webOS and Samsung Tizen builds</li>
+          <li>Browser player needs no install</li>
+        </ul>
+        <a class="btn btn-2" href="#tv-players">Get the players</a>
       </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <h3>Install webOS Dev Manager</h3>
-        <p>On your Windows PC, download <b>webOS TV Dev Manager</b> from the LG Developer site or install the VS Code extension. Add your TV's IP address as a device.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">04</div>
-        <h3>Install the IPK</h3>
-        <p>In webOS Dev Manager, select your TV, click <b>Install App</b>, and choose the downloaded <code>signage-webos-player.ipk</code> file.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">05</div>
-        <h3>Configure server URL</h3>
-        <p>Launch <b>Signage Player</b> from the LG Home Screen. Enter the server URL shown in the desktop app's Settings page and press Connect.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">06</div>
-        <h3>Done — reconnects automatically</h3>
-        <p>The player auto-connects on next launch. Press the <b>Back</b> button on your remote to return to settings and change the server URL.</p>
+
+      <div class="plan">
+        <div class="plan-top"><b>Source</b></div>
+        <div class="plan-p">MIT<small> · on GitHub</small></div>
+        <ul>
+          <li>Build it yourself, fork it, ship it</li>
+          <li>Add your own app to the registry</li>
+          <li>Issues and releases in the open</li>
+        </ul>
+        <a class="btn btn-2" href="https://github.com/abodan09/signage-manager" target="_blank" rel="noopener">View on GitHub</a>
       </div>
     </div>
 
-    <div class="adb-box">
-      <h3>Command-line install (ares-cli)</h3>
-      <p>If you prefer the terminal, install LG's <code>@webosose/ares-cli</code> and run:</p>
-      <div class="adb-command">
-        <span id="webos-cmd">ares-install --device &lt;TV-name&gt; signage-webos-player.ipk</span>
-        <button class="copy-btn" onclick="copyWebosCmd()">Copy</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Samsung Tizen Install Steps ─────────────────────────────────────── -->
-  <section class="steps" id="tizen-setup">
-    <span class="kicker">// INSTALL SEQUENCE — SAMSUNG TIZEN</span>
-    <h2 class="disp" style="margin-top:10px">How to install on Samsung Tizen</h2>
-    <div class="steps-grid" style="margin-top:22px">
-      <div class="step">
-        <div class="step-num">01</div>
-        <h3>Enable Developer Mode</h3>
-        <p>On your Samsung TV go to <b>Apps</b>, then quickly enter <b>12345</b> on the remote. A Developer Mode dialog will appear — toggle it <b>ON</b> and enter your PC's IP address.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <h3>Restart the TV</h3>
-        <p>The TV will prompt you to restart. After reboot, a <b>DEVELOP MODE</b> banner should appear at the top of the Apps screen, confirming developer mode is active.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <h3>Install Tizen Studio</h3>
-        <p>Download <b>Tizen Studio</b> from the Samsung developer site and install it on your Windows PC. Open <b>Device Manager</b> from the toolbar.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">04</div>
-        <h3>Connect the TV</h3>
-        <p>In Device Manager, click <b>Remote Device Manager → Scan</b> or add the TV IP manually. Right-click the TV and select <b>Connect</b>. The status should turn green.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">05</div>
-        <h3>Install the WGT</h3>
-        <p>In Tizen Studio, go to <b>Tools → Tizen → Install Tizen App</b>, select the connected TV, and choose the downloaded <code>signage-tizen.wgt</code> file. Or run:</p>
-        <code id="tizen-install-cmd">tizen install -n signage-tizen.wgt -t &lt;device-id&gt;</code>
-      </div>
-      <div class="step">
-        <div class="step-num">06</div>
-        <h3>Configure &amp; enjoy</h3>
-        <p>Launch <b>Signage Player</b> from the Samsung Smart Hub. Enter the server URL from the desktop app's Settings page and press Connect. The app auto-reconnects on next launch.</p>
-      </div>
-    </div>
-
-    <div class="adb-box">
-      <h3>CLI install (Tizen CLI)</h3>
-      <p>If you have the Tizen CLI on your PATH, connect the TV via SDB and run:</p>
-      <div class="adb-command">
-        <span id="tizen-cmd">tizen sdb connect &lt;TV-IP&gt; &amp;&amp; tizen install -n signage-tizen.wgt -t &lt;device-id&gt;</span>
-        <button class="copy-btn" onclick="copyTizenCmd()">Copy</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── TV Install Steps ──────────────────────────────────────────────────── -->
-  <section class="steps" id="adb-setup" style="margin-bottom:0">
-    <span class="kicker">// INSTALL SEQUENCE — ANDROID TV</span>
-    <h2 class="disp" style="margin-top:10px">How to install the TV App</h2>
-
-    <div class="adb-box warn" style="margin:22px 0 24px">
-      <h3>Updating from v1.5.2 or earlier?</h3>
-      <p>
-        Releases from v1.5.3 are signed with a permanent release key (older builds used a
-        throw-away debug key), so the very first update requires a clean install:
-        run <code>adb uninstall com.signage.tvplayer</code> before installing the new APK.
-        Future updates install over the top normally.
-      </p>
-    </div>
-
-    <!-- ── Video guide ──────────────────────────────────────────────────────
-         Add a src attribute to the video below to publish the guide:
-         src="https://your-storage.com/signage-install-guide.mp4"
-         You can also add  poster="https://…/thumbnail.jpg"  for a preview image.
-         Leave it off entirely and the placeholder underneath stays visible.
-    ─────────────────────────────────────────────────────────────────────── -->
-    <div class="video-wrap" id="video-wrap">
-      <video
-        id="guide-video"
-        controls
-        preload="none"
-      ></video>
-      <div class="video-placeholder" id="video-placeholder">
-        <div class="ph-icon">🎬</div>
-        <p>Installation video guide coming soon</p>
-        <small>Follow the written steps below in the meantime</small>
-      </div>
-    </div>
-
-    <div class="steps-grid">
-      <div class="step">
-        <div class="step-num">01</div>
-        <h3>Enable Developer Mode on the TV</h3>
-        <p>Settings → Device Preferences → About → scroll to <b>Build</b> → click it <b>7 times</b> until "Developer mode enabled" appears.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <h3>Enable USB / Network Debugging</h3>
-        <p>Settings → Device Preferences → Developer Options → turn on <b>USB debugging</b> and note the TV's IP address (Settings → Network).</p>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <h3>Connect via ADB</h3>
-        <p>From the Windows PC running the desktop app, open a terminal:</p>
-        <code>adb connect &lt;TV-IP&gt;</code>
-      </div>
-      <div class="step">
-        <div class="step-num">04</div>
-        <h3>Install the APK</h3>
-        <p>Point to the downloaded APK file:</p>
-        <code>adb install signage-tv-player.apk</code>
-      </div>
-      <div class="step">
-        <div class="step-num">05</div>
-        <h3>Configure the server URL</h3>
-        <p>The app opens a setup screen. Enter the server URL shown in the desktop app's <b>Settings</b> page, or use ADB to skip the screen entirely:</p>
-      </div>
-      <div class="step">
-        <div class="step-num">06</div>
-        <h3>Done — auto-starts on boot</h3>
-        <p>The TV app auto-starts when the TV powers on. Hold <b>OK</b> for 3 seconds to return to the setup screen.</p>
-      </div>
-    </div>
-
-    <!-- TCL-specific troubleshooting -->
-    <div class="adb-box warn" style="margin-top:24px">
-      <h3>App crashes or won't start on a TCL / cheaper Android TV?</h3>
-      <p style="margin-bottom:8px">Three TV-side settings cause most crashes of sideloaded apps on TCL sets:</p>
-      <p style="margin-bottom:8px">
-        <b>1. Android System WebView disabled/outdated</b> — the player runs in WebView.
-        TV Settings → Apps → See all apps → show system apps → <b>Android System WebView</b> → Enable,
-        then update it in the Play Store. Check its state over ADB with
-        <code>adb shell dumpsys webviewupdate</code>.
-      </p>
-      <p style="margin-bottom:8px">
-        <b>2. TCL "Safe Guard" app watchdog</b> — open the pre-installed <b>Safe Guard</b> app →
-        <b>Automatic start setting</b> → disable automatic management (or allow Signage TV Player).
-        Safe Guard silently kills or blocks sideloaded apps otherwise.
-      </p>
-      <p style="margin-bottom:8px">
-        <b>3. Google Play Protect</b> — Play Store → profile icon → Play Protect → Settings →
-        turn off scanning (or approve the app when prompted). Play Protect can kill or even
-        uninstall sideloaded APKs on Google TV.
-      </p>
-      <p>
-        Still crashing? From v1.5.4 the app shows the crash reason on screen the next time it opens.
-        You can also capture it with <code>adb logcat -b crash -d</code> after reproducing the crash.
-      </p>
-    </div>
-
-    <!-- Connection troubleshooting -->
-    <div class="adb-box warn" style="margin-top:24px">
-      <h3>TV can't find or reach the PC?</h3>
-      <p style="margin-bottom:8px">
-        <b>Update both apps to v1.5.5 first.</b> Older versions advertised the wrong address when the PC
-        had a VPN or virtual network adapter (Tailscale, Hyper-V, VPN clients…) — the desktop app now
-        ignores those and the Settings page shows the exact URL to enter on the TV.
-      </p>
-      <p style="margin-bottom:8px">
-        <b>Same network:</b> the TV and PC must be on the same router network. A phone hotspot, guest
-        Wi-Fi, or a router with <b>AP/client isolation</b> enabled blocks device-to-device traffic —
-        disable isolation in the router settings or use the main (non-guest) network for both.
-      </p>
-      <p style="margin-bottom:8px">
-        <b>Windows Firewall:</b> when Windows asks whether "Signage Manager" may access the network,
-        choose <b>Allow</b> (tick "Private networks"). If it was blocked: Windows Security → Firewall →
-        Allow an app through firewall → enable Signage Manager for Private networks.
-      </p>
-      <p>
-        From v1.5.5 the TV app tests the connection when you press Connect and tells you exactly what
-        failed (refused = firewall/app not running; timeout = wrong network or AP isolation).
-      </p>
-    </div>
-
-    <!-- ADB skip-setup command -->
-    <div class="adb-box" style="margin-top:24px" id="adb-skip">
-      <h3>Skip the setup screen via ADB</h3>
-      <p>Replace <code>192.168.1.x</code> with the IP shown in the desktop app's Settings page, then run this once after installing the APK:</p>
-      <div class="adb-command">
-        <span id="adb-cmd">adb shell am start -n com.signage.tvplayer/.SetupActivity --es SERVER_URL "http://192.168.1.x:3001"</span>
-        <button class="copy-btn" onclick="copyCmd()">Copy</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Changelog ─────────────────────────────────────────────────────────── -->
-  <section style="margin-top:72px;margin-bottom:24px" id="changelog">
-    <span class="kicker">// PATCH LOG</span>
-    <h2 class="disp" style="font-size:clamp(22px,3vw,30px);text-transform:uppercase;letter-spacing:0.04em;margin:10px 0 8px">Changelog</h2>
-    <p style="font-size:13.5px;color:var(--dim);margin-bottom:24px">
-      What's new in each release — see <a href="https://github.com/abodan09/signage-manager/releases" target="_blank" style="color:var(--glow);text-decoration:none">GitHub Releases</a> for full details.
+    <p class="pnote">
+      <svg viewBox="0 0 24 24" width="16" height="16" style="flex:none;margin-top:2px;color:var(--accent)"><use href="#i-info"/></svg>
+      <span><b>On staying free.</b> Running Signage Manager entirely on your own network will always be free — that is the whole point of the design, and it costs us nothing to run. Anything that leans on hosted infrastructure may need to pay for itself later. If that day comes we will say so here first, well before it affects anyone.</span>
     </p>
-    <div style="display:flex;flex-direction:column;gap:14px">
+  </div>
+</section>
 
-      <div class="log-entry latest">
-        <div class="log-head">
-          <span class="log-ver">v1.9.0</span>
-          <span class="log-tag">Latest</span>
-        </div>
-        <ul>
-          <li>New app: <b>Social Mix</b> — Instagram, Facebook and X on one wall, every post badged with the network it came from so a room can tell them apart at a glance. Each network is read from a link, either a wall service's feed or an RSS feed</li>
-          <li>New app: <b>MustHaveMenus</b> — put a menu you designed at musthavemenus.com on a screen by pasting its Share link, and republish the design to update the screens. A menu with several pages can play through all of them. A link that was never published is refused when you save it, instead of leaving a blank screen in the dining room</li>
-          <li>New: a <b>Four columns</b> preset in the app zone editor — four full-height panes side by side, the upright counterpart to Quarters</li>
-          <li>Social walls now draw posts that are only words. A post with no picture used to leave a photo-shaped gap on the wall</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head">
-          <span class="log-ver">v1.8.3</span>
-        </div>
-        <ul>
-          <li>New: after you install an update, the app now shows <b>what changed</b> the first time it starts — naming the version you came from, listing the changes, and appearing only once. Previously an update arrived with nothing to say for itself</li>
-          <li>The update prompt is back to its plain wording. It had started appending a change count as soon as release notes began being published, which made updating look different when nothing about it had changed</li>
-          <li>Fixed: release notes are shown as plain sentences, instead of leaving formatting marks like <code>**bold**</code> visible in the text</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head">
-          <span class="log-ver">v1.8.2</span>
-        </div>
-        <ul>
-          <li><b>Reporting a problem no longer sends you to GitHub.</b> Fill in the form, press <b>Send report</b>, and it reaches us directly — no GitHub account, no second step in a browser</li>
-          <li>You can leave your email with a report, so we can actually reply. It is optional and used for nothing else</li>
-          <li>The app tells you honestly what happened: whether the report was filed straight away, or received and held because our end was unreachable. If we cannot be reached at all it falls back to the old browser flow, so a report is never lost</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head">
-          <span class="log-ver">v1.8.1</span>
-        </div>
-        <ul>
-          <li>New: <b>six ready-made emergency and flash messages</b> — a fire drill, a full-building evacuation and a lockdown, plus a full car park, an early close and overnight maintenance — so the Emergency page is useful the first time you open it. Edit them to suit your building; any you delete stay deleted</li>
-          <li>The Emergency page now opens with the four figures you actually want in an incident: what is live, what is prepared, how many screens the broadest message reaches, and how many screens are offline and will pick it up when they reconnect</li>
-          <li>Emergency and Flash messages are now listed separately, emergencies first, so the most serious message is never sitting below a parking notice. Anything you create afterwards files itself into the right section on its own</li>
-          <li>Fixed: a rare fault in the progress bar could leave a screen stuck on whatever it was showing instead of moving to the next item. The next item is now scheduled before the bar is drawn, so nothing the bar does can strand the rotation</li>
-          <li>Fixed: dashes and the × symbol appeared as garbled characters throughout the Screen Layouts page</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head">
-          <span class="log-ver">v1.8.0</span>
-        </div>
-        <ul>
-          <li>New: <b>apps</b> — 21 boards that fill themselves from a live source instead of a file you upload: Instagram and Facebook walls, a follower counter for each, YouTube (videos, Shorts, live streams and playlists), Weather (three styles, seven days, no API key needed), Google Calendar, Google Slides, Google Drive, OneDrive, SharePoint, Power BI, Canva, Live TV with adverts, Split Screen, Simple Clock, World Clock, QR Code, Motivational Quotes, and Countdown / Count-up</li>
-          <li>New: <b>Designer</b> — build a board from scratch with a proper shape library, live widgets, typed QR codes and effects, then keep what you make in a team template library with filters to find it again</li>
-          <li>New: <b>screen layouts</b> — divide a screen into zones, each one playing anything the manager can serve, so a single TV can show a video, a menu and a ticker at once</li>
-          <li>New: <b>emergency and flash messages</b> — put an urgent notice on one screen or on every screen at once. Screens leave their playlist immediately and pick it up again the moment the message is cleared</li>
-          <li>Templates are now sorted into <b>categories</b>, with extra packs downloaded only when you want them rather than shipped with the app</li>
-          <li>Fixed: the zone editor crashed when it was opened; an emergency message could be unreadable for two separate reasons; the weather data provider is now credited as its licence requires; and a hard review of Motivational Quotes turned up six defects, one of them serious</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head">
-          <span class="log-ver">v1.7.0</span>
-        </div>
-        <ul>
-          <li>New: <b>templates</b> — six ready-made layouts (Fullscreen, Fullscreen + Ticker, Lower Third, Branded Frame, Welcome / Lobby and Portrait Poster) with your own colours, font, logo and clock, previewed live in the app before you assign them</li>
-          <li>A template can be set for one screen, for a whole group, or as the default for everything; each screen renders its own, and remembers it so it still looks right if it powers on while the manager is off</li>
-          <li>New: <b>screen pairing</b> — a TV shows an 8-letter code and you add it from the Devices page, so screens are claimed on purpose instead of any device on the network connecting itself. Existing screens keep working exactly as before; pairing only becomes mandatory if you switch it on in Settings</li>
-          <li>Managing the server is now limited to this PC. TVs still connect normally, but another machine on the network can no longer list your screens or push content to them</li>
-          <li>Fixed a serious bug on LG webOS 4 TVs: any scheduled content caused a permanently black screen. Those panels also had the "no content" screen and the new layouts rendered incorrectly — all corrected</li>
-          <li>Un-pair or remove a screen and it now returns to a pairing code immediately, instead of leaving old content on the wall</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head">
-          <span class="log-ver">v1.6.0</span>
-        </div>
-        <ul>
-          <li>New: <b>device groups</b> — organise screens by location or purpose (Lobby, Cafeteria, Menu Boards) and push content or a whole project to every screen in a group at once</li>
-          <li>A screen can belong to several groups, each with its own colour; the Devices page shows group tags on every TV and lets you filter by group or show only ungrouped screens</li>
-          <li>Group pushes report exactly what happened — how many screens received the content and how many were skipped because they were offline</li>
-          <li>Fixed: a TV that reconnected could silently fall out of its groups, and renaming a device no longer risks clearing other fields</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head">
-          <span class="log-ver">v1.5.5</span>
-        </div>
-        <ul>
-          <li>Fixed auto-discovery and manual connection failing when the PC has a VPN or virtual network adapter (Tailscale, Hyper-V, WSL…) — the server now advertises the real LAN address on every network it is connected to</li>
-          <li>Settings page now shows the actual URL to enter on the TV (it previously showed "localhost", which only works on the PC itself)</li>
-          <li>Android TV: discovery now holds a Wi-Fi multicast lock — wireless TVs previously never received the beacon at all</li>
-          <li>Android TV: pressing Connect now tests the connection and explains exactly what failed (firewall, wrong network, AP isolation…)</li>
-          <li>Android TV: the player shows a clear "can't reach the server" banner with instructions instead of a silent black screen</li>
-          <li>New: anonymous usage statistics, with an opt-out under Settings → Privacy — only app version, OS and named feature events are shared, never your content or media</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head"><span class="log-ver">v1.5.4</span></div>
-        <ul>
-          <li>Fixed Android TV app crashing on TCL and other low-memory TVs — a WebView renderer crash (heavy video / out-of-memory) now rebuilds the player instead of killing the app</li>
-          <li>Removed the emoji startup component that could crash the app at launch on TVs without Google font services</li>
-          <li>If the app ever crashes, it now shows the exact crash reason on screen at next launch</li>
-          <li>Player page now works on older TV browsers (Chromium &lt; 87) — content layers no longer collapse to a black screen</li>
-          <li>Player now skips unplayable videos/images (unsupported codec) instead of hanging on a black screen</li>
-          <li>Website: added a TCL troubleshooting section (WebView, Safe Guard, Play Protect)</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head"><span class="log-ver">v1.5.3</span></div>
-        <ul>
-          <li>Fixed Android TV app opening and immediately closing on launch</li>
-          <li>Android APK is now a signed release build with a permanent key — future updates install over the top (one-time clean install needed coming from older versions)</li>
-          <li>Samsung Tizen package is now properly signed — installs directly via Device Manager / Tizen CLI, no more building it yourself in Tizen Studio</li>
-          <li>Auto-discovery on Android is more reliable (keeps listening instead of giving up on the first stray packet)</li>
-          <li>Network scan fixed on older LG webOS models</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head"><span class="log-ver">v1.5.2</span></div>
-        <ul>
-          <li>Definitive fix for the update error "Failed to uninstall old application files (code 2)" — the installer now closes the running app itself and never aborts an update because the previous uninstaller failed</li>
-          <li>Updates now restart the app automatically when finished</li>
-          <li>App files are packaged with asar — dramatically fewer files on disk, faster installs and updates</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head"><span class="log-ver">v1.5.1</span></div>
-        <ul>
-          <li>Fixed installer error "Cannot uninstall old application files (code 2)" when updating from a previous version</li>
-          <li>Installer now automatically cleans up stale uninstall entries left by older installs</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head"><span class="log-ver">v1.5.0</span></div>
-        <ul>
-          <li>Auto-discovery — desktop broadcasts its address via UDP; TV apps detect and connect automatically without manual IP entry</li>
-          <li>Push project — push an entire project's content to a TV in one click from the Devices page</li>
-          <li>Report an Issue dialog with GitHub pre-fill — accessible from Help menu</li>
-          <li>Changelog section added to the website</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head"><span class="log-ver">v1.4.0</span></div>
-        <ul>
-          <li>Text content now plays as a concurrent overlay (z-index 5) on top of images, videos, and web pages</li>
-          <li>Overlay opacity slider (0–100%) and transparent background toggle per text item</li>
-          <li>Projects — group media files with shared schedule/duration; multi-file upload in one step</li>
-          <li>Attach / detach existing content items to/from projects</li>
-          <li>Release notes displayed as bullet points in the update dialog and banner</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head"><span class="log-ver">v1.2.0</span></div>
-        <ul>
-          <li>Samsung Tizen WGT app — fullscreen kiosk player for Samsung QLED / Frame TVs</li>
-          <li>Auto-update across all platforms — Electron, Android TV, webOS, Tizen</li>
-          <li>Help menu with How To guide, About dialog, and manual update check</li>
-          <li>CI pipeline extended to build and publish all four platform packages</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head"><span class="log-ver">v1.1.0</span></div>
-        <ul>
-          <li>LG webOS IPK app — kiosk player for LG OLED / QNED TVs with ares-cli packaging</li>
-          <li>Back-key navigation returns to server setup screen on webOS and Tizen</li>
-          <li>Brand SVG logos (LG, Samsung) on the download page</li>
-        </ul>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-head"><span class="log-ver">v1.0.0</span></div>
-        <ul>
-          <li>Initial release — Windows Electron desktop app with local Express server</li>
-          <li>Android TV / Google TV APK with WebView kiosk player</li>
-          <li>Image, video, HTML, and text content types with loop / scheduled / manual modes</li>
-          <li>Real-time WebSocket push, device management, and drag-to-reorder playlist</li>
-        </ul>
-      </div>
-
+<!-- ══════════════════ download — the manager ══════════════════ -->
+<section class="sec tinted" id="download">
+  <div class="wrap">
+    <div class="stack stack-c">
+      <p class="eyebrow">Download</p>
+      <h2 class="disp h2">Start with the console.</h2>
+      <p class="lede" style="text-align:center">The Windows app is the manager and the server in one. Install it, then add screens.</p>
     </div>
-  </section>
 
-</main>
+    <div class="dl-grid" style="grid-template-columns:minmax(0,1fr);max-width:560px;margin-left:auto;margin-right:auto">
+      <div class="dl lead">
+        <span class="dl-ico"><svg viewBox="0 0 24 24" width="26" height="26" style="color:var(--navy)"><use href="#i-win"/></svg></span>
+        <h3>Mission control</h3>
+        <p>Windows management console that runs the local server automatically. Upload content, set schedules, monitor TVs, and push ads on demand.</p>
+        <div class="pills"><span class="pill">Windows 11 / 10</span><span class="pill">Console + server</span><span class="pill">~74 MB</span></div>
+        <a id="btn-desktop" class="btn btn-1" href="https://signage-api.frozenbit.eu/d/windows">
+          <span class="spinner" id="spin-desktop"></span><span id="label-desktop">Checking for latest…</span>
+        </a>
+        <a id="btn-releases" class="sub-link" href="https://github.com/abodan09/signage-manager/releases/latest" target="_blank" rel="noopener">View all releases &#8599;</a>
+      </div>
+    </div>
+  </div>
+</section>
 
-<footer>
-  <div class="foot-in">
-    <span>SIGNAGE MANAGER — A FROZENBIT SYSTEM</span>
-    <a id="footer-gh" href="https://github.com/abodan09/signage-manager" target="_blank">SOURCE ↗</a>
-    <a href="report.html">REPORT AN ISSUE</a>
-    <a href="#changelog">PATCH LOG</a>
-    <a id="footer-issues" href="https://github.com/abodan09/signage-manager/issues" target="_blank">ALL ISSUES ↗</a>
+<!-- ══════════════════ extra page 1 — TV players ══════════════════ -->
+<section class="sec" id="tv-players">
+  <div class="wrap">
+    <div class="stack stack-c">
+      <p class="eyebrow">TV players</p>
+      <h2 class="disp h2">Then add the screens.</h2>
+      <p class="lede" style="text-align:center">Install one of these on the TV itself. Every player is free, and a TV with none of them can still open the browser player at your server's URL.</p>
+    </div>
+
+    <div class="dl-grid">
+      <div class="dl">
+        <span class="dl-ico"><svg viewBox="0 0 24 24" width="26" height="26" style="color:#3DDC84"><use href="#i-android"/></svg></span>
+        <h3>Android TV</h3>
+        <p>Fullscreen kiosk player for TCL, Google TV and Android TV. Sideload via ADB — auto-starts on boot and reconnects on its own.</p>
+        <div class="pills"><span class="pill">Android TV / Google TV</span><span class="pill">Android 5.0+</span><span class="pill">~2.4 MB</span></div>
+        <a id="btn-tv" class="btn btn-1" href="https://signage-api.frozenbit.eu/d/android">
+          <span class="spinner" id="spin-tv"></span><span id="label-tv">Checking for latest…</span>
+        </a>
+        <a class="sub-link" href="#guide-android">Install guide &#8595;</a>
+      </div>
+
+      <div class="dl">
+        <span class="dl-ico">
+          <svg viewBox="0 0 48 48" width="30" height="30"><circle cx="24" cy="24" r="22" fill="none" stroke="#A50034" stroke-width="2.5"/><text x="24" y="31" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="16" fill="#A50034" text-anchor="middle">LG</text></svg>
+        </span>
+        <h3>LG webOS</h3>
+        <p>Fullscreen kiosk player for LG OLED, QNED and NanoCell sets. Pre-packaged IPK — install it straight from the webOS Dev Manager, no building required.</p>
+        <div class="pills"><span class="pill">webOS 4+</span><span class="pill">LG C1 / C2 / C3…</span><span class="pill">~50 KB</span></div>
+        <a id="btn-webos" class="btn btn-1" href="https://signage-api.frozenbit.eu/d/webos">
+          <span class="spinner" id="spin-webos"></span><span id="label-webos">Checking for latest…</span>
+        </a>
+        <a class="sub-link" href="#guide-webos">Install guide &#8595;</a>
+      </div>
+
+      <div class="dl">
+        <span class="dl-ico">
+          <svg viewBox="0 0 120 44" width="34" height="26"><rect x="1" y="1" width="118" height="42" rx="6" fill="none" stroke="#3b5aa8" stroke-width="2"/><text x="60" y="28" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="13" fill="#3b5aa8" text-anchor="middle" letter-spacing="3">SAMSUNG</text></svg>
+        </span>
+        <h3>Samsung Tizen</h3>
+        <p>Fullscreen kiosk player for Samsung QLED, Neo QLED and Frame TVs. Pre-built and signed WGT — install with Device Manager or the Tizen CLI.</p>
+        <div class="pills"><span class="pill">Tizen 6.0+</span><span class="pill">Samsung 2021+</span><span class="pill">~50 KB</span></div>
+        <a id="btn-tizen" class="btn btn-1" href="https://signage-api.frozenbit.eu/d/tizen">
+          <span class="spinner" id="spin-tizen"></span><span id="label-tizen">Checking for latest…</span>
+        </a>
+        <a class="sub-link" href="#guide-tizen">Install guide &#8595;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ extra page 2 — install guides ══════════════════ -->
+<section class="sec tinted" id="install">
+  <div class="wrap">
+    <div class="stack stack-c">
+      <p class="eyebrow">Install guides</p>
+      <h2 class="disp h2">Getting a player onto the TV.</h2>
+      <p class="lede" style="text-align:center">Each platform wants a slightly different dance. Pick yours — every one of them ends the same way, with the server URL from the desktop app's Settings page.</p>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Choose a TV platform">
+      <button class="tab" role="tab" id="tab-android" aria-controls="guide-android" aria-selected="true">Android TV</button>
+      <button class="tab" role="tab" id="tab-webos" aria-controls="guide-webos" aria-selected="false">LG webOS</button>
+      <button class="tab" role="tab" id="tab-tizen" aria-controls="guide-tizen" aria-selected="false">Samsung Tizen</button>
+    </div>
+
+    <!-- ── Android TV ── -->
+    <div class="panel" id="guide-android" role="tabpanel" aria-labelledby="tab-android">
+      <div class="steps">
+        <div class="step"><span class="step-n">STEP 01</span><h4>Enable Developer Mode on the TV</h4><p>Settings → Device Preferences → About → scroll to <b>Build</b> and click it <b>7 times</b>, until "Developer mode enabled" appears.</p></div>
+        <div class="step"><span class="step-n">STEP 02</span><h4>Turn on USB / network debugging</h4><p>Settings → Device Preferences → Developer Options → enable <b>USB debugging</b>, and note the TV's IP address under Settings → Network.</p></div>
+        <div class="step"><span class="step-n">STEP 03</span><h4>Connect over ADB</h4><p>From the Windows PC running the desktop app, open a terminal:</p><code>adb connect &lt;TV-IP&gt;</code></div>
+        <div class="step"><span class="step-n">STEP 04</span><h4>Install the APK</h4><p>Point ADB at the file you downloaded:</p><code>adb install signage-tv-player.apk</code></div>
+        <div class="step"><span class="step-n">STEP 05</span><h4>Set the server URL</h4><p>The app opens a setup screen. Enter the server URL shown on the desktop app's <b>Settings</b> page — or skip the screen entirely with the ADB command below.</p></div>
+        <div class="step"><span class="step-n">STEP 06</span><h4>Done — it auto-starts on boot</h4><p>The player launches when the TV powers on. Hold <b>OK</b> for 3 seconds to get back to the setup screen.</p></div>
+      </div>
+
+      <div class="callout">
+        <h4>Skip the setup screen from the PC</h4>
+        <p>Replace <code>192.168.1.x</code> with the IP shown on the desktop app's Settings page, then run this once after installing:</p>
+        <div class="cmd"><span id="cmd-adb">adb shell am start -n com.signage.tvplayer/.SetupActivity --es SERVER_URL "http://192.168.1.x:3001"</span><button class="copy" data-copy="cmd-adb">Copy</button></div>
+      </div>
+
+      <div class="callout">
+        <h4>Updating from v1.5.2 or earlier?</h4>
+        <p>Releases from v1.5.3 are signed with a permanent release key — older builds used a throw-away debug key — so the first update needs a clean install. Run <code>adb uninstall com.signage.tvplayer</code> before installing the new APK. Later updates install over the top normally.</p>
+      </div>
+
+      <div class="callout">
+        <h4>App crashes or won't start on a TCL or budget Android TV?</h4>
+        <p>Three TV-side settings cause most crashes of sideloaded apps on TCL sets:</p>
+        <p><b>1. Android System WebView disabled or outdated</b> — the player runs inside WebView. TV Settings → Apps → See all apps → show system apps → <b>Android System WebView</b> → Enable, then update it in the Play Store. Check its state over ADB with <code>adb shell dumpsys webviewupdate</code>.</p>
+        <p><b>2. TCL "Safe Guard" watchdog</b> — open the pre-installed <b>Safe Guard</b> app → <b>Automatic start setting</b> → disable automatic management, or allow Signage TV Player. Safe Guard silently kills or blocks sideloaded apps otherwise.</p>
+        <p><b>3. Google Play Protect</b> — Play Store → profile icon → Play Protect → Settings → turn off scanning, or approve the app when prompted. Play Protect can kill or even uninstall sideloaded APKs on Google TV.</p>
+        <p>Still crashing? From v1.5.4 the app shows the crash reason on screen the next time it opens. You can also capture it with <code>adb logcat -b crash -d</code> after reproducing the crash.</p>
+      </div>
+
+      <div class="callout">
+        <h4>TV can't find or reach the PC?</h4>
+        <p><b>Update both apps first.</b> Versions before v1.5.5 advertised the wrong address when the PC had a VPN or virtual network adapter (Tailscale, Hyper-V, VPN clients). The desktop app now ignores those, and its Settings page shows the exact URL to type on the TV.</p>
+        <p><b>Same network:</b> the TV and PC must be on the same router network. A phone hotspot, guest Wi-Fi, or a router with <b>AP/client isolation</b> switched on blocks device-to-device traffic — turn isolation off, or put both on the main network.</p>
+        <p><b>Windows Firewall:</b> when Windows asks whether "Signage Manager" may access the network, choose <b>Allow</b> and tick "Private networks". If it was blocked already: Windows Security → Firewall → Allow an app through firewall → enable Signage Manager for Private networks.</p>
+        <p>From v1.5.5 the TV app tests the connection when you press Connect and tells you what failed — refused means firewall or the app isn't running; timeout means the wrong network or AP isolation.</p>
+      </div>
+    </div>
+
+    <!-- ── LG webOS ── -->
+    <div class="panel" id="guide-webos" role="tabpanel" aria-labelledby="tab-webos" hidden>
+      <div class="steps">
+        <div class="step"><span class="step-n">STEP 01</span><h4>Reveal Developer Mode</h4><p>On the TV go to <b>Settings → Support → TV Information</b>, then click the TV logo <b>5 times</b> to reveal the Developer Mode app in the LG Content Store.</p></div>
+        <div class="step"><span class="step-n">STEP 02</span><h4>Install the Developer Mode app</h4><p>Open <b>LG Developer Mode</b> from the Content Store, sign in with a free LG developer account, and turn <b>Dev Mode Status</b> on.</p></div>
+        <div class="step"><span class="step-n">STEP 03</span><h4>Install webOS Dev Manager</h4><p>On the Windows PC, download <b>webOS TV Dev Manager</b> from the LG Developer site, or install the VS Code extension. Add the TV's IP address as a device.</p></div>
+        <div class="step"><span class="step-n">STEP 04</span><h4>Install the IPK</h4><p>In webOS Dev Manager, select the TV, click <b>Install App</b>, and choose the downloaded <code>signage-webos-player.ipk</code>.</p></div>
+        <div class="step"><span class="step-n">STEP 05</span><h4>Set the server URL</h4><p>Launch <b>Signage Player</b> from the LG home screen, enter the server URL shown on the desktop app's Settings page, and press Connect.</p></div>
+        <div class="step"><span class="step-n">STEP 06</span><h4>Done — it reconnects on its own</h4><p>The player auto-connects on the next launch. Press <b>Back</b> on the remote to return to settings and change the server URL.</p></div>
+      </div>
+
+      <div class="callout" style="border-left-color:var(--accent);background:var(--accent-tint)">
+        <h4>Prefer the command line?</h4>
+        <p>Install LG's <code>@webosose/ares-cli</code> and run:</p>
+        <div class="cmd"><span id="cmd-webos">ares-install --device &lt;TV-name&gt; signage-webos-player.ipk</span><button class="copy" data-copy="cmd-webos">Copy</button></div>
+      </div>
+    </div>
+
+    <!-- ── Samsung Tizen ── -->
+    <div class="panel" id="guide-tizen" role="tabpanel" aria-labelledby="tab-tizen" hidden>
+      <div class="steps">
+        <div class="step"><span class="step-n">STEP 01</span><h4>Enable Developer Mode</h4><p>On the TV open <b>Apps</b>, then quickly type <b>12345</b> on the remote. A Developer Mode dialog appears — switch it <b>ON</b> and enter your PC's IP address.</p></div>
+        <div class="step"><span class="step-n">STEP 02</span><h4>Restart the TV</h4><p>The TV prompts you to restart. After the reboot a <b>DEVELOP MODE</b> banner appears at the top of the Apps screen, confirming it took.</p></div>
+        <div class="step"><span class="step-n">STEP 03</span><h4>Install Tizen Studio</h4><p>Download <b>Tizen Studio</b> from the Samsung developer site and install it on the Windows PC. Open <b>Device Manager</b> from the toolbar.</p></div>
+        <div class="step"><span class="step-n">STEP 04</span><h4>Connect the TV</h4><p>In Device Manager, click <b>Remote Device Manager → Scan</b>, or add the TV's IP manually. Right-click the TV and choose <b>Connect</b> — the status should turn green.</p></div>
+        <div class="step"><span class="step-n">STEP 05</span><h4>Install the WGT</h4><p>Go to <b>Tools → Tizen → Install Tizen App</b>, pick the connected TV, and choose the downloaded <code>signage-tizen.wgt</code>.</p></div>
+        <div class="step"><span class="step-n">STEP 06</span><h4>Set the server URL</h4><p>Launch <b>Signage Player</b> from Smart Hub, enter the server URL from the desktop app's Settings page, and press Connect. It reconnects by itself next time.</p></div>
+      </div>
+
+      <div class="callout" style="border-left-color:var(--accent);background:var(--accent-tint)">
+        <h4>Prefer the command line?</h4>
+        <p>With the Tizen CLI on your PATH, connect the TV over SDB and run:</p>
+        <div class="cmd"><span id="cmd-tizen">tizen sdb connect &lt;TV-IP&gt; &amp;&amp; tizen install -n signage-tizen.wgt -t &lt;device-id&gt;</span><button class="copy" data-copy="cmd-tizen">Copy</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ changelog ══════════════════ -->
+<section class="sec" id="changelog">
+  <div class="wrap">
+    <div class="stack" style="gap:10px">
+      <p class="eyebrow">Patch log</p>
+      <h2 class="disp h2">What changed.</h2>
+      <p class="small">Full details for every release live on <a href="https://github.com/abodan09/signage-manager/releases" target="_blank" rel="noopener" style="color:var(--accent-ink);font-weight:600">GitHub Releases</a>.</p>
+    </div>
+    <div class="logs">
+      <details class="log latest" open>
+        <summary><span class="log-ver">v1.9.1</span><span class="log-tag">Latest</span></summary>
+        <ul>
+        <li>Fixed: <b>Check for Updates</b> could tell you that you were up to date when the check had in fact failed. A rate limit, an unreachable release list and no internet at all all produced the same green tick, so a computer could sit on an old version for months believing it was current. It now says which happened, and why</li>
+        <li>Fixed: the check could sit on <b>Checking for updates…</b> indefinitely when the network answered and then went quiet. It now gives up after twenty seconds and tells you</li>
+        <li>Fixed: choosing <b>Update Now</b> from the Help menu downloaded the update with nothing on screen to show for it, and then closed the app. The progress bar, and anything that goes wrong, now appear in the bar across the top</li>
+        <li>Fixed: an update that arrived incomplete, or an installer that would not start, could close the app without installing anything. Downloads are now checked against the release’s own checksum before they are run, and the app only closes once the installer has actually started</li>
+        <li>The update bar now says what is in a release before you commit to restarting for it</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.9.0</span></summary>
+        <ul>
+        <li>New app: <b>Social Mix</b> — Instagram, Facebook and X on one wall, every post badged with the network it came from so a room can tell them apart at a glance. Each network is read from a link, either a wall service's feed or an RSS feed</li>
+        <li>New app: <b>MustHaveMenus</b> — put a menu you designed at musthavemenus.com on a screen by pasting its Share link, and republish the design to update the screens. A menu with several pages can play through all of them. A link that was never published is refused when you save it, instead of leaving a blank screen in the dining room</li>
+        <li>New: a <b>Four columns</b> preset in the app zone editor — four full-height panes side by side, the upright counterpart to Quarters</li>
+        <li>Social walls now draw posts that are only words. A post with no picture used to leave a photo-shaped gap on the wall</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.8.3</span></summary>
+        <ul>
+        <li>New: after you install an update, the app now shows <b>what changed</b> the first time it starts — naming the version you came from, listing the changes, and appearing only once. Previously an update arrived with nothing to say for itself</li>
+        <li>The update prompt is back to its plain wording. It had started appending a change count as soon as release notes began being published, which made updating look different when nothing about it had changed</li>
+        <li>Fixed: release notes are shown as plain sentences, instead of leaving formatting marks like <code>**bold**</code> visible in the text</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.8.2</span></summary>
+        <ul>
+        <li><b>Reporting a problem no longer sends you to GitHub.</b> Fill in the form, press <b>Send report</b>, and it reaches us directly — no GitHub account, no second step in a browser</li>
+        <li>You can leave your email with a report, so we can actually reply. It is optional and used for nothing else</li>
+        <li>The app tells you honestly what happened: whether the report was filed straight away, or received and held because our end was unreachable. If we cannot be reached at all it falls back to the old browser flow, so a report is never lost</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.8.1</span></summary>
+        <ul>
+        <li>New: <b>six ready-made emergency and flash messages</b> — a fire drill, a full-building evacuation and a lockdown, plus a full car park, an early close and overnight maintenance — so the Emergency page is useful the first time you open it. Edit them to suit your building; any you delete stay deleted</li>
+        <li>The Emergency page now opens with the four figures you actually want in an incident: what is live, what is prepared, how many screens the broadest message reaches, and how many screens are offline and will pick it up when they reconnect</li>
+        <li>Emergency and Flash messages are now listed separately, emergencies first, so the most serious message is never sitting below a parking notice. Anything you create afterwards files itself into the right section on its own</li>
+        <li>Fixed: a rare fault in the progress bar could leave a screen stuck on whatever it was showing instead of moving to the next item. The next item is now scheduled before the bar is drawn, so nothing the bar does can strand the rotation</li>
+        <li>Fixed: dashes and the × symbol appeared as garbled characters throughout the Screen Layouts page</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.8.0</span></summary>
+        <ul>
+        <li>New: <b>apps</b> — 21 boards that fill themselves from a live source instead of a file you upload: Instagram and Facebook walls, a follower counter for each, YouTube (videos, Shorts, live streams and playlists), Weather (three styles, seven days, no API key needed), Google Calendar, Google Slides, Google Drive, OneDrive, SharePoint, Power BI, Canva, Live TV with adverts, Split Screen, Simple Clock, World Clock, QR Code, Motivational Quotes, and Countdown / Count-up</li>
+        <li>New: <b>Designer</b> — build a board from scratch with a proper shape library, live widgets, typed QR codes and effects, then keep what you make in a team template library with filters to find it again</li>
+        <li>New: <b>screen layouts</b> — divide a screen into zones, each one playing anything the manager can serve, so a single TV can show a video, a menu and a ticker at once</li>
+        <li>New: <b>emergency and flash messages</b> — put an urgent notice on one screen or on every screen at once. Screens leave their playlist immediately and pick it up again the moment the message is cleared</li>
+        <li>Templates are now sorted into <b>categories</b>, with extra packs downloaded only when you want them rather than shipped with the app</li>
+        <li>Fixed: the zone editor crashed when it was opened; an emergency message could be unreadable for two separate reasons; the weather data provider is now credited as its licence requires; and a hard review of Motivational Quotes turned up six defects, one of them serious</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.7.0</span></summary>
+        <ul>
+        <li>New: <b>templates</b> — six ready-made layouts (Fullscreen, Fullscreen + Ticker, Lower Third, Branded Frame, Welcome / Lobby and Portrait Poster) with your own colours, font, logo and clock, previewed live in the app before you assign them</li>
+        <li>A template can be set for one screen, for a whole group, or as the default for everything; each screen renders its own, and remembers it so it still looks right if it powers on while the manager is off</li>
+        <li>New: <b>screen pairing</b> — a TV shows an 8-letter code and you add it from the Devices page, so screens are claimed on purpose instead of any device on the network connecting itself. Existing screens keep working exactly as before; pairing only becomes mandatory if you switch it on in Settings</li>
+        <li>Managing the server is now limited to this PC. TVs still connect normally, but another machine on the network can no longer list your screens or push content to them</li>
+        <li>Fixed a serious bug on LG webOS 4 TVs: any scheduled content caused a permanently black screen. Those panels also had the "no content" screen and the new layouts rendered incorrectly — all corrected</li>
+        <li>Un-pair or remove a screen and it now returns to a pairing code immediately, instead of leaving old content on the wall</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.6.0</span></summary>
+        <ul>
+        <li>New: <b>device groups</b> — organise screens by location or purpose (Lobby, Cafeteria, Menu Boards) and push content or a whole project to every screen in a group at once</li>
+        <li>A screen can belong to several groups, each with its own colour; the Devices page shows group tags on every TV and lets you filter by group or show only ungrouped screens</li>
+        <li>Group pushes report exactly what happened — how many screens received the content and how many were skipped because they were offline</li>
+        <li>Fixed: a TV that reconnected could silently fall out of its groups, and renaming a device no longer risks clearing other fields</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.5.5</span></summary>
+        <ul>
+        <li>Fixed auto-discovery and manual connection failing when the PC has a VPN or virtual network adapter (Tailscale, Hyper-V, WSL…) — the server now advertises the real LAN address on every network it is connected to</li>
+        <li>Settings page now shows the actual URL to enter on the TV (it previously showed "localhost", which only works on the PC itself)</li>
+        <li>Android TV: discovery now holds a Wi-Fi multicast lock — wireless TVs previously never received the beacon at all</li>
+        <li>Android TV: pressing Connect now tests the connection and explains exactly what failed (firewall, wrong network, AP isolation…)</li>
+        <li>Android TV: the player shows a clear "can't reach the server" banner with instructions instead of a silent black screen</li>
+        <li>New: anonymous usage statistics, with an opt-out under Settings → Privacy — only app version, OS and named feature events are shared, never your content or media</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.5.4</span></summary>
+        <ul>
+        <li>Fixed Android TV app crashing on TCL and other low-memory TVs — a WebView renderer crash (heavy video / out-of-memory) now rebuilds the player instead of killing the app</li>
+        <li>Removed the emoji startup component that could crash the app at launch on TVs without Google font services</li>
+        <li>If the app ever crashes, it now shows the exact crash reason on screen at next launch</li>
+        <li>Player page now works on older TV browsers (Chromium &lt; 87) — content layers no longer collapse to a black screen</li>
+        <li>Player now skips unplayable videos/images (unsupported codec) instead of hanging on a black screen</li>
+        <li>Website: added a TCL troubleshooting section (WebView, Safe Guard, Play Protect)</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.5.3</span></summary>
+        <ul>
+        <li>Fixed Android TV app opening and immediately closing on launch</li>
+        <li>Android APK is now a signed release build with a permanent key — future updates install over the top (one-time clean install needed coming from older versions)</li>
+        <li>Samsung Tizen package is now properly signed — installs directly via Device Manager / Tizen CLI, no more building it yourself in Tizen Studio</li>
+        <li>Auto-discovery on Android is more reliable (keeps listening instead of giving up on the first stray packet)</li>
+        <li>Network scan fixed on older LG webOS models</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.5.2</span></summary>
+        <ul>
+        <li>Definitive fix for the update error "Failed to uninstall old application files (code 2)" — the installer now closes the running app itself and never aborts an update because the previous uninstaller failed</li>
+        <li>Updates now restart the app automatically when finished</li>
+        <li>App files are packaged with asar — dramatically fewer files on disk, faster installs and updates</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.5.1</span></summary>
+        <ul>
+        <li>Fixed installer error "Cannot uninstall old application files (code 2)" when updating from a previous version</li>
+        <li>Installer now automatically cleans up stale uninstall entries left by older installs</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.5.0</span></summary>
+        <ul>
+        <li>Auto-discovery — desktop broadcasts its address via UDP; TV apps detect and connect automatically without manual IP entry</li>
+        <li>Push project — push an entire project's content to a TV in one click from the Devices page</li>
+        <li>Report an Issue dialog with GitHub pre-fill — accessible from Help menu</li>
+        <li>Changelog section added to the website</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.4.0</span></summary>
+        <ul>
+        <li>Text content now plays as a concurrent overlay (z-index 5) on top of images, videos, and web pages</li>
+        <li>Overlay opacity slider (0–100%) and transparent background toggle per text item</li>
+        <li>Projects — group media files with shared schedule/duration; multi-file upload in one step</li>
+        <li>Attach / detach existing content items to/from projects</li>
+        <li>Release notes displayed as bullet points in the update dialog and banner</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.2.0</span></summary>
+        <ul>
+        <li>Samsung Tizen WGT app — fullscreen kiosk player for Samsung QLED / Frame TVs</li>
+        <li>Auto-update across all platforms — Electron, Android TV, webOS, Tizen</li>
+        <li>Help menu with How To guide, About dialog, and manual update check</li>
+        <li>CI pipeline extended to build and publish all four platform packages</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.1.0</span></summary>
+        <ul>
+        <li>LG webOS IPK app — kiosk player for LG OLED / QNED TVs with ares-cli packaging</li>
+        <li>Back-key navigation returns to server setup screen on webOS and Tizen</li>
+        <li>Brand SVG logos (LG, Samsung) on the download page</li>
+        </ul>
+      </details>
+      <details class="log">
+        <summary><span class="log-ver">v1.0.0</span></summary>
+        <ul>
+        <li>Initial release — Windows Electron desktop app with local Express server</li>
+        <li>Android TV / Google TV APK with WebView kiosk player</li>
+        <li>Image, video, HTML, and text content types with loop / scheduled / manual modes</li>
+        <li>Real-time WebSocket push, device management, and drag-to-reorder playlist</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ footer ══════════════════ -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-g">
+      <div>
+        <a class="logo" href="#top" style="margin-bottom:12px"><span class="logo-m"></span>SIGNAGE MANAGER</a>
+        <p class="small" style="max-width:32ch;font-size:13.5px;margin-top:12px">Open-source digital signage. One PC commands every screen. A FrozenBit product.</p>
+      </div>
+      <div><h4>Product</h4><ul>
+        <li><a href="#apps">Apps</a></li>
+        <li><a href="#designer">Designer</a></li>
+        <li><a href="#screens">Screens</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+      </ul></div>
+      <div><h4>Downloads</h4><ul>
+        <li><a href="#download">Windows manager</a></li>
+        <li><a href="#tv-players">TV players</a></li>
+        <li><a href="#install">Install guides</a></li>
+        <li><a href="#changelog">Changelog</a></li>
+      </ul></div>
+      <div><h4>Open source</h4><ul>
+        <li><a id="foot-gh" href="https://github.com/abodan09/signage-manager" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/abodan09/signage-manager/releases" target="_blank" rel="noopener">Releases</a></li>
+        <li><a href="report.html">Report an issue</a></li>
+        <li><a id="foot-issues" href="https://github.com/abodan09/signage-manager/issues" target="_blank" rel="noopener">All issues</a></li>
+      </ul></div>
+    </div>
+    <div class="foot-bot">
+      <span>&copy; 2026 FrozenBit &middot; Signage Manager</span>
+      <span>signage.frozenbit.eu</span>
+    </div>
   </div>
 </footer>
 
 <script>
 (function () {
+  'use strict';
   var REPO = 'abodan09/signage-manager';
-  var API  = 'https://api.github.com/repos/' + REPO + '/releases/latest';
-  var releasesUrl = 'https://github.com/' + REPO + '/releases/latest';
   // Download gateway: logs the download, then redirects to the latest GitHub
-  // asset (resolved server-side — the buttons work even if the API call
-  // below fails or is rate-limited).
+  // asset (resolved server-side), so every button works even when the GitHub
+  // API call below is rate-limited or fails outright.
   var DL = 'https://signage-api.frozenbit.eu';
-
-  // Update footer links (already hardcoded above but we do it dynamically too)
-  document.getElementById('footer-gh').href     = 'https://github.com/' + REPO;
-  document.getElementById('footer-issues').href = 'https://github.com/' + REPO + '/issues';
-  document.getElementById('btn-releases').href  = releasesUrl;
-
-  // Buttons point at the gateway from the start
-  var GATEWAY = {
-    'btn-desktop': DL + '/d/windows',
-    'btn-tv':      DL + '/d/android',
-    'btn-webos':   DL + '/d/webos',
-    'btn-tizen':   DL + '/d/tizen'
+  var BTN = {
+    'btn-desktop': { url: DL + '/d/windows', ext: '.exe', spin: 'spin-desktop', label: 'label-desktop', text: 'Download for Windows' },
+    'btn-tv':      { url: DL + '/d/android', ext: '.apk', spin: 'spin-tv',      label: 'label-tv',      text: 'Download APK' },
+    'btn-webos':   { url: DL + '/d/webos',   ext: '.ipk', spin: 'spin-webos',   label: 'label-webos',   text: 'Download IPK' },
+    'btn-tizen':   { url: DL + '/d/tizen',   ext: '.wgt', spin: 'spin-tizen',   label: 'label-tizen',   text: 'Download WGT' }
   };
-  Object.keys(GATEWAY).forEach(function (id) {
-    document.getElementById(id).href = GATEWAY[id];
+
+  Object.keys(BTN).forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.href = BTN[id].url;
   });
 
-  function setBtn(btnId, spinnerId, labelId, text) {
-    var spinner = document.getElementById(spinnerId);
-    var label   = document.getElementById(labelId);
-    spinner.style.display = 'none';
-    label.textContent = text;
+  function settle(id, suffix) {
+    var cfg = BTN[id];
+    var spin = document.getElementById(cfg.spin);
+    var label = document.getElementById(cfg.label);
+    if (spin) spin.style.display = 'none';
+    if (label) label.textContent = cfg.text + (suffix || '');
   }
-
-  fetch(API)
-    .then(function (r) {
-      if (!r.ok) throw new Error('no releases');
-      return r.json();
-    })
-    .then(function (data) {
-      var assets = data.assets || [];
-      var tag    = data.tag_name || '';
-      var date   = data.published_at ? new Date(data.published_at).toLocaleDateString() : '';
-
-      var exeAsset   = assets.find(function (a) { return a.name.endsWith('.exe'); });
-      var apkAsset   = assets.find(function (a) { return a.name.endsWith('.apk'); });
-      var ipkAsset   = assets.find(function (a) { return a.name.endsWith('.ipk'); });
-      var wgtAsset   = assets.find(function (a) { return a.name.endsWith('.wgt'); });
-
-      if (tag) {
-        var bar = document.getElementById('version-bar');
-        bar.textContent = '✓ LATEST BUILD ' + tag.toUpperCase() + (date ? ' · RELEASED ' + date : '');
-        bar.classList.add('visible');
-      }
-
-      setBtn('btn-desktop', 'spin-desktop', 'label-desktop',
-        '⬇ DOWNLOAD FOR WINDOWS' + (exeAsset ? '  (' + fmtSize(exeAsset.size) + ')' : ''));
-      setBtn('btn-tv', 'spin-tv', 'label-tv',
-        '⬇ DOWNLOAD APK' + (apkAsset ? '  (' + fmtSize(apkAsset.size) + ')' : ''));
-      setBtn('btn-webos', 'spin-webos', 'label-webos',
-        '⬇ DOWNLOAD IPK' + (ipkAsset ? '  (' + fmtSize(ipkAsset.size) + ')' : ''));
-      setBtn('btn-tizen', 'spin-tizen', 'label-tizen',
-        '⬇ DOWNLOAD WGT' + (wgtAsset ? '  (' + fmtSize(wgtAsset.size) + ')' : ''));
-    })
-    .catch(function () {
-      // GitHub API unavailable — the gateway still resolves the latest build
-      setBtn('btn-desktop', 'spin-desktop', 'label-desktop', '⬇ DOWNLOAD FOR WINDOWS');
-      setBtn('btn-tv',      'spin-tv',      'label-tv',      '⬇ DOWNLOAD APK');
-      setBtn('btn-webos',   'spin-webos',   'label-webos',   '⬇ DOWNLOAD IPK');
-      setBtn('btn-tizen',   'spin-tizen',   'label-tizen',   '⬇ DOWNLOAD WGT');
-    });
 
   function fmtSize(bytes) {
     if (bytes > 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
     return (bytes / 1024).toFixed(0) + ' KB';
   }
 
-  // Hide the placeholder only when a real video src is present.
-  // Test the content attribute, not vid.src: an absent/empty src resolves to
-  // the page URL minus the fragment, so comparing it against location.href
-  // reported "a video is set" on every #hash deep link and left a dead black box.
-  (function () {
-    var vid = document.getElementById('guide-video');
-    var ph  = document.getElementById('video-placeholder');
-    var src = vid && vid.getAttribute('src');
-    if (ph && src && src.trim()) {
-      ph.style.display = 'none';
-    }
-  })();
+  fetch('https://api.github.com/repos/' + REPO + '/releases/latest')
+    .then(function (r) { if (!r.ok) throw new Error('no releases'); return r.json(); })
+    .then(function (data) {
+      var assets = data.assets || [];
+      var tag = data.tag_name || '';
+      var date = data.published_at ? new Date(data.published_at).toLocaleDateString() : '';
 
-  window.copyTizenCmd = function () {
-    var text = document.getElementById('tizen-cmd').textContent;
-    navigator.clipboard.writeText(text).then(function () {
-      var btn = document.querySelector('#tizen-setup .copy-btn');
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
-    });
-  };
+      if (tag) {
+        var bar = document.getElementById('version-bar');
+        if (bar) {
+          bar.textContent = 'LATEST ' + tag.toUpperCase() + (date ? ' · ' + date : '');
+          bar.classList.add('visible');
+        }
+        var stat = document.getElementById('stat-ver');
+        if (stat) stat.textContent = tag.replace(/^v/, 'v');
+      }
 
-  window.copyWebosCmd = function () {
-    var text = document.getElementById('webos-cmd').textContent;
-    navigator.clipboard.writeText(text).then(function () {
-      var btn = document.querySelector('#webos-setup .copy-btn');
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
-    });
-  };
-
-  window.copyCmd = function () {
-    var text = document.getElementById('adb-cmd').textContent;
-    navigator.clipboard.writeText(text).then(function () {
-      var btn = document.querySelector('#adb-skip .copy-btn');
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
-    });
-  };
-})();
-
-/* ── hero network constellation ── */
-(function () {
-  var cv = document.getElementById('net')
-  if (!cv || !cv.getContext) return
-  var ctx = cv.getContext('2d')
-  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  var W, H, dpr
-
-  var hub = { x: 0.74, y: 0.44 }
-  var nodes = [
-    { x: 0.90, y: 0.16 }, { x: 0.965, y: 0.40 }, { x: 0.935, y: 0.72 },
-    { x: 0.82, y: 0.88 }, { x: 0.64, y: 0.78 }, { x: 0.60, y: 0.20 },
-    { x: 0.86, y: 0.54 }, { x: 0.70, y: 0.10 }
-  ]
-  var pulses = nodes.map(function (_, i) { return { t: (i * 0.13) % 1, v: 0.0016 + (i % 3) * 0.0007 } })
-
-  function size() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2)
-    W = cv.clientWidth; H = cv.clientHeight
-    cv.width = W * dpr; cv.height = H * dpr
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  }
-  function px(p) { return { x: p.x * W, y: p.y * H } }
-
-  function screenNode(n, glow) {
-    var p = px(n)
-    ctx.strokeStyle = 'rgba(76,201,255,' + (0.45 + glow * 0.5) + ')'
-    ctx.lineWidth = 1.4
-    ctx.strokeRect(p.x - 11, p.y - 7, 22, 14)
-    ctx.fillStyle = 'rgba(76,201,255,' + (0.08 + glow * 0.22) + ')'
-    ctx.fillRect(p.x - 11, p.y - 7, 22, 14)
-    ctx.fillStyle = 'rgba(76,201,255,0.85)'
-    ctx.fillRect(p.x - 3, p.y + 7, 6, 2)
-  }
-
-  function draw(t) {
-    ctx.clearRect(0, 0, W, H)
-    ctx.fillStyle = 'rgba(70,100,150,0.10)'
-    for (var gx = 20; gx < W; gx += 44) for (var gy = 20; gy < H; gy += 44) ctx.fillRect(gx, gy, 1.5, 1.5)
-
-    var hp = px(hub)
-    nodes.forEach(function (n, i) {
-      var p = px(n)
-      ctx.strokeStyle = 'rgba(76,201,255,0.14)'
-      ctx.lineWidth = 1
-      ctx.beginPath(); ctx.moveTo(hp.x, hp.y); ctx.lineTo(p.x, p.y); ctx.stroke()
-      var pu = pulses[i]
-      if (!reduced) { pu.t += pu.v; if (pu.t > 1) pu.t = 0 }
-      var qx = hp.x + (p.x - hp.x) * pu.t
-      var qy = hp.y + (p.y - hp.y) * pu.t
-      var grad = ctx.createRadialGradient(qx, qy, 0, qx, qy, 7)
-      grad.addColorStop(0, 'rgba(139,123,255,0.9)')
-      grad.addColorStop(1, 'rgba(139,123,255,0)')
-      ctx.fillStyle = grad
-      ctx.beginPath(); ctx.arc(qx, qy, 7, 0, 6.283); ctx.fill()
-      screenNode(n, reduced ? 0.4 : (0.5 + 0.5 * Math.sin(t / 900 + i * 1.7)))
+      Object.keys(BTN).forEach(function (id) {
+        var ext = BTN[id].ext;
+        var asset = assets.filter(function (a) { return a.name.slice(-ext.length) === ext; })[0];
+        settle(id, asset ? '  (' + fmtSize(asset.size) + ')' : '');
+      });
     })
-    var hg = ctx.createRadialGradient(hp.x, hp.y, 0, hp.x, hp.y, 32)
-    hg.addColorStop(0, 'rgba(76,201,255,0.45)')
-    hg.addColorStop(1, 'rgba(76,201,255,0)')
-    ctx.fillStyle = hg
-    ctx.beginPath(); ctx.arc(hp.x, hp.y, 32, 0, 6.283); ctx.fill()
-    ctx.save()
-    ctx.translate(hp.x, hp.y); ctx.rotate(0.785)
-    ctx.strokeStyle = 'rgba(217,231,248,0.95)'; ctx.lineWidth = 1.6
-    ctx.strokeRect(-8, -8, 16, 16)
-    ctx.fillStyle = '#4cc9ff'
-    ctx.fillRect(-3.5, -3.5, 7, 7)
-    ctx.restore()
-  }
+    .catch(function () {
+      // The gateway still resolves the latest build — just drop the size hint.
+      Object.keys(BTN).forEach(function (id) { settle(id, ''); });
+    });
 
-  // Only animate while the hero is actually on screen — the canvas scrolls away
-  // above a long page, and rAF is not throttled for off-screen elements.
-  var visible = true, running = false
-  function loop(t) {
-    if (reduced || !visible) { running = false; return }
-    draw(t)
-    requestAnimationFrame(loop)
+  // ── install-guide tabs ──
+  var tabs = [].slice.call(document.querySelectorAll('.tab'));
+  function selectTab(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      var panel = document.getElementById(t.getAttribute('aria-controls'));
+      if (panel) panel.hidden = !on;
+    });
   }
-  function start() {
-    if (running || reduced || !visible) return
-    running = true
-    requestAnimationFrame(loop)
-  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { selectTab(t); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var next = tabs[(tabs.indexOf(t) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      next.focus(); selectTab(next);
+    });
+  });
 
-  size()
-  window.addEventListener('resize', function () { size(); if (!running) draw(0) })
-
-  if (reduced) {
-    draw(0)
-  } else if (window.IntersectionObserver) {
-    new IntersectionObserver(function (entries) {
-      visible = entries[0].isIntersecting
-      if (visible) start()
-    }).observe(cv)
-    start()
-  } else {
-    start()
+  // Deep links from the TV-player cards open the matching guide.
+  function openFromHash() {
+    var id = location.hash.slice(1);
+    if (!id) return;
+    var tab = document.querySelector('.tab[aria-controls="' + id + '"]');
+    if (tab) selectTab(tab);
   }
-})()
+  window.addEventListener('hashchange', openFromHash);
+  openFromHash();
+
+  // ── copy buttons ──
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('.copy');
+    if (!btn) return;
+    var src = document.getElementById(btn.getAttribute('data-copy'));
+    if (!src) return;
+    var done = function () {
+      var was = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(function () { btn.textContent = was; }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(src.textContent).then(done, function () {});
+    } else {
+      var r = document.createRange(); r.selectNodeContents(src);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      try { document.execCommand('copy'); done(); } catch (err) {}
+      sel.removeAllRanges();
+    }
+  });
+
+  // ── mobile menu ──
+  var burger = document.getElementById('burger');
+  var mobile = document.getElementById('mobile');
+  if (burger && mobile) {
+    burger.addEventListener('click', function () {
+      var open = mobile.classList.toggle('open');
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    });
+    mobile.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A') {
+        mobile.classList.remove('open');
+        burger.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+})();
 </script>
 </body>
 </html>
